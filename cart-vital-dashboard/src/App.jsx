@@ -291,7 +291,7 @@ const LogisticsDetailModal = ({ item, onClose }) => {
   const statusMap = {
     'STORAGE': '보관 중',
     'DISPATCH': '발송 중',
-    'DELAY': '배송 지연',
+    'DELAY': '배송 완료',
     'IN_USE': '사용 중',
     'RETURN': '회수 중',
     'CLEANING': '소독 중',
@@ -325,12 +325,11 @@ const LogisticsDetailModal = ({ item, onClose }) => {
         { time: `${prevDate} ${nightTime.replace('2', '1')}`, step: '집화 처리', desc: `사업소 접수 및 물류센터 입고` }
       ];
     } else if (item.status === 'DELAY') {
-      const delayReasons = ['기상 악화(폭설)', '허브 터미널 물량 폭주', '배송 차량 고장'];
-      const myReason = delayReasons[idNum % delayReasons.length];
-      result.step = 3;
-      result.statusLabel = '배송 지연';
+      result.step = 4;
+      result.statusLabel = '배송 완료';
       result.history = [
-        { time: `${baseDate} ${morningTime}`, step: '배송 지연', desc: `[주의] ${myReason} 사유로 인한 배송 지연 발생` },
+        { time: `${baseDate} ${afternoonTime}`, step: '배송 완료', desc: `자택 수령 완료 (수령인: 본인 / 배송기사: ${myCourier})` },
+        { time: `${baseDate} ${morningTime}`, step: '배송 출발', desc: `${myTerminal} 지점에서 배송 출발하였습니다.` },
         { time: `${prevDate} ${nightTime}`, step: '간선 상차', desc: `${myHub} 터미널 통과` },
         { time: `${prevDate} ${nightTime.replace('2', '1')}`, step: '집화 처리', desc: `송도 비대면 연구 센터 집화` }
       ];
@@ -396,7 +395,7 @@ const LogisticsDetailModal = ({ item, onClose }) => {
            <div className="w-1/4 bg-slate-800/30 border-r border-slate-800 p-6 space-y-6">
              <div>
                <label className="text-xs font-bold text-slate-500 uppercase tracking-tight">현재 상태</label>
-               <div className={`mt-1 text-lg font-bold ${item.status === 'DELAY' ? 'text-rose-400' : 'text-emerald-400'}`}>
+               <div className={`mt-1 text-lg font-bold text-emerald-400`}>
                  {statusMap[item.status] || item.status}
                </div>
              </div>
@@ -524,9 +523,7 @@ const LogisticsDetailModal = ({ item, onClose }) => {
                                  <div className="text-xl font-bold text-slate-900 font-mono tracking-tight">{trackingNo}</div>
                                </div>
                                <div className="text-right">
-                                 <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${
-                                   trackingData.statusLabel === '배송 지연' ? 'text-rose-600 bg-rose-50 border-rose-100' : 'text-emerald-600 bg-emerald-50 border-emerald-100'
-                                 }`}>
+                                 <div className={`text-[11px] font-bold px-2 py-0.5 rounded border text-emerald-600 bg-emerald-50 border-emerald-100`}>
                                    {trackingData.statusLabel}
                                  </div>
                                  <div className="text-[10px] text-slate-400 mt-1">최근 업데이트: {trackingData.history[0].time}</div>
@@ -1327,7 +1324,7 @@ const LogisticsManager = () => {
   const STATUS_OPTIONS = [
     { value: 'STORAGE', label: '보관 중' },
     { value: 'DISPATCH', label: '발송 중' },
-    { value: 'DELAY', label: '배송 지연' },
+    { value: 'DELAY', label: '배송 완료' },
     { value: 'IN_USE', label: '사용 중' },
     { value: 'RETURN', label: '회수 중' },
     { value: 'CLEANING', label: '소독 중' },
@@ -1341,7 +1338,7 @@ const LogisticsManager = () => {
          case 'REPAIR': return <span className="px-2 py-1 rounded bg-[#3f1623] border border-[#751d33] text-[#fb7185] text-[11px] font-bold">수리 중</span>;
          case 'STORAGE': return <span className="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-400 text-[11px] font-bold">보관 중</span>;
          case 'DISPATCH': return <span className="px-2 py-1 rounded bg-[#172554] border border-[#1e3a8a] text-[#60a5fa] text-[11px] font-bold">발송 중</span>;
-         case 'DELAY': return <span className="px-2 py-1 rounded bg-amber-900/30 border border-amber-700/50 text-amber-500 text-[11px] font-bold">배송 지연</span>;
+         case 'DELAY': return <span className="px-2 py-1 rounded bg-emerald-900/30 border border-emerald-700/50 text-emerald-400 text-[11px] font-bold">배송 완료</span>;
          case 'RETURN': return <span className="px-2 py-1 rounded bg-slate-700 border border-slate-600 text-slate-300 text-[11px] font-bold">회수 중</span>;
          default: return null;
       }
@@ -1433,7 +1430,7 @@ const LogisticsManager = () => {
       <div className="flex w-full overflow-x-auto py-1">
          <ProcessStep label="보관 중" count={stats.storage} icon={Box} targetFilter="STORAGE" />
          <ProcessStep label="발송 중" count={stats.dispatch} icon={Truck} targetFilter="DISPATCH" />
-         <ProcessStep label="배송 지연" count={stats.delay} icon={AlertTriangle} targetFilter="DELAY" />
+         <ProcessStep label="배송 완료" count={stats.delay} icon={Check} targetFilter="DELAY" />
          <ProcessStep label="사용 중" count={stats.inUse} icon={UserCheck} targetFilter="IN_USE" />
          <ProcessStep label="회수 중" count={stats.return} icon={RefreshCw} targetFilter="RETURN" />
          <ProcessStep label="소독/수리 중" count={stats.cleaningRepair} icon={Wrench} targetFilter="CLEANING_REPAIR" isLast={true} />
