@@ -34,7 +34,7 @@
 | 차트 | Recharts |
 | 스타일링 | Tailwind CSS |
 | 아이콘 | Lucide React |
-| 배포 | GitHub Pages (예정) |
+| 배포 | GitHub Pages |
 
 ## 프로젝트 구조
 
@@ -91,7 +91,7 @@ npm run build
 
 ## 라이브 데모
 
-🔗 **[Live Demo](https://yunan.github.io/cart-vital-dashboard/)** ← GitHub Pages 배포 후 실제 URL로 교체
+🔗 **[Live Demo](https://ajsiwkvue-sudo.github.io/dashboard-projects/)**
 
 ## 프로젝트 배경
 
