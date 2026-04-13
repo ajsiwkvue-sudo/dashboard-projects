@@ -3,5 +3,5 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
-  base: "/cart-vital-dashboard/",  // GitHub Pages 배포용
+  base: "/dashboard-projects/",  // GitHub Pages 배포용 (repo name 기준)
 });
