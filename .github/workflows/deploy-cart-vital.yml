@@ -1,9 +1,11 @@
-name: Deploy CART VITAL to GitHub Pages
+name: Deploy Dashboards to GitHub Pages
 
 on:
   push:
     branches: ['main']
-    paths: ['cart-vital-dashboard/**']
+    paths:
+      - 'cart-vital-dashboard/**'
+      - 'med-xai-dashboard/**'
   workflow_dispatch:
 
 permissions:
@@ -26,16 +28,32 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-          cache-dependency-path: cart-vital-dashboard/package-lock.json
 
-      - name: Install dependencies
+      # ── CART VITAL 빌드 ──
+      - name: Install dependencies (CART VITAL)
         working-directory: cart-vital-dashboard
         run: npm ci
 
-      - name: Build
+      - name: Build (CART VITAL)
         working-directory: cart-vital-dashboard
         run: npm run build
+
+      # ── Med XAI 빌드 ──
+      - name: Install dependencies (Med XAI)
+        working-directory: med-xai-dashboard
+        run: npm install
+
+      - name: Build (Med XAI)
+        working-directory: med-xai-dashboard
+        run: npm run build
+
+      # ── 합치기: CART VITAL은 루트, Med XAI는 /med-xai/ ──
+      - name: Combine builds
+        run: |
+          mkdir -p combined
+          cp -r cart-vital-dashboard/dist/* combined/
+          mkdir -p combined/med-xai
+          cp -r med-xai-dashboard/dist/* combined/med-xai/
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -43,7 +61,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'cart-vital-dashboard/dist'
+          path: 'combined'
 
   deploy:
     environment:
