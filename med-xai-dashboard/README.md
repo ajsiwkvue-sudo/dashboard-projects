@@ -2,6 +2,8 @@
 
 비대면 진료기술개발사업의 **멀티모달 XAI 대시보드** 프로토타입입니다. 다발성 장기 부전(MOF) 위험을 실시간으로 시각화하고, AI 판독 근거(XAI)와 임상 표준 보고서(SBAR/SOAP)를 한 화면에서 제공합니다.
 
+👉 **[Live Demo](https://ajsiwkvue-sudo.github.io/dashboard-projects/med-xai/)**
+
 ---
 
 ## 🔬 프로젝트 개요
