@@ -226,6 +226,18 @@
     .tl-step.active .tl-label { color: #FF9800; }
     .card-time { font-size: 11px; color: #ccc; margin-top: 6px; }
 
+    /* ── 담당자 메시지 ── */
+    .admin-msg-wrap {
+      display: flex; align-items: flex-start; gap: 8px;
+      background: #e8f5e9; border-left: 3px solid #4CAF50;
+      border-radius: 0 8px 8px 0;
+      padding: 8px 12px; margin-bottom: 8px;
+    }
+    .admin-msg-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+    .admin-msg-body { flex: 1; }
+    .admin-msg-label { font-size: 10px; font-weight: 700; color: #2e7d32; margin-bottom: 2px; }
+    .admin-msg-text  { font-size: 12px; color: #333; line-height: 1.5; }
+
     /* ── 빈 상태 ── */
     .empty-box {
       background: white; border-radius: 16px; padding: 60px 20px;
@@ -358,7 +370,7 @@
       <span class="sync-dot"></span>
       <span id="wardSyncLabel">1:00</span>
     </div>
-    <a href="/login" class="btn-logout">로그아웃</a>
+    <a href="/ward/{{ ward }}/logout" class="btn-logout">로그아웃</a>
   </div>
 </div>
 
@@ -480,7 +492,7 @@
 
     {% for c in complaints %}
     {% set status = c.status if c.status else '접수대기' %}
-    <div class="complaint-card" data-sol="{{ c.solution }}" data-month="{{ c.created_at[0:7] if c.created_at else '' }}">
+    <div class="complaint-card" data-id="{{ c.id }}" data-sol="{{ c.solution }}" data-month="{{ c.created_at[0:7] if c.created_at else '' }}">
       <div class="card-top">
         <div class="card-left">
           <span class="card-num">#{{ c.id }}</span>
@@ -492,6 +504,13 @@
       {% if c.description %}
       <div class="desc-text">{{ c.description }}</div>
       {% endif %}
+      <div class="admin-msg-wrap" id="msg-{{ c.id }}"{% if not c.message %} style="display:none"{% endif %}>
+        <span class="admin-msg-icon">💬</span>
+        <div class="admin-msg-body">
+          <div class="admin-msg-label">담당자 메시지</div>
+          <div class="admin-msg-text">{{ c.message or '' }}</div>
+        </div>
+      </div>
       <div class="timeline">
         <div class="tl-step {{ 'done' if status in ['처리중','완료'] else 'active' if status == '접수대기' }}">
           <div class="tl-dot">1</div><div class="tl-label">접수대기</div>
@@ -568,7 +587,7 @@
       <div class="success-sub">담당자가 확인 후 처리할 예정입니다</div>
       <div class="success-num" id="successNum">#-</div>
       <button class="btn-more p" onclick="submitAnother()">➕ 추가 접수</button>
-      <button class="btn-more s" onclick="window.location.href='/ward?key='+MY_KEY">📋 현황 확인</button>
+      <button class="btn-more s" onclick="window.location.href='/ward/{{ ward }}'">📋 현황 확인</button>
     </div>
 
   </div>
@@ -684,13 +703,12 @@
     if (wSyncSec <= 0) {
       clearInterval(wSyncTick);
       if (lbl) lbl.textContent = '업데이트 중…';
-      setTimeout(() => { location.href = '/ward?key=' + MY_KEY; }, 300);
+      setTimeout(() => { location.href = '/ward/{{ ward }}'; }, 300);
     }
   }, 1000);
 
   /* ── 현재 탭의 접속 키 (URL에서 읽기) ── */
-  const MY_KEY = new URLSearchParams(window.location.search).get('key') || '{{ key }}';
-
+  
   /* ── 문제 유형 ── */
   const issueMap = {
     "자산비콘":["이름/번호 불일치","신호상실","신규신청","자산불용/폐기","분실","기타"],
@@ -750,10 +768,10 @@
     const btn = document.getElementById('btnSubmit');
     btn.disabled = true; btn.textContent = '접수 중...';
 
-    fetch('/api/submit?key=' + MY_KEY, {
+    fetch('/api/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ solution, issue, description: desc })
+      body: new URLSearchParams({ solution, issue, description: desc, ward: '{{ ward }}' })
     })
     .then(r => r.json())
     .then(data => {
@@ -766,7 +784,7 @@
         errEl.style.display = 'block';
       }
     })
-    .catch(() => { errEl.textContent = '네트워크 오류. 다시 시도해주세요.'; errEl.style.display = 'block'; })
+    .catch(() => { errEl.textContent = '오류가 발생했습니다. 로그인 상태를 확인하고 페이지를 새로고침해주세요.'; errEl.style.display = 'block'; })
     .finally(() => { btn.disabled = false; btn.textContent = '접수하기 →'; });
   }
 
@@ -777,6 +795,84 @@
     document.getElementById('formState').style.display = 'block';
     document.getElementById('successState').style.display = 'none';
   }
+
+  /* ── 상태 실시간 폴링 (3초) ── */
+  function _applyStatus(id, newStatus) {
+    const card = document.querySelector(`.complaint-card[data-id="${id}"]`);
+    if (!card) return;
+
+    // 배지 업데이트
+    const badge = card.querySelector('.status-badge');
+    if (badge && badge.textContent.trim() !== newStatus) {
+      badge.className = `status-badge s-${newStatus}`;
+      badge.textContent = newStatus;
+
+      // 타임라인 업데이트
+      const steps = card.querySelectorAll('.tl-step');
+      if (steps.length === 3) {
+        steps.forEach(s => { s.className = 'tl-step'; });
+        if (newStatus === '접수대기') {
+          steps[0].classList.add('active');
+        } else if (newStatus === '처리중') {
+          steps[0].classList.add('done');
+          steps[1].classList.add('active');
+        } else if (newStatus === '완료') {
+          steps[0].classList.add('done');
+          steps[1].classList.add('done');
+          steps[2].classList.add('done');
+        }
+      }
+
+      // KPI 숫자 재집계
+      _refreshKPI();
+    }
+  }
+
+  function _refreshKPI() {
+    const cards = document.querySelectorAll('.complaint-card[data-id]');
+    const cnt = { '접수대기': 0, '처리중': 0, '완료': 0 };
+    cards.forEach(card => {
+      const badge = card.querySelector('.status-badge');
+      const s = badge ? badge.textContent.trim() : '접수대기';
+      if (s in cnt) cnt[s]++;
+    });
+    // KPI 카드 값 반영 (kpi-card 순서: 전체 / 접수대기 / 처리중 / 완료)
+    const kpiVals = document.querySelectorAll('.kpi-val');
+    if (kpiVals.length >= 4) {
+      kpiVals[0].textContent = cards.length;
+      kpiVals[1].textContent = cnt['접수대기'];
+      kpiVals[2].textContent = cnt['처리중'];
+      kpiVals[3].textContent = cnt['완료'];
+    }
+  }
+
+  /* ── 담당자 메시지 표시 ── */
+  function _applyMessage(id, msg) {
+    if (!msg) return;
+    const wrap = document.getElementById('msg-' + id);
+    if (!wrap) return;
+    const textEl = wrap.querySelector('.admin-msg-text');
+    if (textEl) textEl.textContent = msg;
+    wrap.style.display = '';
+  }
+
+  setInterval(() => {
+    fetch('/api/ward_poll/{{ ward }}')
+      .then(r => {
+        if (!r.ok) return null;
+        return r.json();
+      })
+      .then(data => {
+        if (!data || !data.statuses) return;
+        Object.entries(data.statuses).forEach(([id, status]) => {
+          _applyStatus(id, status);
+        });
+        Object.entries(data.messages || {}).forEach(([id, msg]) => {
+          _applyMessage(id, msg);
+        });
+      })
+      .catch(() => {});
+  }, 3000);
 </script>
 </body>
 </html>

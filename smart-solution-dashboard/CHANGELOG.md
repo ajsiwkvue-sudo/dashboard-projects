@@ -1,7 +1,7 @@
-# CHANGELOG — Crate Dashboard
+# CHANGELOG — Smart Solution Dashboard
 
 > 병동 민원 접수 및 관리 대시보드  
-> Repository: https://github.com/ajsiwkvue-sudo/crate_dashboard
+> Repository: https://github.com/ajsiwkvue-sudo/smart-solution-dashboard
 
 ---
 
@@ -414,3 +414,187 @@ crate_dashboard/
 ---
 
 *Last updated: 2026-04-12*
+
+---
+
+## Security Issues
+
+> 현재 코드는 **파일럿 검증 전용**입니다. 실제 환자 데이터가 포함되는 환경에는 아래 이슈를 반드시 해결한 후 배포해야 합니다.
+
+### 🔴 치명적 — 배포 전 필수 수정
+
+**1. URL에 인증키 평문 노출** — `?key=abc123` 형태로 브라우저 히스토리, 서버 로그에 기록됨. HTTP 환경에서는 네트워크 스니핑으로 탈취 가능.
+
+**2. HTTPS 미적용** — 폐쇄망이라도 내부 패킷 감청 가능. 병원 보안 감사 지적 사항. 최소 nginx + self-signed cert 필요.
+
+**3. 기본 관리자 계정 하드코딩** — `admin / admin1234`가 GitHub 공개 저장소에 노출. 최초 실행 즉시 변경 필수.
+
+### 🟡 중요 — 프로덕션 전 수정
+
+**4. 세션(Key) 만료 없음** — 한 번 발급된 key 영구 유효. PC 자리 비워도 URL만 알면 접속 가능.
+
+**5. 입력값 검증 미흡** — XSS, SQL Injection 방어 코드 없음.
+
+**6. 감사 로그(Audit Log) 없음** — 의료법상 접근 기록 보관 의무. 관리자 행동 로깅 필요.
+
+| 규정 | 요구사항 | 현재 상태 |
+|------|----------|-----------|
+| 개인정보보호법 | 접근통제, 암호화 전송 | ❌ 미충족 |
+| 의료법 | 의료정보 보호, 접근 로그 | ❌ 미충족 |
+| 원내 보안정책 | IT팀 코드 리뷰 및 승인 | 미확인 |
+
+> 파일럿 운영 시 실제 환자 데이터 절대 입력 금지. 더미 데이터로만 워크플로우 검증할 것.
+
+---
+
+## Roadmap
+
+| 항목 | 현재 (파일럿) | 단기 보강 | 중장기 목표 |
+|------|--------------|-----------|-------------|
+| **DB** | SQLite | SQLite 유지 | PostgreSQL |
+| **인증** | URL access_key | Flask-Session + 만료 | 병원 SSO / LDAP |
+| **통신** | HTTP | HTTPS (self-signed) | 원내 공인 인증서 |
+| **앱 구조** | Flask 단일 파일 | 유지 | 모듈화 / API 분리 |
+| **EMR 연계** | ❌ | ❌ | HL7 / FHIR |
+| **배포** | python app.py | Gunicorn + nginx | Docker / WAS |
+| **감사 로그** | ❌ | 기본 로깅 추가 | 전체 행동 로깅 |
+| **고가용성** | ❌ | ❌ | Active-Standby 이중화 |
+
+### 단계별 실행 계획
+
+- **Step 1** — 파일럿 운영 (현재, 4~8주): 더미 데이터로 1~2개 병동 워크플로우 검증
+- **Step 2** — 피드백 수집: 현장 직원 인터뷰, 개선 요구사항 정리
+- **Step 3** — IT팀 / 정보보안팀 협의: 원내 서버 환경, 보안 요구사항, 승인 프로세스
+- **Step 4** — 정식 개발 (재설계): PostgreSQL 전환, 인증 교체, EMR 연계 설계
+- **Step 5** — 보안 점검 후 전체 배포
+
+---
+
+*Last updated: 2026-04-14*
+
+---
+
+---
+
+### v1.1 — PostgreSQL 전환 + Flask-Login 세션 인증 (아키텍처 재설계)
+
+**배경:**
+> 온프레미스 병원 서버 배포를 위한 프로덕션 준비. URL Key 방식의 보안 취약점 제거 필요.
+
+**변경 내용:**
+
+- **DB**: SQLite3 → PostgreSQL (psycopg2-binary)
+  - 플레이스홀더 `?` → `%s`
+  - `db.sqlite3` 파일 의존성 제거
+  - `DATABASE_URL` 환경변수로 연결 설정
+- **인증**: URL access_key 완전 제거 → Flask-Login 세션 쿠키
+  - `access_key` 컬럼 제거
+  - `login_user()` / `logout_user()` / `@login_required`
+  - 세션 7일 유지 (`SESSION_PERMANENT`, `PERMANENT_SESSION_LIFETIME`, `session.permanent = True`, `login_user(remember=True)`)
+- **보안**: 하드코딩 계정 정보 제거, `.env` 기반 `ADMIN_PASSWORD` / `SECRET_KEY`
+- **배포 파일 추가**: `wsgi.py`, `deploy/nginx.conf`, `deploy/smartsolution.service`
+- **레거시 파일 삭제**: `templates/index.html`, `submitted.html`, `track.html`
+
+**버그 수정:**
+
+| 이슈 | 원인 | 해결 |
+|------|------|------|
+| `load_user` DB 오류 시 세션 초기화 | 예외 처리 없어 Flask-Login이 anonymous 반환 | `try/except` 추가, 오류 시 `None` 반환 |
+| API 경로에서 HTML redirect 반환 | `require_role`이 모든 경로에서 302 반환 | `/api/`, `/action`, `/admin/accounts/` 경로는 JSON 401/403 반환 |
+| 계정 전환 시 이전 세션 잔류 | `login_user()` 전 `logout_user()` 미호출 | 로그인 전 `logout_user()` 명시 호출 |
+| 알람 폴링 속도 | 10초 간격으로 알람 지연 | 3초로 단축 |
+
+---
+
+### v1.2 — 동일 브라우저 admin + nurse 동시 세션 지원
+
+**문제 (사용자):**
+> "아니 같은 크롬에서 테스트될 수 있도록 해야지"
+
+**원인 분석:**
+- Flask-Login은 브라우저당 세션 쿠키 하나
+- 간호사로 로그인하면 `logout_user()` → `login_user()` 순서로 관리자 세션이 파괴됨
+- 같은 브라우저에서 admin 탭 + ward 탭 동시 유지 불가
+
+**해결 (아키텍처 결정):**
+- 관리자: 기존 Flask-Login 세션 쿠키 유지
+- 간호사: `itsdangerous.URLSafeTimedSerializer`로 서명된 **별도 `ward_session` 쿠키** 사용
+- 로그인 시 role에 따라 분기:
+  - `admin` → `login_user()` (Flask-Login)
+  - `nurse` → `response.set_cookie('ward_session', signed_token)` (Flask-Login 건드리지 않음)
+
+```python
+# 간호사 로그인 처리
+resp = make_response(redirect(url_for('ward_view', ward_name=username)))
+resp.set_cookie('ward_session', token, max_age=86400*7, httponly=True, samesite='Lax')
+return resp
+```
+
+- `/ward/logout` → `resp.delete_cookie('ward_session')` (관리자 세션 영향 없음)
+- `require_ward` 데코레이터 추가: `ward_session` 쿠키 검증
+
+**결과:** admin 탭 + ward 탭이 같은 Chrome에서 독립적으로 공존
+
+---
+
+### v1.3 — 병동별 독립 쿠키로 다중 병동 동시 로그인
+
+**문제 (사용자):**
+> "다른 병동 로그인도 여러 개를 창 띄우려고 하는데 간호사 세션이 하나니까 하나밖에 로그인이 안되네"
+
+**원인:** `ward_session` 쿠키가 하나이므로 병동 B 로그인 시 병동 A 쿠키를 덮어씀
+
+**해결:**
+- 쿠키명을 `ward_session_{병동명}`으로 변경 → 병동마다 독립 쿠키
+- 라우트를 `/ward` → `/ward/<ward_name>`으로 변경 (URL로 어느 병동 탭인지 구분)
+- `/ward/<ward_name>/logout` → 해당 병동 쿠키만 삭제, 나머지 세션 무영향
+- `/api/submit` 폼에 `ward` 필드 추가 → 서버에서 어느 병동 쿠키를 검증할지 결정
+
+```
+브라우저 쿠키 상태 (동시 로그인 예시):
+  session          → admin Flask-Login
+  ward_session_A병동 → A병동 서명 토큰
+  ward_session_B병동 → B병동 서명 토큰
+  ward_session_C병동 → C병동 서명 토큰
+```
+
+**현재 Roadmap 업데이트:**
+
+| 항목 | 파일럿 v1.0 | 현재 v1.3 | 중장기 목표 |
+|------|------------|-----------|-------------|
+| **DB** | SQLite | PostgreSQL ✅ | PostgreSQL 유지 |
+| **인증** | URL access_key | Flask-Login + ward cookie ✅ | 병원 SSO / LDAP |
+| **멀티탭** | ✅ (URL key) | ✅ (독립 쿠키) | 유지 |
+| **통신** | HTTP | HTTP | HTTPS (원내 인증서) |
+| **배포** | python app.py | Gunicorn + nginx ✅ | Docker / WAS |
+| **감사 로그** | ❌ | ❌ | 전체 행동 로깅 |
+
+---
+
+---
+
+### v1.4 — 관리자→병동 메시지 기능 + 전체 코드 감사 수정
+
+**새 기능: 담당자 메시지**
+
+> 관리자가 접수/완료 처리 시 병동에 메시지를 남길 수 있음
+
+- `/action` POST: 선택적 `message` 필드 추가, `complaints.message` 컬럼에 저장
+- 관리자 UI: "접수하기" / "완료" 클릭 시 메시지 모달 팝업 (Ctrl+Enter 단축키 지원)
+- `/api/ward_poll/<ward_name>`: 상태와 함께 메시지도 반환 (`messages` 필드)
+- 병동 페이지: 각 민원 카드에 담당자 메시지 영역 추가 (3초 폴링으로 실시간 표시)
+
+**버그 수정 (코드 감사)**
+
+| 파일 | 이슈 | 수정 |
+|------|------|------|
+| `app.py` | `ward_view` / `ward_poll`에서 `['username']` 사용 — 사번 ≠ 병동명 혼동 | `['ward']`로 변경 |
+| `app.py` | `/api/poll` NULL status 처리 누락 | `st = row['status'] or '접수대기'` |
+| `app.py` | `complaints` 테이블 `message` 컬럼 누락 | `ADD COLUMN IF NOT EXISTS message TEXT` 마이그레이션 추가 |
+| `admin.html` | `allNewComplaints` 배열 메모리 누수 | 최대 50건으로 캡 |
+| `admin.html` | `insertAdjacentHTML`에 사용자 입력 직접 삽입 (HTML injection) | `esc()` 이스케이프 함수 적용 |
+| `admin.html` | `updateKpiLive()` 이번달 KPI 미업데이트 | month 카드 업데이트 로직 추가 |
+| `login.html` | 라벨 "아이디 (병동명)" — EMR 사번 로그인 반영 안됨 | "아이디 (사번 또는 병동명)"으로 변경 |
+| `CHANGELOG.md` | 제목 "Crate Dashboard" | "Smart Solution Dashboard"로 수정 |
+
+*Last updated: 2026-04-21*

@@ -1,0 +1,10 @@
+db.sqlite3
+.env
+.DS_Store
+__pycache__/
+*.pyc
+*.pyo
+*.log
+instance/
+venv/
+.venv/
