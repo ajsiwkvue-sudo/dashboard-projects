@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>일산병원 AX 추진 대시보드</title>
+<meta name="description" content="국민건강보험일산병원 AX 플랫폼병원 전환 사업계획 추진 현황 대시보드">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b4f9e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AX 대시보드">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+:root{
+  --primary:#0b4f9e; --primary-light:#1e6fc4; --accent:#00a3b4; --accent2:#6a3fb5;
+  --success:#2e9e5b; --warning:#e8890c; --danger:#d64545; --gray:#6c757d;
+  --bg:#eef2f7; --card:#ffffff; --border:#dde3ec; --text:#25303f; --muted:#6b7688;
+  --shadow:0 2px 10px rgba(20,40,80,.08); --radius:12px; --font:'Noto Sans KR',sans-serif;
+  --g1:#1565c0; --g2:#6a3fb5; --g3:#2e9e5b;
+  --track:#e7ecf3;
+}
+[data-theme="dark"]{
+  --primary:#4a9eff; --primary-light:#5ba8ff; --accent:#28c3d4; --accent2:#a07ce0;
+  --success:#4caf7a; --warning:#ffb74d; --danger:#ef6b6b; --gray:#9aa4b2;
+  --bg:#151a22; --card:#1e242e; --border:#333c48; --text:#e2e8f0; --muted:#9aa4b2;
+  --shadow:0 2px 10px rgba(0,0,0,.35);
+  --g1:#5b9be8; --g2:#a07ce0; --g3:#5cc588; --track:#2b3340;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6}
+.wrap{max-width:1360px;margin:0 auto;padding:0 16px}
+/* Header */
+.header{background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;padding:20px 0}
+.header .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.header h1{font-size:1.45rem;font-weight:900;letter-spacing:-.5px}
+.header .sub{font-size:.82rem;opacity:.9;margin-top:3px}
+.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dday{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);border-radius:20px;padding:6px 16px;font-weight:700;font-size:.9rem}
+.icon-btn{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:1.05rem;display:flex;align-items:center;justify-content:center;transition:.2s}
+.icon-btn:hover{background:rgba(255,255,255,.3)}
+.user-chip{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);color:#fff;padding:6px 12px;border-radius:20px;cursor:pointer;font-family:var(--font);font-size:.82rem;font-weight:700;white-space:nowrap}
+.user-chip:hover{background:rgba(255,255,255,.3)}
+.live-badge{font-size:.76rem;font-weight:700;padding:5px 11px;border-radius:20px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);color:#fff;white-space:nowrap}
+.live-badge.on{background:rgba(46,158,91,.35);border-color:rgba(120,230,170,.6)}
+.live-badge.off{background:rgba(214,69,69,.35);border-color:rgba(255,150,150,.6)}
+/* Tabs */
+.tabs{background:var(--card);border-bottom:2px solid var(--border);position:sticky;top:0;z-index:50;box-shadow:var(--shadow)}
+.tabs .wrap{display:flex;overflow-x:auto}
+.tab{padding:14px 18px;cursor:pointer;font-size:.9rem;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;transition:.2s;user-select:none;display:flex;align-items:center;gap:6px}
+.tab:hover{color:var(--primary);background:rgba(30,111,196,.06)}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:800}
+/* Views */
+.view{display:none;padding:24px 0 60px;animation:fade .3s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.sec-title{font-size:1.1rem;font-weight:800;margin:8px 0 16px;padding-bottom:8px;border-bottom:2px solid var(--primary);display:flex;align-items:center;gap:8px}
+.sec-sub{font-size:.92rem;font-weight:700;color:var(--muted);margin:22px 0 12px}
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:22px}
+.kpi{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);text-align:center;border-top:4px solid var(--primary);position:relative;transition:transform .2s,box-shadow .2s}
+#kpiGrid .kpi{cursor:pointer}
+#kpiGrid .kpi::after{content:'▸';position:absolute;top:7px;right:10px;color:var(--muted);font-size:.78rem;opacity:.5}
+#kpiGrid .kpi:hover{box-shadow:0 6px 16px rgba(20,40,80,.14);transform:translateY(-2px)}
+.kl-list{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.kl-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:var(--bg);font-size:.86rem}
+.kl-item.click{cursor:pointer;transition:.15s}
+.kl-item.click:hover{background:rgba(30,111,196,.10);transform:translateX(2px)}
+.kl-item .kl-main{flex:1;font-weight:600;min-width:0}
+.kl-item .kl-sub{font-size:.75rem;color:var(--muted);white-space:nowrap}
+.kl-item .kl-pct{font-weight:800;min-width:44px;text-align:right;font-variant-numeric:tabular-nums;color:var(--primary)}
+.kpi .v{font-size:2.1rem;font-weight:900;color:var(--primary);line-height:1.1}
+.kpi .l{font-size:.8rem;color:var(--muted);margin-top:6px}
+.kpi.a{border-top-color:var(--accent)}.kpi.a .v{color:var(--accent)}
+.kpi.s{border-top-color:var(--success)}.kpi.s .v{color:var(--success)}
+.kpi.w{border-top-color:var(--warning)}.kpi.w .v{color:var(--warning)}
+.kpi.d{border-top-color:var(--danger)}.kpi.d .v{color:var(--danger)}
+.kpi.p{border-top-color:var(--accent2)}.kpi.p .v{color:var(--accent2)}
+/* Cards & charts */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+.card{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+.card h3{font-size:.98rem;font-weight:800;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.chart-box{position:relative;height:300px}
+.chart-box.tall{height:360px}
+/* Progress gauge */
+.gauge{display:flex;align-items:center;gap:16px}
+.gauge .bar{flex:1;height:22px;background:var(--track);border-radius:11px;overflow:hidden}
+.gauge .fill{height:100%;border-radius:11px;background:linear-gradient(90deg,var(--success),#38c172);transition:width .8s}
+.gauge .pct{font-size:1.6rem;font-weight:900;color:var(--success);min-width:70px;text-align:right}
+/* Vision map */
+.vision{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:10px}
+.vcol{border-radius:var(--radius);padding:16px;color:#fff}
+.vcol.v1{background:linear-gradient(135deg,var(--g1),#2f80d9)}
+.vcol.v2{background:linear-gradient(135deg,var(--g2),#8558cf)}
+.vcol.v3{background:linear-gradient(135deg,var(--g3),#43b06e)}
+.vcol .axis{font-size:.74rem;opacity:.9;font-weight:700;letter-spacing:.2px}
+.vcol .goal{font-size:1.02rem;font-weight:800;margin:5px 0 12px;line-height:1.4;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.25)}
+.vcol .mini{background:rgba(255,255,255,.15);border-radius:9px;padding:10px 12px;margin-bottom:8px;transition:background .15s;cursor:default}
+.vcol .mini:hover{background:rgba(255,255,255,.26)}
+.vcol .mini .mt2{font-size:.82rem;font-weight:600;line-height:1.4;display:block;margin-bottom:8px}
+.vcol .mini .mrow{display:flex;align-items:center;gap:9px}
+.vcol .mini .mbar{flex:1;height:7px;background:rgba(0,0,0,.18);border-radius:4px;overflow:hidden}
+.vcol .mini .mbf{height:100%;background:#fff;border-radius:4px;transition:width .6s;box-shadow:0 0 6px rgba(255,255,255,.4)}
+.vcol .mini .mpct{font-size:.82rem;font-weight:900;min-width:40px;text-align:right;font-variant-numeric:tabular-nums}
+/* Vision hero (카드 밖 강조 배너) */
+.vision-hero{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border-radius:16px;padding:22px 26px;margin-bottom:18px;box-shadow:0 6px 20px rgba(11,79,158,.28)}
+.vision-hero .vh-tag{background:rgba(255,255,255,.22);font-size:.74rem;font-weight:800;letter-spacing:.5px;padding:5px 14px;border-radius:20px;white-space:nowrap}
+.vision-hero .vh-txt{font-size:1.5rem;font-weight:900;letter-spacing:-.5px;text-align:center}
+@media(max-width:600px){.vision-hero .vh-txt{font-size:1.15rem}}
+/* Help / onboarding card */
+.help-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;margin-bottom:20px;border-left:5px solid var(--accent)}
+.help-card h3{font-size:1rem;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.help-card p{font-size:.86rem;line-height:1.7;color:var(--text);margin-bottom:12px}
+.help-legend{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+.help-legend .li{display:flex;align-items:center;gap:7px;font-size:.82rem}
+.help-legend .li b{font-weight:700}
+.help-legend .li small{color:var(--muted);font-size:.76rem}
+.help-toggle{margin-left:auto;font-size:.78rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:5px 12px;cursor:pointer;color:var(--muted);font-family:var(--font)}
+/* Tooltip (hover ? marks) */
+.tip{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--muted);color:#fff;font-size:.68rem;font-weight:800;cursor:help;margin-left:5px;position:relative;flex-shrink:0}
+.tip:hover::after{content:attr(data-tip);position:absolute;bottom:140%;left:50%;transform:translateX(-50%);background:#25303f;color:#fff;padding:8px 11px;border-radius:7px;font-size:.76rem;font-weight:400;line-height:1.5;white-space:normal;width:230px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.25);text-align:left}
+.tip:hover::before{content:'';position:absolute;bottom:130%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#25303f;z-index:9999}
+/* Filters */
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;background:var(--card);padding:12px 14px;border-radius:var(--radius);box-shadow:var(--shadow)}
+.filters select,.filters input{padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:.85rem;background:var(--card);color:var(--text);min-width:130px}
+.filters .chip{margin-left:auto;font-size:.82rem;color:var(--muted)}
+/* Task cards */
+.task-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.tcard{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);cursor:pointer;transition:.2s;border-left:4px solid var(--primary)}
+.tcard:hover{transform:translateY(-3px);box-shadow:0 6px 18px rgba(20,40,80,.15)}
+.tcard.g1{border-left-color:var(--g1)}.tcard.g2{border-left-color:var(--g2)}.tcard.g3{border-left-color:var(--g3)}
+.tcard .tno{font-size:.74rem;color:var(--muted);font-weight:700}
+.tcard .tt{font-size:.98rem;font-weight:800;margin:5px 0 8px;line-height:1.4}
+.tcard .tmeta{font-size:.77rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.badge{display:inline-block;padding:3px 9px;border-radius:12px;font-size:.7rem;font-weight:700}
+.b-g1{background:rgba(21,101,192,.14);color:var(--g1)}
+.b-g2{background:rgba(106,63,181,.14);color:var(--g2)}
+.b-g3{background:rgba(46,158,91,.16);color:var(--g3)}
+.b-team{background:rgba(0,163,180,.14);color:var(--accent)}
+.tprog{display:flex;align-items:center;gap:8px}
+.tprog .pb{flex:1;height:8px;background:var(--track);border-radius:4px;overflow:hidden}
+.tprog .pf{height:100%;border-radius:4px;transition:width .5s}
+.tprog .pt{font-size:.78rem;font-weight:800;min-width:38px;text-align:right}
+.mstat{display:flex;gap:5px;margin-top:9px;font-size:.7rem;color:var(--muted);flex-wrap:wrap}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;vertical-align:middle;margin-right:3px}
+.dot.done{background:var(--success)}.dot.prog{background:var(--warning)}.dot.plan{background:var(--gray)}.dot.over{background:var(--danger)}
+/* Modal */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;justify-content:center;align-items:flex-start;padding:20px;overflow-y:auto}
+.overlay.open{display:flex}
+.modal{background:var(--card);border-radius:14px;width:100%;max-width:760px;max-height:90vh;overflow-y:auto;padding:24px;margin:auto;position:relative}
+.modal .mh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;gap:10px}
+.modal .mt{font-size:1.15rem;font-weight:900;line-height:1.35}
+.modal .close{background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--muted)}
+.msec{margin-top:16px}
+.msec h4{font-size:.85rem;font-weight:800;color:var(--primary);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+.msec .txt{font-size:.88rem;line-height:1.7}
+.mile{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;margin-bottom:6px;background:var(--bg);font-size:.85rem;cursor:pointer;transition:.15s}
+.mile:hover{background:rgba(30,111,196,.08)}
+.mile .md{font-weight:700;min-width:74px;color:var(--muted);font-size:.78rem}
+.mile .ml{flex:1}
+.mile .ms{font-size:.72rem;font-weight:800;padding:3px 8px;border-radius:10px}
+.ms.done{background:rgba(46,158,91,.16);color:var(--success)}
+.ms.prog{background:rgba(232,137,12,.16);color:var(--warning)}
+.ms.plan{background:rgba(108,117,125,.16);color:var(--gray)}
+.ms.over{background:rgba(214,69,69,.16);color:var(--danger)}
+.hint{font-size:.76rem;color:var(--muted);margin-top:6px}
+/* Roadmap gantt */
+.gantt{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;overflow-x:auto}
+.grow{display:flex;align-items:center;border-bottom:1px solid var(--border);min-height:40px}
+.glabel{width:230px;flex-shrink:0;font-size:.8rem;font-weight:700;padding-right:10px;white-space:normal;word-break:keep-all;line-height:1.35}
+.gtrack{flex:1;position:relative;height:34px;min-width:620px}
+.gbar{position:absolute;height:22px;top:6px;border-radius:5px;font-size:.68rem;color:#fff;display:flex;align-items:center;padding:0 8px;overflow:hidden;white-space:nowrap;cursor:pointer;transition:.15s}
+.gbar:hover{filter:brightness(1.12);z-index:2}
+.ghead{display:flex;border-bottom:2px solid var(--border);font-size:.74rem;font-weight:800;color:var(--muted)}
+.ghead .glabel{align-self:center}
+.ghead .cols{flex:1;display:flex;min-width:620px}
+.ghead .cols span{flex:1;text-align:center;padding:6px 0}
+.gnow{position:absolute;top:0;bottom:0;width:2px;background:var(--danger);z-index:3}
+/* 사업 여정 지도 (Layered Phase) */
+.phase-flow{display:flex;align-items:stretch;gap:2px;overflow-x:auto;margin-bottom:18px;padding:4px 0}
+.pf-node{flex:1;min-width:150px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:12px;text-align:center;position:relative}
+.pf-node.cur{border-color:var(--warning);box-shadow:0 0 0 2px var(--warning),var(--shadow)}
+.pf-node .pf-t{font-weight:800;font-size:.86rem;line-height:1.3}
+.pf-node .pf-p{font-size:.72rem;color:var(--muted);margin:2px 0 6px}
+.pf-node .pf-bar{height:6px;background:var(--track);border-radius:3px;overflow:hidden}
+.pf-node .pf-bf{height:100%;border-radius:3px;transition:width .6s}
+.pf-node .pf-pct{font-size:.78rem;font-weight:900;margin-top:3px}
+.pf-node .pf-here{margin-top:6px;background:var(--danger);color:#fff;font-size:.66rem;font-weight:800;padding:2px 6px;border-radius:8px;display:inline-block}
+.pf-conn{display:flex;align-items:center;font-size:.9rem;color:var(--muted);flex-shrink:0;padding:0 1px}
+.pm-wrap{overflow-x:auto;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:4px;margin-bottom:20px}
+.pm{border-collapse:collapse;width:100%;min-width:920px;font-size:.82rem}
+.pm th,.pm td{border:1px solid var(--border);padding:10px 12px;vertical-align:top;text-align:left}
+.pm thead th{background:var(--bg)}
+.pm .layer-col{background:var(--bg);font-weight:800;white-space:nowrap;width:118px;color:var(--primary)}
+.pm .ph-head{min-width:175px}
+.pm .ph-name{font-weight:900;font-size:.9rem;line-height:1.3}
+.pm .ph-period{font-size:.72rem;color:var(--muted)}
+.pm .ph-bar{height:6px;background:var(--track);border-radius:3px;margin-top:6px;overflow:hidden}
+.pm .ph-bf{height:100%;border-radius:3px}
+.pm .ph-here{display:inline-block;margin-top:4px;background:var(--danger);color:#fff;font-size:.66rem;font-weight:800;padding:2px 7px;border-radius:9px}
+.pm ul{margin:0;padding-left:15px}
+.pm li{margin-bottom:4px;line-height:1.45}
+.pm .mile-cell{}
+.pm td.current-col,.pm th.current-col{background:rgba(232,137,12,.08)}
+.gate-sig{font-size:.8rem;font-weight:800;padding:3px 9px;border-radius:8px;display:inline-block}
+/* Benchmark */
+.bm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.bm-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;border-top:3px solid var(--accent)}
+.bm-card .bm-org{font-size:1rem;font-weight:900}
+.bm-card .bm-tag{font-size:.72rem;font-weight:700;color:var(--accent);margin:3px 0 8px}
+.bm-card .bm-body{font-size:.84rem;line-height:1.65;color:var(--text)}
+.bm-card .bm-body li{margin-left:16px;margin-bottom:4px}
+.bm-card a{color:var(--primary);font-size:.78rem;text-decoration:none;display:inline-block;margin-top:8px}
+.bm-card a:hover{text-decoration:underline}
+.bm-cat{display:inline-block;font-size:.68rem;font-weight:800;padding:2px 8px;border-radius:8px;background:var(--bg);color:var(--muted);margin-bottom:6px}
+/* Assistant floating widget */
+.agent-fab{position:fixed;bottom:22px;right:22px;z-index:1400;display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;border:none;border-radius:30px;padding:12px 18px 12px 15px;font-size:1.35rem;cursor:pointer;box-shadow:0 6px 20px rgba(11,79,158,.4);font-family:var(--font);transition:transform .2s,box-shadow .2s}
+.agent-fab:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 8px 26px rgba(11,79,158,.5)}
+.agent-fab .fab-label{font-size:.9rem;font-weight:800}
+.agent-fab.hidden{display:none}
+.agent-widget{position:fixed;bottom:22px;right:22px;z-index:1401;width:400px;max-width:calc(100vw - 24px);height:560px;max-height:calc(100vh - 44px);background:var(--card);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.28);display:none;flex-direction:column;overflow:hidden;animation:widgetIn .25s ease}
+.agent-widget.open{display:flex}
+@keyframes widgetIn{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.agent-wh{background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;padding:14px 16px;font-weight:800;font-size:1rem;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.agent-wh button{background:rgba(255,255,255,.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1.1rem;line-height:1}
+.agent-wh button:hover{background:rgba(255,255,255,.35)}
+.chat-log{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:82%;padding:11px 14px;border-radius:14px;font-size:.88rem;line-height:1.6;white-space:pre-wrap}
+.msg.bot{background:var(--bg);align-self:flex-start;border-bottom-left-radius:4px}
+.msg.user{background:var(--primary);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.msg.bot b{color:var(--primary)}
+.chips{display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto;padding:10px 14px;border-top:1px solid var(--border);flex-shrink:0}
+.chip-btn{background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:6px 12px;font-size:.78rem;cursor:pointer;font-family:var(--font);color:var(--text);transition:.15s;white-space:nowrap;flex-shrink:0}
+.chip-btn:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+.chat-input{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--border)}
+.chat-input input{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:22px;font-family:var(--font);font-size:.88rem;background:var(--card);color:var(--text)}
+.chat-input button{padding:10px 20px;background:var(--primary);color:#fff;border:none;border-radius:22px;cursor:pointer;font-family:var(--font);font-weight:700}
+/* Milestone edit */
+.mile{position:relative}
+.mile .ml,.mile .ms{cursor:pointer}
+.mile-edit{background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;width:28px;height:26px;cursor:pointer;font-size:.82rem;flex-shrink:0;transition:.15s}
+.mile-edit:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+.mef{background:var(--bg);border:1px solid var(--primary);border-radius:8px;padding:12px;margin-bottom:6px}
+.mef-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.mef-row label{font-size:.78rem;font-weight:700;color:var(--muted);width:44px;flex-shrink:0}
+.mef-row input{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-family:var(--font);font-size:.84rem;background:var(--card);color:var(--text)}
+.mef-btns{display:flex;gap:8px;justify-content:flex-end}
+.mef-btns button{padding:6px 14px;border-radius:6px;border:none;cursor:pointer;font-family:var(--font);font-size:.8rem;font-weight:700}
+.mef-save{background:var(--primary);color:#fff}
+.mef-cancel{background:var(--gray);color:#fff}
+.mef-reset{background:none;border:1px solid var(--border) !important;color:var(--muted)}
+.mile .edited{color:var(--accent);font-weight:700}
+.ms-select{font-size:.76rem;font-weight:800;padding:4px 6px;border-radius:8px;border:1.5px solid;cursor:pointer;font-family:var(--font);flex-shrink:0}
+.ms-select.done{color:var(--success);border-color:var(--success);background:rgba(46,158,91,.1)}
+.ms-select.prog{color:var(--warning);border-color:var(--warning);background:rgba(232,137,12,.1)}
+.ms-select.plan{color:var(--gray);border-color:var(--gray);background:rgba(108,117,125,.1)}
+.ms-select.over{color:var(--danger);border-color:var(--danger);background:rgba(214,69,69,.1)}
+/* 담당/협업 부서 라인 */
+.dept-line{display:flex;align-items:center;gap:10px;margin:6px 0}
+.dept-lbl{font-size:.76rem;font-weight:800;color:#fff;background:var(--muted);padding:3px 10px;border-radius:6px;flex-shrink:0;min-width:64px;text-align:center}
+.dept-line:first-of-type .dept-lbl{background:var(--accent)}
+.dept-badges{display:flex;gap:6px;flex-wrap:wrap}
+.badge.b-coop{background:var(--bg);color:var(--muted);border:1px solid var(--border)}
+/* Department detail cards */
+.dept-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:16px;border-top:5px solid var(--primary)}
+.dept-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.dept-name{font-size:1.1rem;font-weight:900}
+.dept-role{font-size:.82rem;color:var(--muted);margin:6px 0 14px;line-height:1.5}
+.dept-metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:12px 0 6px}
+.dept-metrics .dm{background:var(--bg);border-radius:8px;padding:9px 6px;font-size:.74rem;color:var(--muted);text-align:center;cursor:pointer;transition:.15s;border:1px solid transparent}
+.dept-metrics .dm:hover{border-color:var(--primary);background:rgba(30,111,196,.08)}
+/* 부서 전환 탭 */
+.dept-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.dept-tabs .dtab{padding:8px 16px;border:1px solid var(--border);border-radius:20px;background:var(--card);cursor:pointer;font-family:var(--font);font-size:.84rem;font-weight:700;color:var(--muted);transition:.15s;box-shadow:var(--shadow)}
+.dept-tabs .dtab:hover{border-color:var(--primary);color:var(--primary)}
+.dept-tabs .dtab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.dept-metrics .dm b{display:block;font-size:1.2rem;color:var(--text);font-weight:900;line-height:1.25;margin-bottom:2px}
+.dept-gauge{display:flex;align-items:center;gap:12px;margin:6px 0 16px}
+.dept-gauge .bar{flex:1;height:18px;background:var(--track);border-radius:9px;overflow:hidden}
+.dept-gauge .fill{height:100%;border-radius:9px;transition:width .7s}
+.dept-gauge .pct{font-weight:900;font-size:1.2rem;min-width:56px;text-align:right;font-variant-numeric:tabular-nums}
+.dept-tasklist{display:grid;gap:8px}
+.dept-task{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:var(--bg);cursor:pointer;transition:.15s}
+.dept-task:hover{background:rgba(30,111,196,.09);transform:translateX(2px)}
+.dept-task .dt-id{font-size:.76rem;font-weight:800;color:var(--muted);min-width:30px;flex-shrink:0}
+.dept-task .dt-title{flex:0 1 44%;min-width:110px;font-size:.86rem;font-weight:600;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dept-task .dt-dots{display:flex;gap:3px;flex-shrink:0}
+.dept-task .dt-bar{flex:1;min-width:70px;height:9px;background:var(--track);border-radius:5px;overflow:hidden}
+.dept-task .dt-bf{height:100%;border-radius:5px;transition:width .5s}
+.dept-task .dt-pct{font-size:.82rem;font-weight:800;min-width:40px;text-align:right;font-variant-numeric:tabular-nums;flex-shrink:0}
+@media(max-width:640px){.dept-metrics{grid-template-columns:repeat(3,1fr)}.dept-task .dt-dots{display:none}.dept-task .dt-title{flex-basis:auto}}
+/* table */
+.tbl{width:100%;border-collapse:collapse;font-size:.85rem;background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.tbl th{background:var(--primary);color:#fff;padding:11px 14px;text-align:left;font-size:.82rem}
+.tbl td{padding:9px 14px;border-bottom:1px solid var(--border)}
+.tbl tr:hover td{background:rgba(30,111,196,.06)}
+.footer{text-align:center;color:var(--muted);font-size:.78rem;padding:24px 0}
+.reset-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 12px;font-size:.78rem;cursor:pointer;font-family:var(--font)}
+@media(max-width:900px){.grid2,.grid3,.vision{grid-template-columns:1fr}.glabel{width:150px}}
+@media(max-width:600px){.header h1{font-size:1.15rem}.kpi .v{font-size:1.7rem}}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="wrap">
+    <div>
+      <h1>🏥 일산병원 AX 추진 대시보드</h1>
+      <div class="sub">AI 플랫폼병원 전환을 위한 추진전략</div>
+    </div>
+    <div class="header-right">
+      <span class="live-badge" id="liveBadge" title="공용 DB 연결 상태">● 연결 확인 중</span>
+      <button class="user-chip" id="userChip" title="이름 변경">👤 <span id="userName">게스트</span></button>
+      <button class="icon-btn" id="themeBtn" title="테마 전환">🌙</button>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="wrap" id="tabbar"></div></nav>
+
+<!-- 개요 -->
+<section class="view active" id="v-overview"><div class="wrap">
+  <div class="vision-hero"><span class="vh-tag">VISION · 비전</span><span class="vh-txt">대한민국 공공의료를 선도하는 AX 플랫폼병원</span></div>
+  <div class="help-card" id="helpCard">
+    <h3>👋 이 대시보드는 무엇인가요? <button class="help-toggle" id="helpToggle">접기</button></h3>
+    <div id="helpBody">
+      <p><b>AX(AI Transformation)</b>는 병원 업무 전반에 AI를 도입해 일하는 방식을 바꾸는 것을 뜻합니다. 이 대시보드는 <b>일산병원 AX추진부의 추진전략(2026.6~12)</b>을 한눈에 따라가기 위한 도구예요. 사업은 <b>3대 핵심목표 → 12개 전략과제 → <span id="mileCountTxt">--</span>개 세부 마일스톤(할 일)</b>으로 이루어져 있고, 각 할 일이 얼마나 진행됐는지를 색으로 표시합니다. 상단 탭에서 과제 현황·담당팀별 분석·일정 로드맵·목표 달성 경로·타 병원 사례·AI 비서를 확인할 수 있어요.</p>
+      <div class="help-legend">
+        <span style="font-weight:700;font-size:.82rem">진행 상태 색상:</span>
+        <span class="li"><span class="dot done"></span><b>완료</b> <small>끝난 일</small></span>
+        <span class="li"><span class="dot prog"></span><b>진행중</b> <small>이번 달 진행</small></span>
+        <span class="li"><span class="dot plan"></span><b>예정</b> <small>앞으로 할 일</small></span>
+        <span class="li"><span class="dot over"></span><b>지연</b> <small>기한 지남</small></span>
+      </div>
+    </div>
+  </div>
+  <div class="kpi-grid" id="kpiGrid"></div>
+  <div class="card" style="margin-bottom:16px">
+    <h3>📊 전체 사업 진척률</h3>
+    <div class="gauge"><div class="bar"><div class="fill" id="ovFill"></div></div><div class="pct" id="ovPct">0%</div></div>
+    <div class="mstat" id="ovLegend"></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>핵심목표별 진척도</h3><div class="chart-box"><canvas id="goalChart"></canvas></div></div>
+    <div class="card"><h3>월별 마일스톤 추이 (2026)</h3><div class="chart-box"><canvas id="monthChart"></canvas></div></div>
+  </div>
+  <div class="card">
+    <h3>🎯 비전 체계도 <span class="tip" data-tip="병원 AX를 이끄는 3대 핵심목표(거버넌스·프로세스·문화)와 12개 전략과제의 달성률을 보여줍니다. 막대가 길수록 많이 진행된 과제예요.">?</span> <span style="font-weight:400;font-size:.82rem;color:var(--muted)">거버넌스·프로세스·문화 · 3대 핵심목표 · 12개 전략과제</span></h3>
+    <div class="vision" id="visionMap"></div>
+  </div>
+</div></section>
+
+<!-- 전략과제 -->
+<section class="view" id="v-tasks"><div class="wrap">
+  <div class="sec-title">📋 전략과제 팔로업 <span class="hint" style="font-weight:400">(카드 클릭 → 상세 · 마일스톤 클릭 → 상태 변경/저장)</span></div>
+  <div class="filters">
+    <select id="fGoal"><option value="">전체 핵심목표</option></select>
+    <select id="fTeam"><option value="">전체 담당팀</option></select>
+    <select id="fStatus"><option value="">전체 상태</option><option value="over">지연</option><option value="prog">진행중</option><option value="plan">예정</option><option value="done">완료</option></select>
+    <button class="reset-btn" id="resetProg">진척 초기화</button>
+    <span class="chip" id="taskCount"></span>
+  </div>
+  <div class="task-grid" id="taskGrid"></div>
+</div></section>
+
+<!-- 진척 분석 -->
+<section class="view" id="v-analytics"><div class="wrap">
+  <div class="sec-title">📈 부서별 진척 분석 <span class="tip" data-tip="AX추진부 3개 부서가 각각 어떤 과제를 맡아 얼마나 진행했는지 보여줍니다. 아래에서 부서별로 담당 업무와 세부 진척도를 확인하세요. '마일스톤'은 과제 안의 세부 할 일이에요.">?</span></div>
+  <div class="kpi-grid" id="teamKpi"></div>
+  <div class="grid2">
+    <div class="card"><h3>부서별 진척률 비교</h3><div class="chart-box"><canvas id="teamProgChart"></canvas></div></div>
+    <div class="card"><h3>부서별 업무량 (과제·마일스톤 수)</h3><div class="chart-box"><canvas id="teamLoadChart"></canvas></div></div>
+  </div>
+  <div class="sec-sub">🏢 부서별 담당 업무 및 세부 진척 현황 <span style="font-weight:400;font-size:.8rem;color:var(--muted)">(탭으로 부서 전환 · 지표/업무 클릭 → 목록)</span></div>
+  <div class="dept-tabs" id="deptTabs"></div>
+  <div id="deptDetail"></div>
+  <div class="card"><h3>협력부서 참여 빈도 <span style="font-weight:400;font-size:.8rem;color:var(--muted)">(3개 부서가 과제 수행 시 함께 협업하는 원내 부서)</span></h3><div class="chart-box"><canvas id="deptChart"></canvas></div></div>
+</div></section>
+
+<!-- 사업 타임라인 (Layered Phase + 간트) -->
+<section class="view" id="v-route"><div class="wrap">
+  <div class="sec-title">🗺️ 사업 타임라인 <span class="tip" data-tip="사업을 5개 단계로 나누고, 각 단계의 목표·핵심 마일스톤·활동·리스크를 한 표로 정리했습니다. 아래 간트 차트로 과제별 활동 기간도 시간 순으로 확인할 수 있어요. 진행률·마일스톤 상태는 실제 데이터에서 자동 계산됩니다.">?</span></div>
+  <div class="card" style="margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div style="font-weight:800;white-space:nowrap">📈 종합 진척률</div>
+    <div class="gauge" style="flex:1;min-width:200px"><div class="bar"><div class="fill" id="pmOverallFill"></div></div><div class="pct" id="pmOverallPct">0%</div></div>
+  </div>
+  <div id="phaseFlow"></div>
+  <div id="phaseMatrix"></div>
+  <div class="sec-sub">📊 전략과제 간트 타임라인 <span style="font-weight:400;font-size:.8rem;color:var(--muted)">(막대=과제 활동기간 · 빨간선=오늘 · 과제 클릭 → 상세)</span></div>
+  <div class="filters"><select id="rGoal"><option value="">전체 핵심목표</option></select><span class="chip">막대 안 %는 과제 진척률</span></div>
+  <div class="gantt" id="gantt"></div>
+</div></section>
+
+<!-- 벤치마크 -->
+<section class="view" id="v-bench"><div class="wrap">
+  <div class="sec-title">🏢 타 기관·기업 AX 추진 벤치마크 <span class="tip" data-tip="다른 병원·기업의 AI 전환 사례입니다. 다운로드된 HTML 파일은 보안(CORS) 때문에 뉴스를 직접 실시간으로 불러올 수 없어서, '최신 뉴스' 버튼을 누르면 해당 기관의 최근 30일 뉴스를 새 창(Google 뉴스)에서 바로 보여줍니다.">?</span></div>
+  <div class="filters" style="justify-content:space-between">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <button class="reset-btn" id="bmRefresh">🔄 새로고침</button>
+      <label style="font-size:.8rem;display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="bmAuto" style="min-width:auto;width:auto"> 자동 새로고침(10분)</label>
+      <span class="chip" id="bmUpdated" style="margin-left:0"></span>
+    </div>
+    <a class="reset-btn" id="bmLiveAll" style="text-decoration:none;color:var(--primary);border-color:var(--primary)" target="_blank" rel="noopener">🔎 최신 사례 통합검색(Google 뉴스) ↗</a>
+  </div>
+  <div class="filters">
+    <select id="bmCat"><option value="">전체 분류</option><option value="국내병원">국내 병원</option><option value="해외병원">해외 병원</option><option value="기업·솔루션">기업·솔루션</option><option value="정책·프레임워크">정책·프레임워크</option></select>
+    <input type="text" id="bmSearch" placeholder="키워드 검색 (예: 파운데이션, 거버넌스)">
+    <span class="chip" id="bmCount"></span>
+  </div>
+  <div class="bm-grid" id="bmGrid"></div>
+  <div class="hint" style="margin-top:14px">※ 카드 내용은 웹 공개자료 기반 요약(조사 기준 2026.7)이며, 각 카드의 <b>🔎 최신 뉴스</b> 버튼으로 해당 기관의 최근 소식을 실시간 확인할 수 있습니다. 출처 링크는 원문입니다.</div>
+</div></section>
+
+<div class="footer">국민건강보험일산병원 AX추진부 · 추진전략(안) v0.97 기반 대시보드 · 진척 데이터는 브라우저에 저장됩니다.</div>
+
+<!-- AI 비서 플로팅 위젯 -->
+<button class="agent-fab" id="agentFab" title="AX 사업계획 비서에게 물어보기">🤖<span class="fab-label">AI 비서</span></button>
+<div class="agent-widget" id="agentWidget">
+  <div class="agent-wh"><span>🤖 AX 사업계획 비서</span><button id="agentClose" title="닫기">×</button></div>
+  <div class="chat-log" id="chatLog"></div>
+  <div class="chips" id="chatChips"></div>
+  <div class="chat-input"><input type="text" id="chatInput" placeholder="예: 이번 달 할 일, 지연 과제, 1-3 요약"><button id="chatSend">전송</button></div>
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+
+<script>
+"use strict";
+const TODAY = new Date(2026,6,1); // 2026-07-01 (기준일)
+const VISION = "대한민국 공공의료를 선도하는 AX 플랫폼병원";
+const teams = {
+  "전략·거버넌스팀":"#0b4f9e","데이터·시스템 연계팀":"#00a3b4","연구·실증·교육 지원팀":"#6a3fb5"
+};
+const goals = [
+  {id:1,axis:"거버넌스",name:"AI 통합 거버넌스 구축",cls:"g1"},
+  {id:2,axis:"프로세스",name:"AI 기반 업무 프로세스 운영",cls:"g2"},
+  {id:3,axis:"문화",name:"전 직원 AX 문화 조성",cls:"g3"}
+];
+function M(dstr,label,kind){
+  let y=null,mo=null;
+  if(dstr){const mm=dstr.match(/(\d{4})[.\-](\d{1,2})/);if(mm){y=+mm[1];mo=+mm[2];}else{const yy=dstr.match(/(\d{4})/);if(yy){y=+yy[1];mo=kind==='경과'?1:12;}}}
+  return {dstr,y,m:mo,label,kind};
+}
+const TASKS = [
+ {id:"1-1",goal:1,team:"전략·거버넌스팀",title:"AX 전략 수립 및 이행관리",
+  coop:["기획예산부","진료기획부","의료정보실"],
+  obj:"AX 추진전략 체계화 및 연차별 이행 로드맵 수립 / 이행점검·환류체계 운영으로 전략 실행력 확보",
+  outcome:"AX 추진 연차별 단기·중장기 이행 로드맵 수립",
+  review:"신규 예산 및 향후 지속 전략 이행과 관련된 직제 반영",
+  miles:[M("2026.05","AI 플랫폼병원 추진단(T/F) 신설·발대식","경과"),M("2026.08","AX 추진전략 컨설팅 추진","계획"),M("2026.08","AI 관련 원내 제규정·운영절차 현황 검토","계획"),M("2026.12","부서 간 역할·협업체계 수립","계획"),M("2027.01","AX 협의체계 마련 / 단기·중장기 Rolling Plan 연차 이행관리","계획")]},
+ {id:"1-2",goal:1,team:"전략·거버넌스팀",title:"AI 표준 프로세스 및 윤리·안전 체계",
+  coop:["의료정보기획부","의료정보관리부","경영평가부","노사협력부"],
+  obj:"AI 도입·운영과 관련된 표준 프로세스 수립 / 윤리·안전 체계 구축으로 신뢰성 있는 AI 활용 환경 조성",
+  outcome:"AI 도입·운영 관련 가이드라인 / 생성형 AI 이용 통제 솔루션(DLP) 도입 계획(안) 수립",
+  review:"AI 도입·운영과 관련된 기존 및 신규 위원회 간 역할 정립 고려",
+  miles:[M("2025.06","생성형 AI 사용 보안권고 원내 공지","경과"),M("2025.01","신의료기술(루닛 CXR, AI trics VC) 도입 진료위원회 심의","경과"),M("2026.04","소청과 대사성산증 예측 AI솔루션 도입 진료위원회 심의","경과"),M("2026.12","AI 표준 전주기 프로세스(도입심의→구축→평가→지속여부) 구축 / 기술도입 가이드라인 제공","계획"),M("2027.01","안전한 AI 이용문화 확산 / DLP 도입 검토 / AI 보안역량·데이터 교육","계획")]},
+ {id:"1-3",goal:1,team:"전략·거버넌스팀",title:"AI 성과지표(KPI) 기반 성과관리",
+  coop:["전 부서"],
+  obj:"AX 추진 핵심 성과지표 체계 정립 / 성과 기반 환류 및 고도화 체계 구축",
+  outcome:"핵심 성과지표(KPI) 도출 및 평가",
+  review:"AX 핵심 성과지표의 부서별 성과 평가와 연계",
+  miles:[M("2026.10","HIMSS DHI 등 글로벌 기준 기반 평가지표 후보군 도출","계획"),M("2026.12","병원 맞춤형 AX 핵심 KPI 최종 확정·관리체계 수립","계획")]},
+ {id:"1-4",goal:1,team:"전략·거버넌스팀",title:"AX 국가 정책사업을 통한 미래 성장동력 확보",
+  coop:["연구기획부","의료정보실","기획조정실"],
+  obj:"산·학·연 협력체계 구축으로 공동연구 기반 강화 / 국가 정책 사업 수행으로 AX 성장기반 확보",
+  outcome:"웨어러블 디바이스(CART VITAL) 출시·특허 출원 / 신규 국가 정책사업 수주 / 산출물 원내 시스템 연계",
+  review:"다기관 협력사업 확대에 따른 지식재산권·데이터 활용·성과관리 체계 정립 필요",
+  miles:[M("2026.05","㈜루닛-일산병원 플랫폼병원·AX 협력 MOU 체결","경과"),M("2026.01","환자안전기술개발사업·AI 신속상용화 지원사업 공모 선정","경과"),M("2026.01","AI 특화병원 공모사업 참여","경과"),M("2026.09","AI·디지털헬스 협력체계 발굴 / 의료 특화 FM 원내 도입 추진","계획"),M("2026.12","웨어러블 디바이스(CART VITAL) 시제품 개발","계획"),M("2027.01","멀티모달 XAI 웨어러블 환자 모니터링 체계 구축","계획")]},
+ {id:"2-1",goal:2,team:"데이터·시스템 연계팀",title:"AI 컴퓨팅 인프라 운영·고도화",
+  coop:["의료정보기획부","기획예산부","진료기획부","미래전략부","연구기획부","시설사업부"],
+  obj:"중장기 AI 컴퓨팅 인프라(서버·GPU·네트워크 등) 확보 / 원내 보유 인프라 자원 활용 최적화·관리체계 구축",
+  outcome:"고사양 AI 원내 인프라 구축 / AI 인프라 구성도",
+  review:"소아 특화 전담진료센터 건립 관련 물리 운영환경(공간·전원·냉각·네트워크) 검토",
+  miles:[M("2026.06","기존 GPU 4기 운영중(TITAN X/V100S/A5000/A4000)","경과"),M("2026.09","국책연구사업 기반 NVIDIA H200 2기 도입 예정","계획"),M("2027.01","의료정보기획부 자체예산 활용 GPU 추가 도입","계획"),M("2028.01","온프레미스 GPU 활용성 평가 / 클라우드 인프라 활용방안 비교·검토","계획")]},
+ {id:"2-2",goal:2,team:"데이터·시스템 연계팀",title:"고품질 AX Ready 데이터 확보",
+  coop:["의료정보관리부","전 부서"],
+  obj:"고품질 Ready 데이터 확보로 AI 활용 기반 마련 / AI Knowledge Base 구축 및 부서별 데이터 자산화",
+  outcome:"AI 활용 데이터 허브 구축 / AI Ready Data / AI Knowledge Base",
+  review:"기존 고유 업무와 AI 활용 개발 업무 간 통합 관리·우선순위 조정을 통한 운용 효율화 전략 수립",
+  miles:[M("2024.01","의료정보관리부 텍스트마이닝 CDW 적용","경과"),M("2025.08","원내 생성형 AI 챗봇 i-BYS 구축","경과"),M("2026.07","AI 활용 대상 데이터 발굴·우선순위 선정","계획"),M("2026.12","진료지침·CP·업무매뉴얼 AI Knowledge Base 구축","계획"),M("2027.01","AI Ready Data 품질관리 체계 / AI 친화 문서·관리체계 도입","계획"),M("2028.01","AI 활용 데이터 거버넌스·연계체계 구축","계획")]},
+ {id:"2-3",goal:2,team:"데이터·시스템 연계팀",title:"의료특화 AI 실증 및 현장 맞춤형 AI 에이전트 개발",
+  coop:["진료과","의료정보실","연구소"],
+  obj:"의료특화 AI 실증·진료과 수요기반 최적화 / 맞춤형 AI 에이전트 개발로 업무 효율성 향상",
+  outcome:"Agent Builder 플랫폼 및 AI Agent 30종 / AI 전환 과제 발굴·우선순위 보고서",
+  review:"부서별 요구사항 수렴·우선순위 조정 / OCS·EMR 연계 기술 검토·부서 협의",
+  miles:[M("2025.08","생성형 AI 챗봇 i-BYS 구축","경과"),M("2026.03","의료 AI 모델(L1) 1차 추론·요약 임상실증 완료","경과"),M("2026.06","L1 2차 진료과별 임상 평가도구 개발","경과"),M("2026.09","AI 진료과별 임상 실증 평가·피드백 수집","계획"),M("2026.12","사용자 주도형 에이전트 빌더(Agent Builder) 플랫폼 구축","계획"),M("2027.01","실시간 대화형 AI 에이전트 구축 / 일산병원 의료특화 FM(i-FM) 고도화","계획")]},
+ {id:"2-4",goal:2,team:"전략·거버넌스팀",title:"AI 테스트베드 역할 수행",
+  coop:["전 부서"],
+  obj:"AI 솔루션 임상 검증·실증 지원체계 운영 / 지역 공공의료 AI 테스트베드 거점 역할 강화",
+  outcome:"의료 특화 AI 파운데이션 모델 2단계 실증 및 평가보고서",
+  review:"AI 성능평가의 객관성 및 대외 수용성 확보 필요",
+  miles:[M("2026.03","의료 특화 AI 파운데이션 모델 1단계 실증·평가","경과"),M("2026.05","AX 플랫폼병원 추진단 발대","경과"),M("2026.06","병원 맞춤형 AI 에이전트 플랫폼 설계 추진","계획"),M("2026.09","의료 특화 AI 파운데이션 모델 2단계 실증·평가","계획"),M("2027.01","i-FM 운영 성과 분석·개선방안 도출","계획"),M("2028.01","병원 맞춤형 AI 표준모델 마련·지역 공공의료기관 확산","계획")]},
+ {id:"3-1",goal:3,team:"전략·거버넌스팀",title:"현장 중심 AI 과제 발굴 및 활용 확산",
+  coop:["전 부서"],
+  obj:"전 부서 대상 AI활용 진단·수요조사 및 신규 AX 과제 발굴 / AI 활용 확산으로 현장 중심 혁신문화 조성",
+  outcome:"AI활용 진단 보고서 / 부서별 AI 활용 과제 발굴 목록",
+  review:"현장 중심의 AI 활용 진단 및 수요조사 인터뷰 활성화 필요",
+  miles:[M("2026.08","전 부서 AI활용 진단·수요조사(FGI) / 부문별 미팅그룹 운영","계획"),M("2026.09","AI 서비스 도입 우선순위 매트릭스·로드맵 작성","계획"),M("2027.01","우선순위 로드맵 기반 단계별 개발·도입","계획")]},
+ {id:"3-2",goal:3,team:"연구·실증·교육 지원팀",title:"AI 핵심인재(Key Player) 양성",
+  coop:["전 부서"],
+  obj:"AI 리더십 그룹 운영으로 핵심 인재풀 구축 / Key Player 중심 전사 확산체계 마련",
+  outcome:"단계별 커리큘럼 / 부서별 AI Key Player 구성 / L3 이상 Key Player 30명 이상 달성",
+  review:"AI 관련 교육 시간·예산 확보",
+  miles:[M("2026.06","AI Leadership Group Squad(4) 운영 개시","경과"),M("2026.06","AI 역량 단계(L1~L5)·단계별 커리큘럼 설계 완료","경과"),M("2026.08","AI Key Player 정기세션 / AI 커뮤니케이션 온라인 채널 운영","계획"),M("2026.09","단계별 교육으로 주도적 AI 활용능력 개발","계획"),M("2027.01","능동적 AI 업무활용·부서 확산","계획")]},
+ {id:"3-3",goal:3,team:"연구·실증·교육 지원팀",title:"AI 도입 및 활용에 따른 가치창출",
+  coop:["연구소","연구기획부","연구분석부","경영평가부"],
+  obj:"임상데이터 기반 연구 설계·수행으로 유효 신뢰성·대외 인증 기반 구축 / 연구성과의 임상·경영 가치 환원",
+  outcome:"임상 유효성 검증 보고서 / 특허 3건 이상 출원 / 루닛 CXR 논문 1편 / FM 고도화 논문 1편 투고",
+  review:"AI 활용 데이터 축적을 위한 인프라 확보 필요",
+  miles:[M("2026.03","의료 AI 모델(L1) 1차 임상실증 완료","경과"),M("2026.07","AI 진료과별 임상 평가데이터·피드백 수집","계획"),M("2026.08","루닛 인사이트 CXR 성능평가 논문 1편","계획"),M("2026.09","L1 의료 AI 모델 2단계 임상실증 평가","계획"),M("2026.12","AI 기술개발 성과 지식재산권 확보","계획"),M("2027.01","FM 고도화 평가 논문 1편 / 성능추이 파이프라인 솔루션 구축","계획")]},
+ {id:"3-4",goal:3,team:"전략·거버넌스팀",title:"AX 혁신 성과 보상체계 구축·운영",
+  coop:["인사부","노사협력부","교육수련부","홍보부"],
+  obj:"AI활용 우수자·우수부서 발굴 및 성과 기반 보상체계 마련 / AX 참여 확산을 위한 지속 가능한 동기부여 체계 구축",
+  outcome:"AX 우수사례(Best Practice) / 우수자·우수부서 / 대·내외 홍보 실적(사보·언론 등)",
+  review:"AI 활용 성과 보상체계 실행을 위한 예산 마련 필요",
+  miles:[M("2026.08","AX 혁신 성과 보상체계 검토(KPI 연계 선정지표)","계획"),M("2026.12","AX 활용 경진대회 개최","계획"),M("2027.01","AX 활용 성과 보상체계 본격 운영·제도 개선","계획")]}
+];
+
+const BENCH = [
+ {org:"서울대병원",cat:"국내병원",tag:"소버린 의료AI 생태계",body:["헬스케어AI연구원 출범, 한국형 의료특화 LLM 'KMed.AI'·'SNUH.AI' 플랫폼","KMed.ai 2025 의사국시 평균 96.4점 — 세계 최고 수준 성능","정밀의료 진료지원 'SNUH POLARIS' 구축, UAE 아부다비 AI병원 추진"],url:"https://www.snuh.org/m/board/B003/view.do?bbs_no=7351"},
+ {org:"연세의료원(세브란스)",cat:"국내병원",tag:"Next Severance 2026",body:["2026년을 '넥스트 세브란스' 원년으로 규정, 진료·교육·연구·운영 전반 재설계","루닛과 의료 파운데이션 모델 기반 AI 임상 확산 협력 체결"],url:"https://www.etnews.com/20251130000078"},
+ {org:"빅3·빅5 병원",cat:"국내병원",tag:"AX 조직·제도 정비",body:["2026 신년 키워드: AI·중증의료·글로벌 확장","AX 전담조직 신설·거버넌스/제도 정비에 총력 — 우리 추진단(T/F) 모델과 유사"],url:"https://www.sentv.co.kr/article/view/sentv202601050163"},
+ {org:"Mayo Clinic",cat:"해외병원",tag:"파운데이션 모델 인프라",body:["NVIDIA DGX SuperPOD(B200) 도입 — 디지털 병리·신약·정밀의료 파운데이션 모델","FDA 승인 심전도 AI를 1차진료에 내장 → 저박출률 신규진단 32%↑ (실증형 KPI 참고)"],url:"https://www.aha.org/aha-center-health-innovation-market-scan/2025-08-12-mayo-clinic-new-ai-computing-platform-will-advance-precision-medicine"},
+ {org:"Cleveland Clinic",cat:"해외병원",tag:"Epic 내 생성형 AI 내장",body:["Ambient documentation(Ambience) 4,000+ 임상의 — 하루 EHR 기록 14분 절감","Abridge 앰비언트 2,000+ 확산, AKASA 생성형 수익주기 솔루션 도입","임상·환자접근·수익주기에 'time-to-action' 단축 (우리 시간절감 KPI 벤치마크)"],url:"https://www.getprosper.ai/blog/top-5-hospitals-that-use-ai-in-2025-for-better-care"},
+ {org:"루닛(Lunit)",cat:"기업·솔루션",tag:"의료 파운데이션 모델",body:["2025.6 의료용 AI 파운데이션 모델 공개 — 16B 현장검증 후 32B 단계적 고도화","9개 병원+2개 제약사 컨소시엄(용인세브란스·고려대의료원·건양대·양산부산대 등)","일산병원과 MOU 체결(과제 1-4) — 응용AI 공동개발·현장적용·사업화 단계 추진"],url:"https://www.sedaily.com/article/20044408"},
+ {org:"보건복지부·정부",cat:"정책·프레임워크",tag:"의료 AI 실증 국가지원",body:["2026년 의료 AI 실증 과제 20개 신설 지원","보건의료데이터 활용 활성화로 'AI 기본의료' 가속화 (과제 1-4 국가사업 유치 연계)"],url:"https://www.mohw.go.kr/board.es?mid=a10503000000&bid=0027&list_no=1488181&act=view"},
+ {org:"HIMSS DHI / OECD",cat:"정책·프레임워크",tag:"성과·거버넌스 프레임워크",body:["HIMSS DHI(Digital Health Indicator) — 성과지표 설계 국제기준 (과제 1-3 KPI 근거)","OECD 'Governing with AI 2025' — 공공부문 AI 핵심기반(데이터·인력·인프라·제도) (현황진단 근거)"],url:"https://www.oecd.org/en/publications/governing-with-artificial-intelligence_795de142-en.html"}
+];
+
+/* ---------- 진척 상태 로직 ---------- */
+const STORE_KEY = "ax_dashboard_progress_v2";
+let overrides = {};
+try{overrides = JSON.parse(localStorage.getItem(STORE_KEY)||"{}");}catch(e){overrides={};}
+function mkey(tid,i){return tid+"#"+i;}
+// 마일스톤 일정(날짜·내용) 편집 저장
+let mileEdits={};
+try{mileEdits=JSON.parse(localStorage.getItem('ax_mile_edits_v1')||'{}');}catch(e){mileEdits={};}
+TASKS.forEach(t=>t._orig=t.miles.map(m=>({dstr:m.dstr,label:m.label,kind:m.kind})));
+function applyMileEdits(){TASKS.forEach(t=>{t.miles=t._orig.map((m,i)=>{const e=mileEdits[mkey(t.id,i)];return M(e?e.dstr:m.dstr,e?e.label:m.label,m.kind);});});}
+applyMileEdits();
+function autoStatus(m){
+  if(m.kind==='경과') return 'done';
+  if(!m.y) return 'plan';
+  const cy=TODAY.getFullYear(),cm=TODAY.getMonth()+1;
+  if(m.y<cy || (m.y===cy && m.m<cm)) return 'over';
+  if(m.y===cy && m.m===cm) return 'prog';
+  return 'plan';
+}
+function statusOf(tid,i,m){const k=mkey(tid,i);return overrides[k]||autoStatus(m);}
+function setStatus(tid,i,st){const k=mkey(tid,i);overrides[k]=st;localStorage.setItem(STORE_KEY,JSON.stringify(overrides));pushState(k);}
+function taskProgress(t){let done=0;t.miles.forEach((m,i)=>{if(statusOf(t.id,i,m)==='done')done++;});return Math.round(done/t.miles.length*100);}
+function taskStatusSummary(t){const c={done:0,prog:0,plan:0,over:0};t.miles.forEach((m,i)=>{c[statusOf(t.id,i,m)]++;});return c;}
+function progColor(p){return p>=80?'var(--success)':p>=40?'var(--warning)':p>=1?'var(--primary)':'var(--gray)';}
+const STAT_LABEL={done:'완료',prog:'진행중',plan:'예정',over:'지연'};
+const STAT_COLOR={done:'#2e9e5b',prog:'#e8890c',plan:'#8a94a6',over:'#d64545'};
+
+/* ---------- 탭 ---------- */
+const TABS=[
+  ["overview","📊 개요","사업 전체를 한눈에 — 핵심 숫자, 전체 진척률, 목표별 현황"],
+  ["route","🗺️ 사업 타임라인","단계별 목표·마일스톤·활동·리스크 + 과제 간트 타임라인"],
+  ["tasks","📋 전략과제","12개 과제를 카드로 보고, 세부 할 일(마일스톤)의 진행 상태를 직접 표시"],
+  ["analytics","📈 진척 분석","어느 팀이 무엇을 얼마나 맡고 있는지, 진척은 어떤지 비교"],
+  ["bench","🏢 벤치마크","다른 병원·기업은 AX를 어떻게 하는지 참고 사례 모음"]
+];
+let charts={};
+function buildTabs(){
+  const bar=document.getElementById('tabbar');
+  bar.innerHTML=TABS.map((t,i)=>`<div class="tab${i===0?' active':''}" data-t="${t[0]}" title="${t[2]}">${t[1]}</div>`).join('');
+  bar.querySelectorAll('.tab').forEach(el=>el.onclick=()=>switchTab(el.dataset.t,el));
+}
+function switchTab(name,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('v-'+name).classList.add('active');
+  if(name==='overview') renderOverview();
+  if(name==='analytics') renderAnalytics();
+  if(name==='route') renderRoute();
+}
+
+/* ---------- 개요 ---------- */
+function overallProgress(){let tot=0,done=0;TASKS.forEach(t=>t.miles.forEach((m,i)=>{tot++;if(statusOf(t.id,i,m)==='done')done++;}));return {pct:Math.round(done/tot*100),tot,done};}
+function ddayText(){const end=new Date(2026,11,31);const diff=Math.ceil((end-TODAY)/(1000*3600*24));return diff>0?`D-${diff} · 사업종료 2026.12`:`사업기간 종료`;}
+function renderOverview(){
+  const op=overallProgress();
+  let allStat={done:0,prog:0,plan:0,over:0};
+  TASKS.forEach(t=>{const c=taskStatusSummary(t);for(const k in c)allStat[k]+=c[k];});
+  const kpis=[{v:goals.length,l:"핵심목표",c:"",key:"goals"},{v:TASKS.length,l:"전략과제",c:"a",key:"tasks"},{v:op.tot,l:"세부 마일스톤",c:"p",key:"miles"},{v:op.done,l:"완료",c:"s",key:"done"},{v:allStat.prog,l:"진행중",c:"w",key:"prog"},{v:allStat.over,l:"지연",c:"d",key:"over"}];
+  document.getElementById('kpiGrid').innerHTML=kpis.map(k=>`<div class="kpi ${k.c}" onclick="openKpiList('${k.key}')" title="클릭하면 목록 보기"><div class="v">${k.v}</div><div class="l">${k.l}</div></div>`).join('');
+  document.getElementById('ovFill').style.width=op.pct+'%';
+  document.getElementById('ovPct').textContent=op.pct+'%';
+  document.getElementById('ovLegend').innerHTML=Object.keys(allStat).map(k=>`<span><span class="dot ${k}"></span>${STAT_LABEL[k]} ${allStat[k]}</span>`).join(' &nbsp; ');
+  document.getElementById('visionMap').innerHTML=goals.map(g=>{const gt=TASKS.filter(t=>t.goal===g.id);return `<div class="vcol v${g.id}"><div class="axis">${g.axis} 축 · 핵심목표 ${g.id}</div><div class="goal">${g.name}</div>${gt.map(t=>{const p=taskProgress(t);const nx=nextMile(t);return `<div class="mini" title="담당: ${t.team}${nx?' · 다음 할 일: '+nx:''}"><span class="mt2">${t.id} ${t.title}</span><div class="mrow"><div class="mbar"><div class="mbf" style="width:${p}%"></div></div><span class="mpct">${p}%</span></div></div>`;}).join('')}</div>`;}).join('');
+  drawGoalChart();drawMonthChart();
+}
+function drawGoalChart(){
+  const data=goals.map(g=>{const gt=TASKS.filter(t=>t.goal===g.id);return Math.round(gt.reduce((s,t)=>s+taskProgress(t),0)/gt.length);});
+  mkChart('goalChart','bar',{labels:goals.map(g=>[`목표${g.id}`,g.axis]),datasets:[{label:'진척률(%)',data,backgroundColor:['#1565c0','#6a3fb5','#2e9e5b'],borderRadius:6}]},{scales:{x:{title:{display:true,text:'핵심목표 (거버넌스·프로세스·문화)'}},y:{beginAtZero:true,max:100,title:{display:true,text:'진척률(%)'},ticks:{callback:v=>v+'%'}}},plugins:{legend:{display:false}}});
+}
+function drawMonthChart(){
+  const months=['26.06','26.07','26.08','26.09','26.10','26.11','26.12'];const cnt=months.map(()=>0);
+  TASKS.forEach(t=>t.miles.forEach(m=>{if(m.y===2026&&m.m>=6&&m.m<=12)cnt[m.m-6]++;}));
+  mkChart('monthChart','line',{labels:months,datasets:[{label:'마일스톤 수',data:cnt,borderColor:'#0b4f9e',backgroundColor:'rgba(11,79,158,.12)',fill:true,tension:.3,pointRadius:5,pointBackgroundColor:'#0b4f9e'}]},{scales:{y:{beginAtZero:true,ticks:{stepSize:1}}},plugins:{legend:{display:false}}});
+}
+
+/* ---------- 전략과제 ---------- */
+function fillFilters(){
+  const fg=document.getElementById('fGoal');goals.forEach(g=>fg.add(new Option(`목표${g.id}: ${g.name}`,g.id)));
+  const ft=document.getElementById('fTeam');Object.keys(teams).forEach(t=>ft.add(new Option(t,t)));
+  ['fGoal','fTeam','fStatus'].forEach(id=>document.getElementById(id).onchange=renderTasks);
+  document.getElementById('resetProg').onclick=()=>{if(supa&&remoteReady){loadRemote();return;}if(confirm('진척 상태를 초기값(자동 산정)으로 되돌릴까요?')){overrides={};localStorage.removeItem(STORE_KEY);renderTasks();renderOverview();}};
+  const rg=document.getElementById('rGoal');goals.forEach(g=>rg.add(new Option(`목표${g.id}`,g.id)));rg.onchange=renderGantt;
+}
+function renderTasks(){
+  const g=document.getElementById('fGoal').value,tm=document.getElementById('fTeam').value,st=document.getElementById('fStatus').value;
+  let list=TASKS.filter(t=>(!g||t.goal==g)&&(!tm||t.team===tm));
+  if(st) list=list.filter(t=>{const c=taskStatusSummary(t);return c[st]>0;});
+  document.getElementById('taskCount').textContent=`${list.length} / ${TASKS.length} 과제`;
+  document.getElementById('taskGrid').innerHTML=list.map(t=>{
+    const p=taskProgress(t),c=taskStatusSummary(t);
+    return `<div class="tcard g${t.goal}" onclick="openTask('${t.id}')"><div class="tno">${t.id} · 목표${t.goal}</div><div class="tt">${t.title}</div><div class="tmeta"><span class="badge b-team">담당 ${t.team}</span><span class="badge b-coop">협업 ${t.coop.length}곳</span></div><div class="tprog"><div class="pb"><div class="pf" style="width:${p}%;background:${progColor(p)}"></div></div><div class="pt">${p}%</div></div><div class="mstat">${Object.keys(c).map(k=>`<span><span class="dot ${k}"></span>${STAT_LABEL[k]} ${c[k]}</span>`).join('')}</div></div>`;
+  }).join('')||'<div class="hint">조건에 맞는 과제가 없습니다.</div>';
+}
+let modalTask=null;
+function openTask(tid){
+  modalTask=tid;
+  const t=TASKS.find(x=>x.id===tid);const g=goals.find(x=>x.id===t.goal);const modal=document.getElementById('modal');
+  modal.innerHTML=`<div class="mh"><div><div class="tno" style="color:var(--muted);font-size:.8rem;font-weight:700">${t.id} · 목표${t.goal} (${g.axis}축)</div><div class="mt">${t.title}</div></div><button class="close" onclick="closeModal()">×</button></div>
+    <div class="dept-line"><span class="dept-lbl">담당 부서</span><span class="badge b-team">${t.team}</span></div>
+    <div class="dept-line"><span class="dept-lbl">협업 부서</span><span class="dept-badges">${t.coop.map(c=>`<span class="badge b-coop">${c}</span>`).join('')}</span></div>
+    <div class="msec"><h4>추진목표</h4><div class="txt">${t.obj}</div></div>
+    <div class="msec"><h4>마일스톤 <span style="font-weight:400;font-size:.74rem;color:var(--muted)">(상태=목록 선택 · ✏️=일정 수정 · 자동저장)</span></h4>${t.miles.map((m,i)=>{const s=statusOf(t.id,i,m);const ed=mileEdits[mkey(t.id,i)];if(editingMile===mkey(t.id,i)){return `<div class="mef"><div class="mef-row"><label>일정</label><input id="edD" value="${(m.dstr||'').replace(/"/g,'&quot;')}" placeholder="예: 2026.09 또는 2026.7~9"></div><div class="mef-row"><label>내용</label><input id="edL" value="${m.label.replace(/"/g,'&quot;')}"></div><div class="mef-btns">${ed?`<button class="mef-reset" onclick="resetMile('${t.id}',${i})">원래대로</button>`:''}<button class="mef-cancel" onclick="cancelEdit('${t.id}')">취소</button><button class="mef-save" onclick="saveMile('${t.id}',${i})">저장</button></div></div>`;}return `<div class="mile"><span class="md">${m.dstr||'-'}</span><span class="ml">${m.label} <span style="color:var(--muted);font-size:.72rem">(${m.kind})${ed?' <span class="edited">✎수정됨</span>':''}</span></span><select class="ms-select ${s}" onchange="setMileStatus('${t.id}',${i},this.value)">${['plan','prog','done','over'].map(k=>`<option value="${k}"${k===s?' selected':''}>${STAT_LABEL[k]}</option>`).join('')}</select><button class="mile-edit" onclick="editMile('${t.id}',${i})" title="일정 수정">✏️</button></div>`;}).join('')}<div class="hint">상태는 각 항목의 목록(예정·진행중·완료·지연)에서 선택하세요.</div></div>
+    <div class="msec"><h4>기대 산출물</h4><div class="txt">${t.outcome}</div></div>
+    <div class="msec"><h4>고려사항</h4><div class="txt">${t.review}</div></div>`;
+  document.getElementById('overlay').classList.add('open');
+}
+function setMileStatus(tid,i,v){setStatus(tid,i,v);openTask(tid);renderTasks();renderOverview();}
+let editingMile=null;
+function editMile(tid,i){editingMile=mkey(tid,i);openTask(tid);setTimeout(()=>{const el=document.getElementById('edD');if(el)el.focus();},60);}
+function cancelEdit(tid){editingMile=null;openTask(tid);}
+function saveMile(tid,i){const d=document.getElementById('edD').value.trim();const l=document.getElementById('edL').value.trim();if(!l){alert('내용을 입력하세요.');return;}const k=mkey(tid,i);mileEdits[k]={dstr:d,label:l};localStorage.setItem('ax_mile_edits_v1',JSON.stringify(mileEdits));editingMile=null;applyMileEdits();pushState(k);openTask(tid);renderTasks();renderOverview();}
+function resetMile(tid,i){const k=mkey(tid,i);delete mileEdits[k];localStorage.setItem('ax_mile_edits_v1',JSON.stringify(mileEdits));editingMile=null;applyMileEdits();pushState(k);openTask(tid);renderTasks();renderOverview();}
+function closeModal(){editingMile=null;modalTask=null;document.getElementById('overlay').classList.remove('open');}
+function milesByStatus(filter){const arr=[];TASKS.forEach(t=>t.miles.forEach((m,i)=>{const s=statusOf(t.id,i,m);if(!filter||s===filter)arr.push(Object.assign({},m,{st:s,tid:t.id,title:t.title}));}));arr.sort((a,b)=>((a.y||9999)*12+(a.m||1))-((b.y||9999)*12+(b.m||1)));return arr;}
+function openKpiList(key){
+  modalTask=null;
+  let title='',body='';
+  if(key==='goals'){
+    title='핵심목표 3개';
+    body=goals.map(g=>{const gt=TASKS.filter(t=>t.goal===g.id);const p=Math.round(gt.reduce((s,t)=>s+taskProgress(t),0)/gt.length);return `<div class="kl-item"><span class="kl-main">목표${g.id}. ${g.name}</span><span class="kl-sub">${g.axis}축 · ${gt.length}과제</span><span class="kl-pct">${p}%</span></div>`;}).join('');
+  }else if(key==='tasks'){
+    title='전략과제 12개';
+    body=TASKS.map(t=>`<div class="kl-item click" onclick="openTask('${t.id}')"><span class="kl-main">${t.id} ${t.title}</span><span class="kl-sub">담당 ${t.team}</span><span class="kl-pct">${taskProgress(t)}%</span></div>`).join('');
+  }else{
+    const fmap={miles:null,done:'done',prog:'prog',over:'over'};
+    const lab={miles:'세부 마일스톤 전체',done:'완료 마일스톤',prog:'진행중 마일스톤',over:'지연 마일스톤'};
+    const arr=milesByStatus(fmap[key]);
+    title=`${lab[key]} ${arr.length}개`;
+    body=arr.map(m=>`<div class="kl-item click" onclick="openTask('${m.tid}')"><span class="kl-main"><span class="dot ${m.st}"></span>${m.label}</span><span class="kl-sub">${m.dstr||'-'} · ${m.tid}</span><span class="ms ${m.st}">${STAT_LABEL[m.st]}</span></div>`).join('')||'<div class="hint">항목이 없습니다.</div>';
+  }
+  document.getElementById('modal').innerHTML=`<div class="mh"><div class="mt">${title}</div><button class="close" onclick="closeModal()">×</button></div><div class="hint" style="margin:2px 0 10px">항목을 클릭하면 해당 전략과제 상세로 이동합니다.</div><div class="kl-list">${body}</div>`;
+  document.getElementById('overlay').classList.add('open');
+}
+document.getElementById('overlay').onclick=e=>{if(e.target.id==='overlay')closeModal();};
+
+/* ---------- 진척 분석 ---------- */
+function teamStats(){const st={};Object.keys(teams).forEach(t=>st[t]={tasks:0,miles:0,done:0,prog:0,plan:0,over:0});TASKS.forEach(t=>{const s=st[t.team];s.tasks++;t.miles.forEach((m,i)=>{s.miles++;s[statusOf(t.id,i,m)]++;});});return st;}
+function shortTeam(n){return n.replace('·시스템 연계','연계').replace('·실증·교육 지원','교육').replace('·거버넌스','거버넌스');}
+const teamRole={
+  "전략·거버넌스팀":"AX 전략 수립·이행관리, AI 표준·윤리·안전 체계, 성과지표(KPI) 관리, 국가정책사업 유치, 테스트베드 운영, 현장 과제 발굴, 성과 보상체계 — 거버넌스·전략 총괄",
+  "데이터·시스템 연계팀":"AI 컴퓨팅 인프라 운영·고도화, 고품질 AX Ready 데이터 확보, 의료특화 AI 실증 및 현장 맞춤형 AI 에이전트 개발 — 데이터·기술 실행",
+  "연구·실증·교육 지원팀":"AI 핵심인재(Key Player) 양성, AI 도입·활용에 따른 가치창출(연구·논문·지식재산권) — 연구·실증·교육 지원"
+};
+function renderAnalytics(){
+  const st=teamStats();const names=Object.keys(teams);
+  const prog=names.map(n=>st[n].miles?Math.round(st[n].done/st[n].miles*100):0);
+  const op=overallProgress();
+  let totOver=0,totProg=0;names.forEach(n=>{totOver+=st[n].over;totProg+=st[n].prog;});
+  document.getElementById('teamKpi').innerHTML=[
+    {v:names.length,l:"담당 부서",c:""},
+    {v:op.pct+'%',l:"전사 공동 진척률 (TF 공동 목표)",c:"s"},
+    {v:totProg,l:"이번 달 함께 완료할 일 (진행중)",c:"w"},
+    {v:totOver,l:"함께 줄여야 할 지연 (공동 관리)",c:"d"}
+  ].map(k=>`<div class="kpi ${k.c}"><div class="v" style="font-size:${(''+k.v).length>5?'1.1rem':'2.1rem'}">${k.v}</div><div class="l">${k.l}</div></div>`).join('');
+  mkChart('teamProgChart','bar',{labels:names.map(shortTeam),datasets:[{label:'진척률(%)',data:prog,backgroundColor:names.map(n=>teams[n]),borderRadius:6}]},{indexAxis:'y',scales:{x:{max:100,ticks:{callback:v=>v+'%'}}},plugins:{legend:{display:false}}});
+  mkChart('teamLoadChart','bar',{labels:names.map(shortTeam),datasets:[{label:'과제 수',data:names.map(n=>st[n].tasks),backgroundColor:'#1e6fc4',borderRadius:5},{label:'마일스톤 수',data:names.map(n=>st[n].miles),backgroundColor:'#00a3b4',borderRadius:5}]},{scales:{y:{beginAtZero:true,ticks:{stepSize:2}}}});
+  const df={};TASKS.forEach(t=>t.coop.forEach(c=>df[c]=(df[c]||0)+1));
+  const de=Object.entries(df).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  mkChart('deptChart','bar',{labels:de.map(d=>d[0]),datasets:[{label:'참여 과제 수',data:de.map(d=>d[1]),backgroundColor:'#6a3fb5',borderRadius:5}]},{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{stepSize:1}}}});
+  renderDeptTabs();
+  renderDeptDetail(st);
+}
+let deptSel='전체';
+function renderDeptTabs(){
+  const opts=['전체'].concat(Object.keys(teams));
+  document.getElementById('deptTabs').innerHTML=opts.map(o=>`<button class="dtab${o===deptSel?' active':''}" onclick="selectDept('${o}')">${o==='전체'?'전체 부서':o}</button>`).join('');
+}
+function selectDept(o){deptSel=o;renderDeptTabs();renderDeptDetail(teamStats());}
+function deptCardHtml(n,st){
+  const tt=TASKS.filter(t=>t.team===n);const s=st[n];const pct=s.miles?Math.round(s.done/s.miles*100):0;
+  return `<div class="dept-card" style="border-top-color:${teams[n]}">
+      <div class="dept-head"><div class="dept-name" style="color:${teams[n]}">${n}</div></div>
+      <div class="dept-role">${teamRole[n]||''}</div>
+      <div class="dept-metrics">
+        <div class="dm" onclick="openDeptList('${n}','tasks')"><b>${s.tasks}</b>담당 과제</div>
+        <div class="dm" onclick="openDeptList('${n}','all')"><b>${s.miles}</b>세부 마일스톤</div>
+        <div class="dm" onclick="openDeptList('${n}','done')"><b style="color:var(--success)">${s.done}</b>완료</div>
+        <div class="dm" onclick="openDeptList('${n}','prog')"><b style="color:var(--warning)">${s.prog}</b>진행중</div>
+        <div class="dm" onclick="openDeptList('${n}','over')"><b style="color:var(--danger)">${s.over}</b>지연</div>
+      </div>
+      <div class="dept-gauge"><div class="bar"><div class="fill" style="width:${pct}%;background:${teams[n]}"></div></div><div class="pct" style="color:${teams[n]}">${pct}%</div></div>
+      <div class="dept-tasklist">${tt.map(t=>{const p=taskProgress(t);const c=taskStatusSummary(t);return `<div class="dept-task" onclick="openTask('${t.id}')" title="${t.title}"><span class="dt-id">${t.id}</span><span class="dt-title">${t.title}</span><span class="dt-dots">${['done','prog','over'].map(k=>c[k]?`<span class="dot ${k}" title="${STAT_LABEL[k]} ${c[k]}"></span>`:'').join('')}</span><div class="dt-bar"><div class="dt-bf" style="width:${p}%;background:${progColor(p)}"></div></div><span class="dt-pct">${p}%</span></div>`;}).join('')}</div>
+    </div>`;
+}
+function renderDeptDetail(st){
+  const names=Object.keys(teams);
+  const show=(deptSel==='전체')?names:names.filter(n=>n===deptSel);
+  document.getElementById('deptDetail').innerHTML=show.map(n=>deptCardHtml(n,st)).join('');
+}
+function openDeptList(team,key){
+  modalTask=null;
+  const tt=TASKS.filter(t=>t.team===team);let title=team+' · ',body='';
+  if(key==='tasks'){title+='담당 과제 '+tt.length+'개';body=tt.map(t=>`<div class="kl-item click" onclick="openTask('${t.id}')"><span class="kl-main">${t.id} ${t.title}</span><span class="kl-pct">${taskProgress(t)}%</span></div>`).join('');}
+  else{const lab={all:'세부 마일스톤 전체',done:'완료 마일스톤',prog:'진행중 마일스톤',over:'지연 마일스톤'};const arr=[];tt.forEach(t=>t.miles.forEach((m,i)=>{const s=statusOf(t.id,i,m);if(key==='all'||s===key)arr.push(Object.assign({},m,{st:s,tid:t.id}));}));arr.sort((a,b)=>((a.y||9999)*12+(a.m||1))-((b.y||9999)*12+(b.m||1)));title+=lab[key]+' '+arr.length+'개';body=arr.map(m=>`<div class="kl-item click" onclick="openTask('${m.tid}')"><span class="kl-main"><span class="dot ${m.st}"></span>${m.label}</span><span class="kl-sub">${m.dstr||'-'} · ${m.tid}</span><span class="ms ${m.st}">${STAT_LABEL[m.st]}</span></div>`).join('')||'<div class="hint">항목이 없습니다.</div>';}
+  document.getElementById('modal').innerHTML=`<div class="mh"><div class="mt">${title}</div><button class="close" onclick="closeModal()">×</button></div><div class="hint" style="margin:2px 0 10px">항목을 클릭하면 해당 전략과제 상세로 이동합니다.</div><div class="kl-list">${body}</div>`;
+  document.getElementById('overlay').classList.add('open');
+}
+
+/* ---------- 로드맵 ---------- */
+function renderGantt(){
+  const g=document.getElementById('rGoal').value;const list=TASKS.filter(t=>!g||t.goal==g);
+  const months=['26.6','26.7','26.8','26.9','26.10','26.11','26.12','27.상','27.하','28~'];
+  const idx=(y,m)=>{if(y===2026)return Math.max(0,Math.min(6,m-6));if(y===2027)return m<=6?7:8;if(y>=2028)return 9;return 0;};
+  let html=`<div class="ghead"><div class="glabel">전략과제</div><div class="cols">${months.map(m=>`<span>${m}</span>`).join('')}</div></div>`;
+  const nowIdx=idx(2026,7);
+  list.forEach(t=>{
+    let mn=99,mx=-1;t.miles.forEach(m=>{if(m.y){const ix=idx(m.y,m.m);mn=Math.min(mn,ix);mx=Math.max(mx,ix);}});
+    if(mx<0){mn=0;mx=0;}
+    const left=mn/10*100,w=Math.max((mx-mn+1)/10*100,7);
+    const col=t.goal===1?'#1565c0':t.goal===2?'#6a3fb5':'#2e9e5b';
+    html+=`<div class="grow"><div class="glabel" title="${t.title}">${t.id} ${t.title}</div><div class="gtrack"><div class="gnow" style="left:${(nowIdx+0.5)/10*100}%"></div><div class="gbar" style="left:${left}%;width:${w}%;background:${col}" onclick="openTask('${t.id}')">${taskProgress(t)}%</div></div></div>`;
+  });
+  document.getElementById('gantt').innerHTML=html;
+}
+
+/* ---------- 사업 여정 지도 (Layered Phase Matrix) ---------- */
+const PHASES=[
+ {id:1,name:"추진기반·거버넌스 구축",period:"2026.5~7",range:[202605,202607],
+  obj:["전담 추진체계 확립","AX 전략방향 확정"],
+  act:["원내 규정·절차 검토","전 부서 수요조사(FGI)","Key Player Squad 운영"],
+  risk:["신규 예산·직제 미반영","위원회 역할 중복"]},
+ {id:2,name:"전략과제 수행·AI 실증",period:"2026.8~10",range:[202608,202610],
+  obj:["의료특화 AI 실증","고품질 데이터 확보","성과지표(KPI) 체계 정립"],
+  act:["진료과별 실증 평가·피드백","데이터 자산화","HIMSS DHI 지표 검토","인프라(H200) 도입 절차"],
+  risk:["GPU 조달 지연","임상 실증 객관성·대외 수용성","데이터 품질·개인정보"]},
+ {id:3,name:"성과 평가·표준화",period:"2026.11~12",range:[202611,202612],
+  obj:["AI 전주기 표준·윤리체계","플랫폼·Knowledge Base 구축","성과관리 체계 확정"],
+  act:["DLP 도입 검토","보안·데이터 교육","도입 우선순위 로드맵","지식재산권 확보"],
+  risk:["디지털의료제품법 인허가 심사 장기화","보안↔추진속도 균형","EMR/OCS 연계 난이도"]},
+ {id:4,name:"지속가능 AX 전환·확산",period:"2027",range:[202701,202712],
+  obj:["전사 확산","AI 모델 고도화","연차별 이행체계 운영"],
+  act:["능동적 AI 업무활용","의료특화 FM 고도화","성과 환류·제도 개선"],
+  risk:["데이터 축적 인프라 부족","온프레미스↔클라우드 전환 리스크","직원 참여율 저하"]},
+ {id:5,name:"표준모델·지역 공공의료 확산",period:"2028~",range:[202801,209912],
+  obj:["병원 AI 표준모델 확립","지역 공공의료기관 확산"],
+  act:["표준모델 검증","다기관 협력·IP/데이터 관리"],
+  risk:["다기관 데이터·IP 거버넌스","클라우드 보안","지속 예산·거버넌스 확보"]}
+];
+function phaseStats(){
+  return PHASES.map(p=>{
+    let tot=0,done=0,miles=[];
+    TASKS.forEach(t=>t.miles.forEach((m,i)=>{if(!m.y)return;const key=m.y*100+(m.m||1);if(key>=p.range[0]&&key<=p.range[1]){const s=statusOf(t.id,i,m);tot++;if(s==='done')done++;miles.push({dstr:m.dstr,label:m.label,tid:t.id,st:s,key});}}));
+    miles.sort((a,b)=>a.key-b.key);
+    return Object.assign({},p,{tot,done,prog:tot?Math.round(done/tot*100):0,miles});
+  });
+}
+function renderRoute(){
+  const stats=phaseStats();
+  let cur=stats.findIndex(s=>s.prog<100);if(cur<0)cur=stats.length-1;
+  const op=overallProgress();
+  document.getElementById('pmOverallFill').style.width=op.pct+'%';
+  document.getElementById('pmOverallPct').textContent=op.pct+'%';
+  // 단계 흐름 스트립
+  document.getElementById('phaseFlow').innerHTML=`<div class="phase-flow">`+stats.map((s,idx)=>{
+    const node=`<div class="pf-node ${idx===cur?'cur':''}"><div class="pf-t">${s.name}</div><div class="pf-p">${s.period}</div><div class="pf-bar"><div class="pf-bf" style="width:${s.prog}%;background:${s.prog>=100?'var(--success)':s.prog>0?'var(--warning)':'var(--gray)'}"></div></div><div class="pf-pct">${s.prog}%</div>${idx===cur?'<div class="pf-here">📍 YOU ARE HERE</div>':''}</div>`;
+    const conn=idx<stats.length-1?`<div class="pf-conn">→</div>`:'';
+    return node+conn;
+  }).join('')+`</div>`;
+  // 매트릭스
+  const ul=arr=>`<ul>${arr.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+  const row=(label,fn)=>`<tr><td class="layer-col">${label}</td>`+stats.map((s,idx)=>`<td class="${idx===cur?'current-col':''}">${fn(s,idx)}</td>`).join('')+`</tr>`;
+  let html=`<div class="pm-wrap"><table class="pm"><thead><tr><th class="layer-col">단계</th>`+
+    stats.map((s,idx)=>`<th class="ph-head ${idx===cur?'current-col':''}"><div class="ph-name">${s.name}</div><div class="ph-period">${s.period}</div><div style="font-size:.82rem;font-weight:800;margin-top:5px;color:${s.prog>=100?'var(--success)':s.prog>0?'var(--warning)':'var(--muted)'}">진행률 ${s.prog}%</div></th>`).join('')+
+    `</tr></thead><tbody>`;
+  html+=row('◈ 주요 목표',s=>ul(s.obj));
+  html+=row('📌 핵심 마일스톤',s=>s.miles.length?`<div class="mile-cell"><ul>`+s.miles.map(m=>`<li><span class="dot ${m.st}"></span>${m.dstr} ${m.label} <small style="color:var(--muted)">(${m.tid})</small></li>`).join('')+`</ul></div>`:'<span style="color:var(--muted)">—</span>');
+  html+=row('⚙️ 프로세스/활동',s=>ul(s.act));
+  html+=row('⚠️ 리스크 & 장벽',s=>ul(s.risk));
+  html+=`</tbody></table></div>`;
+  document.getElementById('phaseMatrix').innerHTML=html;
+  renderGantt();
+}
+
+/* ---------- 벤치마크 ---------- */
+function newsUrl(query){return 'https://news.google.com/search?q='+encodeURIComponent(query+' when:30d')+'&hl=ko&gl=KR&ceid=KR:ko';}
+let bmAutoTimer=null;
+function updateBmTime(){const d=new Date();const p=n=>String(n).padStart(2,'0');document.getElementById('bmUpdated').textContent=`마지막 확인 ${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;}
+function renderBench(){
+  const cat=document.getElementById('bmCat').value,q=document.getElementById('bmSearch').value.trim().toLowerCase();
+  let list=BENCH.filter(b=>(!cat||b.cat===cat)&&(!q||(b.org+b.tag+b.body.join('')).toLowerCase().includes(q)));
+  document.getElementById('bmCount').textContent=`${list.length}건`;
+  document.getElementById('bmGrid').innerHTML=list.map(b=>`<div class="bm-card"><div class="bm-cat">${b.cat}</div><div class="bm-org">${b.org}</div><div class="bm-tag">${b.tag}</div><div class="bm-body"><ul>${b.body.map(x=>`<li>${x}</li>`).join('')}</ul></div><div style="display:flex;gap:12px;flex-wrap:wrap"><a href="${b.url}" target="_blank" rel="noopener">출처 보기 ↗</a><a href="${newsUrl(b.org+' AI 병원 AX')}" target="_blank" rel="noopener" style="color:var(--accent)">🔎 최신 뉴스 ↗</a></div></div>`).join('')||'<div class="hint">결과 없음</div>';
+  document.getElementById('bmLiveAll').href=newsUrl('병원 AI 전환 AX 의료 AI 도입');
+  updateBmTime();
+}
+function initBench(){
+  document.getElementById('bmCat').onchange=renderBench;
+  document.getElementById('bmSearch').oninput=renderBench;
+  document.getElementById('bmRefresh').onclick=()=>renderBench();
+  document.getElementById('bmAuto').onchange=e=>{if(e.target.checked){bmAutoTimer=setInterval(renderBench,600000);}else{clearInterval(bmAutoTimer);}};
+}
+
+/* ---------- AI 비서 ---------- */
+const CHIPS=["이번 달 할 일","지연 과제","다음 마일스톤","전체 진척률","데이터·시스템 연계팀 현황","1-3 요약","루닛 관련","벤치마크 추천","추천 다음 액션"];
+function addMsg(txt,who){const log=document.getElementById('chatLog');const d=document.createElement('div');d.className='msg '+who;d.innerHTML=txt;log.appendChild(d);log.scrollTop=log.scrollHeight;}
+function nextMileObj(t){let best=null;t.miles.forEach((m,i)=>{const s=statusOf(t.id,i,m);if((s==='plan'||s==='prog'||s==='over')&&m.y){if(!best||(m.y*12+m.m)<(best.y*12+best.m))best=Object.assign({},m,{tid:t.id});}});return best;}
+function nextMile(t){const n=nextMileObj(t);return n?`${n.dstr} ${n.label}`:null;}
+function botReply(q){
+  const s=q.trim();const ls=s.toLowerCase();
+  const idm=s.match(/([1-3])\s*[-.]\s*([1-4])/);
+  if(idm){const tid=idm[1]+'-'+idm[2];const t=TASKS.find(x=>x.id===tid);if(t){const c=taskStatusSummary(t);return `<b>${t.id} ${t.title}</b>\n담당: ${t.team}\n협력: ${t.coop.join(', ')}\n진척률: <b>${taskProgress(t)}%</b> (완료 ${c.done}·진행 ${c.prog}·예정 ${c.plan}·지연 ${c.over})\n목표: ${t.obj}\n다음 할 일: ${nextMile(t)||'없음'}`;}}
+  if(/(이번\s*달|이달|당월|이번달)/.test(s)){const items=[];TASKS.forEach(t=>t.miles.forEach((m,i)=>{if(statusOf(t.id,i,m)==='prog')items.push(`• ${m.dstr} [${t.id}] ${m.label}`);}));return items.length?`<b>이번 달(2026.7) 진행할 마일스톤 ${items.length}건</b>\n`+items.join('\n'):'이번 달 진행 예정 마일스톤이 없습니다.';}
+  if(/(지연|늦|밀린|초과|딜레이)/.test(ls)){const items=[];TASKS.forEach(t=>t.miles.forEach((m,i)=>{if(statusOf(t.id,i,m)==='over')items.push(`• ${m.dstr} [${t.id}] ${m.label}`);}));return items.length?`<b>⚠️ 기한 초과(지연) ${items.length}건 — 우선 조치 권장</b>\n`+items.join('\n'):'✅ 현재 지연된 마일스톤이 없습니다.';}
+  if(/다음\s*마일/.test(s)||/(다음|앞으로|예정).*(마일|일정|할)/.test(ls)){const up=[];TASKS.forEach(t=>{const n=nextMileObj(t);if(n)up.push(n);});up.sort((a,b)=>(a.y*12+a.m)-(b.y*12+b.m));return `<b>다가오는 마일스톤 Top 6</b>\n`+up.slice(0,6).map(u=>`• ${u.dstr} [${u.tid}] ${u.label}`).join('\n');}
+  if(/(전체|총).*(진척|진행|현황)|진척률/.test(ls)){const op=overallProgress();let st={done:0,prog:0,plan:0,over:0};TASKS.forEach(t=>{const c=taskStatusSummary(t);for(const k in c)st[k]+=c[k];});return `<b>전체 사업 진척률: ${op.pct}%</b>\n마일스톤 ${op.tot}개 중 ${op.done}개 완료\n(진행중 ${st.prog} · 예정 ${st.plan} · 지연 ${st.over})\n목표별: `+goals.map(g=>{const gt=TASKS.filter(t=>t.goal===g.id);return `목표${g.id} ${Math.round(gt.reduce((a,t)=>a+taskProgress(t),0)/gt.length)}%`;}).join(' / ');}
+  for(const tm of Object.keys(teams)){if(s.includes(tm)||ls.includes(shortTeam(tm).toLowerCase())){const tt=TASKS.filter(t=>t.team===tm);if(tt.length){let mi=0,dn=0;tt.forEach(t=>t.miles.forEach((m,i)=>{mi++;if(statusOf(t.id,i,m)==='done')dn++;}));return `<b>${tm}</b>\n담당 과제 ${tt.length}개: ${tt.map(t=>t.id).join(', ')}\n마일스톤 ${mi}개 중 ${dn}개 완료 (진척 ${Math.round(dn/mi*100)}%)\n`+tt.map(t=>`• ${t.id} ${t.title} — ${taskProgress(t)}%`).join('\n');}}}
+  if(/(루닛|lunit|파운데이션|mou|산학연|국가사업)/.test(ls)){return `<b>산·학·연 / 루닛 관련 (과제 1-4)</b>\n• 2026.5 ㈜루닛-일산병원 AX 협력 MOU 체결\n• 환자안전기술개발사업·AI 신속상용화 지원사업 선정\n벤치마크: 루닛은 16B→32B 파운데이션 모델을 9개 병원+2제약사 컨소시엄으로 확산 중. '벤치마크' 탭 참고.`;}
+  if(/(벤치|사례|타\s*병원|다른|경쟁|참고)/.test(ls)){return `<b>추천 벤치마크</b>\n• Cleveland Clinic — 앰비언트 문서화로 하루 14분 절감 (시간절감 KPI, 과제 1-3)\n• Mayo Clinic — 심전도 AI로 신규진단 32%↑ (실증형 KPI, 과제 2-3/3-3)\n• 서울대병원 — KMed.AI 소버린 의료 LLM\n'벤치마크' 탭에서 출처와 함께 8건 확인 가능.`;}
+  if(/(추천|다음\s*액션|뭐부터|우선|어떻게)/.test(ls)){const ov=[];TASKS.forEach(t=>t.miles.forEach((m,i)=>{if(statusOf(t.id,i,m)==='over')ov.push(`${t.id} ${m.label}`);}));const pr=[];TASKS.forEach(t=>t.miles.forEach((m,i)=>{if(statusOf(t.id,i,m)==='prog')pr.push(`${t.id} ${m.label}`);}));let r='<b>🤖 비서 추천 액션</b>\n';r+=ov.length?`1) 지연 ${ov.length}건 즉시 조치: ${ov.slice(0,3).join(' / ')}\n`:'1) 지연 없음 — 양호 ✅\n';r+=pr.length?`2) 진행중 마무리: ${pr.slice(0,3).join(' / ')}\n`:'2) 이번 달 착수 항목 점검\n';r+=`3) '경로 추천' 탭에서 안정/빠른 경로로 순서 최적화\n4) KPI(과제 1-3)는 10월 지표 도출이 분기점 — 미리 HIMSS DHI 검토 권장`;return r;}
+  return `질문을 이해하지 못했어요. 예시를 눌러보세요:\n• "이번 달 할 일" / "지연 과제" / "전체 진척률"\n• 과제번호 (예: 2-3) / 팀명 (예: 전략·거버넌스팀)\n• "추천 다음 액션" / "벤치마크 추천"`;
+}
+function initChat(){
+  document.getElementById('chatChips').innerHTML=CHIPS.map(c=>`<button class="chip-btn">${c}</button>`).join('');
+  document.querySelectorAll('#chatChips .chip-btn').forEach(b=>b.onclick=()=>{sendChat(b.textContent);});
+  document.getElementById('chatSend').onclick=()=>sendChat();
+  const inp=document.getElementById('chatInput');
+  // 한글(IME) 조합 중 Enter로 마지막 글자가 중복 전송되는 문제 보정
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229){e.preventDefault();sendChat();}});
+  addMsg("안녕하세요! 저는 <b>AX 사업계획 비서</b>예요. 🤖\n사업계획서의 3대 목표·12개 과제·마일스톤을 실시간으로 분석해 드립니다.\n아래 버튼을 누르거나 자유롭게 물어보세요.","bot");
+  // 위젯 열고 닫기
+  document.getElementById('agentFab').onclick=openAgent;
+  document.getElementById('agentClose').onclick=closeAgent;
+}
+function openAgent(){document.getElementById('agentWidget').classList.add('open');document.getElementById('agentFab').classList.add('hidden');setTimeout(()=>{const i=document.getElementById('chatInput');if(i)i.focus();},120);}
+function closeAgent(){document.getElementById('agentWidget').classList.remove('open');document.getElementById('agentFab').classList.remove('hidden');}
+function sendChat(preset){const inp=document.getElementById('chatInput');const q=(preset||inp.value||'').trim();if(!q)return;addMsg(q,'user');inp.value='';setTimeout(()=>addMsg(botReply(q),'bot'),200);}
+
+/* ---------- 공통 ---------- */
+function mkChart(id,type,data,opts){
+  if(charts[id])charts[id].destroy();
+  const ctx=document.getElementById(id);if(!ctx)return;
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  const grid=dark?'rgba(255,255,255,.08)':'rgba(0,0,0,.06)';const tick=dark?'#9aa4b2':'#6b7688';
+  const base={responsive:true,maintainAspectRatio:false,layout:{padding:{top:6,bottom:2,left:2,right:6}},plugins:{legend:{labels:{color:tick,font:{family:"'Noto Sans KR'",size:12},padding:26,boxWidth:14,boxHeight:14,usePointStyle:true,pointStyle:'rectRounded'}},tooltip:{titleFont:{family:"'Noto Sans KR'",size:13},bodyFont:{family:"'Noto Sans KR'",size:12.5},padding:10,cornerRadius:8,boxPadding:6}},scales:{}};
+  const merged=deepMerge(base,opts||{});
+  ['x','y'].forEach(ax=>{if(merged.scales&&merged.scales[ax]){const sc=merged.scales[ax];sc.grid={color:grid};sc.ticks=Object.assign({color:tick},sc.ticks||{});if(sc.title)sc.title=Object.assign({color:tick,font:{family:"'Noto Sans KR'",weight:'700',size:12}},sc.title);}});
+  charts[id]=new Chart(ctx,{type,data,options:merged});
+}
+function deepMerge(a,b){const o=JSON.parse(JSON.stringify(a));(function m(t,s){for(const k in s){if(s[k]&&typeof s[k]==='object'&&!Array.isArray(s[k])){t[k]=t[k]||{};m(t[k],s[k]);}else t[k]=s[k];}})(o,b);return o;}
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',cur?'light':'dark');
+  document.getElementById('themeBtn').textContent=cur?'🌙':'☀️';
+  localStorage.setItem('ax_theme',cur?'light':'dark');
+  const active=document.querySelector('.tab.active');if(active)switchTab(active.dataset.t,active);
+}
+document.getElementById('themeBtn').onclick=toggleTheme;
+
+/* ---------- 공용 DB(Supabase) 실시간 동기화 ---------- */
+const SUPA_URL="https://bgivrphfzlpnimojhvcv.supabase.co";
+const SUPA_KEY="sb_publishable_LICmKIfnw35KgkbgN3o3ng_EFBhDZzT";
+let supa=null, remoteReady=false;
+let userName=localStorage.getItem('ax_user')||'';
+function setUserBadge(){const el=document.getElementById('userName');if(el)el.textContent=userName||'게스트';}
+function ensureUser(silent){if(!userName&&!silent){userName=(prompt('이름/닉네임을 입력하세요 — 변경 내역 표시에 사용됩니다.','')||'').trim();if(userName)localStorage.setItem('ax_user',userName);setUserBadge();}return userName||'익명';}
+function changeUser(){const v=(prompt('표시할 이름을 입력하세요.',userName||'')||'').trim();if(v){userName=v;localStorage.setItem('ax_user',v);setUserBadge();}}
+function setLive(state){const b=document.getElementById('liveBadge');const rb=document.getElementById('resetProg');
+  if(b){if(state==='on'){b.className='live-badge on';b.textContent='● 실시간 연결됨';}else if(state==='off'){b.className='live-badge off';b.textContent='● 오프라인(로컬)';}else{b.className='live-badge';b.textContent='● 연결 확인 중';}}
+  if(rb)rb.textContent=(state==='on')?'🔄 동기화':'진척 초기화';}
+function rerenderActive(){renderTasks();const active=document.querySelector('.tab.active');if(active){const n=active.dataset.t;if(n==='overview')renderOverview();if(n==='analytics')renderAnalytics();if(n==='route')renderRoute();}if(modalTask&&document.getElementById('overlay').classList.contains('open'))openTask(modalTask);document.getElementById('mileCountTxt').textContent=overallProgress().tot;}
+function applyRow(r){const k=r.mkey;if(r.status)overrides[k]=r.status;else delete overrides[k];if(r.edited_date!=null||r.edited_label!=null)mileEdits[k]={dstr:r.edited_date||'',label:r.edited_label||''};else delete mileEdits[k];}
+async function loadRemote(){if(!supa)return;try{const {data,error}=await supa.from('ax_milestone_state').select('*');if(error)throw error;overrides={};mileEdits={};(data||[]).forEach(applyRow);localStorage.setItem(STORE_KEY,JSON.stringify(overrides));localStorage.setItem('ax_mile_edits_v1',JSON.stringify(mileEdits));applyMileEdits();remoteReady=true;setLive('on');rerenderActive();}catch(e){remoteReady=false;setLive('off');}}
+async function pushState(k){if(!supa)return;const p=k.split('#');const ed=mileEdits[k];const row={mkey:k,task_id:p[0],mile_index:+p[1],status:overrides[k]||null,edited_date:ed?ed.dstr:null,edited_label:ed?ed.label:null,updated_by:ensureUser(),updated_at:new Date().toISOString()};try{const {error}=await supa.from('ax_milestone_state').upsert(row,{onConflict:'mkey'});if(error)throw error;}catch(e){setLive('off');}}
+function subscribeRemote(){if(!supa)return;supa.channel('ax_ms_ch').on('postgres_changes',{event:'*',schema:'public',table:'ax_milestone_state'},payload=>{const r=(payload.new&&payload.new.mkey)?payload.new:payload.old;if(!r)return;if(payload.eventType==='DELETE'){delete overrides[r.mkey];delete mileEdits[r.mkey];}else applyRow(r);localStorage.setItem(STORE_KEY,JSON.stringify(overrides));localStorage.setItem('ax_mile_edits_v1',JSON.stringify(mileEdits));applyMileEdits();rerenderActive();}).subscribe(st=>{if(st==='SUBSCRIBED')setLive('on');else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')setLive('off');});}
+function initSupa(){try{if(window.supabase&&SUPA_URL&&SUPA_KEY){supa=window.supabase.createClient(SUPA_URL,SUPA_KEY,{realtime:{params:{eventsPerSecond:5}}});}}catch(e){supa=null;}setUserBadge();if(supa){loadRemote();subscribeRemote();}else{setLive('off');}}
+
+/* init */
+(function(){
+  if(localStorage.getItem('ax_theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');document.getElementById('themeBtn').textContent='☀️';}
+  buildTabs();fillFilters();renderTasks();initBench();renderBench();initChat();renderOverview();
+  document.getElementById('mileCountTxt').textContent=overallProgress().tot;
+  document.getElementById('userChip').onclick=changeUser;
+  initSupa();
+  if('serviceWorker' in navigator && location.protocol.indexOf('http')===0){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+  // help card toggle (기억)
+  const hb=document.getElementById('helpBody'),ht=document.getElementById('helpToggle');
+  if(localStorage.getItem('ax_help')==='closed'){hb.style.display='none';ht.textContent='도움말 보기';}
+  ht.onclick=()=>{const closed=hb.style.display==='none';hb.style.display=closed?'block':'none';ht.textContent=closed?'접기':'도움말 보기';localStorage.setItem('ax_help',closed?'open':'closed');};
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "일산병원 AX 추진 대시보드",
+  "short_name": "AX 대시보드",
+  "description": "AI 플랫폼병원 전환 추진전략 실시간 공용 대시보드",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b4f9e",
+  "theme_color": "#0b4f9e",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
