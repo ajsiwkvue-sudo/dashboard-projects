@@ -6,6 +6,7 @@ on:
     paths:
       - 'cart-vital-dashboard/**'
       - 'med-xai-dashboard/**'
+      - 'ax-dashboard/**'
   workflow_dispatch:
 
 permissions:
@@ -47,13 +48,15 @@ jobs:
         working-directory: med-xai-dashboard
         run: npm run build
 
-      # ── 합치기: CART VITAL은 루트, Med XAI는 /med-xai/ ──
+      # ── 합치기: CART VITAL은 루트, Med XAI는 /med-xai/, AX는 /ax-dashboard/ ──
       - name: Combine builds
         run: |
           mkdir -p combined
           cp -r cart-vital-dashboard/dist/* combined/
           mkdir -p combined/med-xai
           cp -r med-xai-dashboard/dist/* combined/med-xai/
+          mkdir -p combined/ax-dashboard
+          cp -r ax-dashboard/* combined/ax-dashboard/
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
