@@ -49,6 +49,12 @@ body.modal-open{overflow:hidden}
 .live-badge{font-size:.76rem;font-weight:700;padding:5px 11px;border-radius:20px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);color:#fff;white-space:nowrap}
 .live-badge.on{background:rgba(46,158,91,.35);border-color:rgba(120,230,170,.6)}
 .live-badge.off{background:rgba(214,69,69,.35);border-color:rgba(255,150,150,.6)}
+.presence{display:flex;align-items:center}
+.presence .pres-lbl{font-size:.74rem;color:#fff;opacity:.9;margin-right:8px;white-space:nowrap;font-weight:600}
+.presence .pres-av{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:.8rem;font-weight:800;border:2px solid #fff;margin-left:-8px;box-shadow:0 1px 4px rgba(0,0,0,.35);transition:transform .15s}
+.presence .pres-av:first-of-type{margin-left:0}
+.presence .pres-av:hover{transform:translateY(-2px) scale(1.08);z-index:2}
+.presence .pres-more{background:var(--gray)}
 /* Tabs */
 .tabs{background:var(--card);border-bottom:2px solid var(--border);position:sticky;top:0;z-index:50;box-shadow:var(--shadow)}
 .tabs .wrap{display:flex;overflow-x:auto}
@@ -354,6 +360,7 @@ body.modal-open{overflow:hidden}
       <div class="sub">AI 플랫폼병원 전환을 위한 추진전략</div>
     </div>
     <div class="header-right">
+      <div class="presence" id="presence" title="지금 접속 중인 사용자"></div>
       <span class="live-badge" id="liveBadge" title="공용 DB 연결 상태">● 연결 확인 중</span>
       <button class="user-chip" id="userChip" title="이름 변경">👤 <span id="userName">게스트</span></button>
       <button class="icon-btn" id="themeBtn" title="테마 전환">🌙</button>
@@ -944,7 +951,26 @@ function applyRow(r){const k=r.mkey;if(r.status)overrides[k]=r.status;else delet
 async function loadRemote(){if(!supa)return;try{const {data,error}=await supa.from('ax_milestone_state').select('*');if(error)throw error;overrides={};mileEdits={};(data||[]).forEach(applyRow);localStorage.setItem(STORE_KEY,JSON.stringify(overrides));localStorage.setItem('ax_mile_edits_v1',JSON.stringify(mileEdits));applyMileEdits();remoteReady=true;setLive('on');rerenderActive();}catch(e){remoteReady=false;setLive('off');}}
 async function pushState(k){if(!supa)return;const p=k.split('#');const ed=mileEdits[k];const row={mkey:k,task_id:p[0],mile_index:+p[1],status:overrides[k]||null,edited_date:ed?ed.dstr:null,edited_label:ed?ed.label:null,updated_by:whoAmI(),updated_at:new Date().toISOString()};try{const {error}=await supa.from('ax_milestone_state').upsert(row,{onConflict:'mkey'});if(error)throw error;}catch(e){setLive('off');}}
 function subscribeRemote(){if(!supa)return;supa.channel('ax_ms_ch').on('postgres_changes',{event:'*',schema:'public',table:'ax_milestone_state'},payload=>{const r=(payload.new&&payload.new.mkey)?payload.new:payload.old;if(!r)return;if(payload.eventType==='DELETE'){delete overrides[r.mkey];delete mileEdits[r.mkey];}else applyRow(r);localStorage.setItem(STORE_KEY,JSON.stringify(overrides));localStorage.setItem('ax_mile_edits_v1',JSON.stringify(mileEdits));applyMileEdits();rerenderActive();}).subscribe(st=>{if(st==='SUBSCRIBED')setLive('on');else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')setLive('off');});}
-function initSupa(){try{if(window.supabase&&SUPA_URL&&SUPA_KEY){supa=window.supabase.createClient(SUPA_URL,SUPA_KEY,{realtime:{params:{eventsPerSecond:5}}});}}catch(e){supa=null;}setUserBadge();if(supa){loadRemote();subscribeRemote();initAuth();subscribeSchedules();}else{setLive('off');}}
+function initSupa(){try{if(window.supabase&&SUPA_URL&&SUPA_KEY){supa=window.supabase.createClient(SUPA_URL,SUPA_KEY,{realtime:{params:{eventsPerSecond:5}}});}}catch(e){supa=null;}setUserBadge();if(supa){loadRemote();subscribeRemote();initAuth();subscribeSchedules();initPresence();}else{setLive('off');}}
+
+/* ---------- 동시 접속자 표시 (Realtime Presence) ---------- */
+const CLIENT_ID=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():('c'+Math.random().toString(36).slice(2));
+let presenceChannel=null;
+function colorFor(s){const c=['#0b4f9e','#00a3b4','#6a3fb5','#2e9e5b','#e8890c','#d64545','#1e6fc4','#c2185b'];let h=0;s=s||'?';for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return c[h%c.length];}
+function myPresence(){const nm=whoAmI();return {id:CLIENT_ID,name:nm,initial:(nm.trim()[0]||'?').toUpperCase(),color:colorFor(nm),login:!!authUser};}
+function initPresence(){if(!supa)return;presenceChannel=supa.channel('ax_presence',{config:{presence:{key:CLIENT_ID}}});presenceChannel.on('presence',{event:'sync'},renderPresence).subscribe(async st=>{if(st==='SUBSCRIBED'){try{await presenceChannel.track(myPresence());}catch(e){}}});}
+function updatePresence(){if(presenceChannel){try{presenceChannel.track(myPresence());}catch(e){}}}
+function renderPresence(){
+  const el=document.getElementById('presence');if(!el)return;
+  const state=presenceChannel?presenceChannel.presenceState():{};
+  const seen={},users=[];
+  Object.values(state).forEach(arr=>{const u=arr&&arr[0];if(u&&!seen[u.name]){seen[u.name]=1;users.push(u);}});
+  if(!users.length){el.innerHTML='';return;}
+  const show=users.slice(0,5);
+  el.innerHTML=`<span class="pres-lbl">👥 ${users.length}명 접속</span>`+
+    show.map(u=>`<span class="pres-av" style="background:${u.color}" title="${u.name}${u.login?'':' (게스트)'}">${u.initial}</span>`).join('')+
+    (users.length>5?`<span class="pres-av pres-more" title="외 ${users.length-5}명">+${users.length-5}</span>`:'');
+}
 
 /* ---------- 구글 로그인 (Supabase Auth) ---------- */
 const OWNERS={
@@ -963,6 +989,7 @@ function updateAuthUI(){
   if(authUser){nm.textContent=authUser.name||authUser.email;chip.title='로그아웃';chip.onclick=()=>{if(confirm('로그아웃할까요?'))signOutUser();};}
   else{nm.textContent='구글 로그인';chip.title='구글 계정으로 로그인';chip.onclick=signInGoogle;}
   if(currentSchedTask)renderSchedule(currentSchedTask);
+  updatePresence();
 }
 async function signInGoogle(){if(!supa){alert('공용 DB에 연결되지 않았습니다.');return;}try{const {error}=await supa.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.href.split('#')[0]}});if(error)throw error;}catch(e){alert('구글 로그인이 아직 설정되지 않았습니다.\n관리자: Supabase → Authentication → Providers → Google 활성화가 필요합니다.\n('+e.message+')');}}
 async function signOutUser(){if(supa){try{await supa.auth.signOut();}catch(e){}authUser=null;updateAuthUI();}}
