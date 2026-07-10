@@ -312,6 +312,20 @@ body.modal-open{overflow:hidden}
 .sw-title{font-size:1.15rem;font-weight:900;line-height:1.35}
 .sw-sub{font-size:.8rem;color:var(--muted);margin-top:4px}
 .sw-close{background:none;border:none;font-size:1.6rem;cursor:pointer;color:var(--muted);line-height:1}
+/* 리본 툴바 */
+.sw-ribbon{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg)}
+.sw-ribbon .rb-btn{display:inline-flex;align-items:center;gap:5px;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:6px 11px;font-family:var(--font);font-size:.82rem;font-weight:600;cursor:pointer;color:var(--text)}
+.sw-ribbon .rb-btn:hover{border-color:var(--primary);color:var(--primary)}
+.sw-ribbon .rb-color{width:20px;height:20px;border:1px solid var(--border);border-radius:4px;background:none;padding:0;cursor:pointer}
+.sw-ribbon .rb-div{width:1px;height:22px;background:var(--border);margin:0 2px}
+.sw-ribbon .rb-hint{font-size:.74rem;color:var(--muted);margin-left:auto}
+/* 편집 가능한 셀 */
+.sw-table td[contenteditable]{cursor:text;outline:none}
+.sw-table td[contenteditable]:focus{box-shadow:inset 0 0 0 2px var(--primary);background:rgba(30,111,196,.06)}
+.sw-table .sw-rownum{min-width:28px;text-align:center;color:var(--muted);font-size:.72rem;background:var(--bg);cursor:pointer;user-select:none;font-weight:700}
+.sw-table tr.sw-selrow td{background:rgba(232,137,12,.10)}
+.sw-table tr.sw-selrow .sw-rownum{background:var(--warning);color:#fff}
+.sw-dinput{border:1px solid var(--border);border-radius:5px;font-family:var(--font);font-size:.7rem;padding:2px 3px;background:var(--card);color:var(--text);width:118px}
 .sw-tablewrap{overflow-x:auto;padding:12px 16px}
 .sw-table{border-collapse:collapse;font-size:.78rem;min-width:1200px}
 .sw-table th,.sw-table td{border:1px solid var(--border);padding:5px 7px;vertical-align:middle}
@@ -688,7 +702,7 @@ function openTask(tid){
     <div class="dept-line"><span class="dept-lbl">담당 부서</span><span class="badge b-team">${t.team}</span></div>
     <div class="dept-line"><span class="dept-lbl">협업 부서</span><span class="dept-badges">${t.coop.map(c=>`<span class="badge b-coop">${c}</span>`).join('')}</span></div>
     ${OWNERS[t.id]?`<div class="dept-line"><span class="dept-lbl" style="background:var(--accent2)">담당자</span><span class="dept-badges"><span class="badge" style="background:rgba(106,63,181,.14);color:var(--accent2)">정 ${OWNERS[t.id].main}</span>${OWNERS[t.id].sub?`<span class="badge b-coop">부 ${OWNERS[t.id].sub}</span>`:''}</span></div>`:''}
-    <button class="open-sched-btn" onclick="openSchedule('${t.id}')">📅 실행계획(세세부 일정) 워크스페이스 열기</button>
+    <button class="open-sched-btn" onclick="openSchedule('${t.id}')">📅 실행계획(세부계획) 워크스페이스 열기</button>
     <div class="msec"><h4>추진목표</h4><div class="txt">${t.obj}</div></div>
     <div class="msec"><h4>마일스톤 <span style="font-weight:400;font-size:.74rem;color:var(--muted)">(상태=목록 선택 · ✏️=일정 수정 · 자동저장)</span></h4>${t.miles.map((m,i)=>{const s=statusOf(t.id,i,m);const ed=mileEdits[mkey(t.id,i)];if(editingMile===mkey(t.id,i)){return `<div class="mef"><div class="mef-row"><label>일정</label><input id="edD" value="${(m.dstr||'').replace(/"/g,'&quot;')}" placeholder="예: 2026.09 또는 2026.7~9"></div><div class="mef-row"><label>내용</label><input id="edL" value="${m.label.replace(/"/g,'&quot;')}"></div><div class="mef-btns">${ed?`<button class="mef-reset" onclick="resetMile('${t.id}',${i})">원래대로</button>`:''}<button class="mef-cancel" onclick="cancelEdit('${t.id}')">취소</button><button class="mef-save" onclick="saveMile('${t.id}',${i})">저장</button></div></div>`;}return `<div class="mile"><span class="md">${m.dstr||'-'}</span><span class="ml">${m.label} <span style="color:var(--muted);font-size:.72rem">(${m.kind})${ed?' <span class="edited">✎수정됨</span>':''}</span></span><select class="ms-select ${s}" onchange="setMileStatus('${t.id}',${i},this.value)">${['plan','prog','done','over'].map(k=>`<option value="${k}"${k===s?' selected':''}>${STAT_LABEL[k]}</option>`).join('')}</select><button class="mile-edit" onclick="editMile('${t.id}',${i})" title="일정 수정">✏️</button></div>`;}).join('')}<div class="hint">상태는 각 항목의 목록(예정·진행중·완료·지연)에서 선택하세요.</div></div>
     <div class="msec"><h4>기대 산출물</h4><div class="txt">${t.outcome}</div></div>
@@ -1000,72 +1014,79 @@ function whoAmI(){return authUser?(authUser.name||authUser.email):(userName||'�
 
 /* ---------- 과제별 실행계획 간트 워크스페이스 ---------- */
 const SW_MONTHS=[7,8,9,10,11,12];
-let schedCache={},currentSchedTask=null,schedEditId=null;
+let schedCache={},currentSchedTask=null,selectedSchedId=null,editingCell=false;
 function weekCol(ds){if(!ds)return null;const d=new Date(ds);const m=d.getMonth()+1;if(m<7)return 0;if(m>12)return 29;return (m-7)*5+(Math.min(5,Math.ceil(d.getDate()/7))-1);}
 function fmtD(ds){if(!ds)return '';const d=new Date(ds);return `${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;}
-async function reloadSched(tid){if(!supa)return;try{const {data,error}=await supa.from('ax_schedules').select('*').eq('task_id',tid).order('sort_order');if(error)throw error;schedCache[tid]=data||[];}catch(e){schedCache[tid]=schedCache[tid]||[];}if(currentSchedTask===tid)renderSchedule(tid);}
+function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function rowStyle(r){let s='';if(r.fill_color)s+=`background:${r.fill_color};`;if(r.text_color)s+=`color:${r.text_color};`;if(r.bold)s+='font-weight:800;';return s?`style="${s}"`:'';}
+async function reloadSched(tid){if(!supa)return;try{const {data,error}=await supa.from('ax_schedules').select('*').eq('task_id',tid).order('sort_order');if(error)throw error;schedCache[tid]=data||[];}catch(e){schedCache[tid]=schedCache[tid]||[];}if(currentSchedTask===tid&&!editingCell)renderSchedule(tid);}
 function subscribeSchedules(){if(!supa)return;supa.channel('ax_sch_ch').on('postgres_changes',{event:'*',schema:'public',table:'ax_schedules'},payload=>{const r=(payload.new&&payload.new.task_id)?payload.new:payload.old;if(r&&r.task_id===currentSchedTask)reloadSched(r.task_id);}).subscribe();}
-function openSchedule(tid){currentSchedTask=tid;schedEditId=null;document.getElementById('swOverlay').classList.add('open');refreshBodyLock();renderSchedule(tid);reloadSched(tid);}
-function closeSchedule(){currentSchedTask=null;schedEditId=null;document.getElementById('swOverlay').classList.remove('open');refreshBodyLock();}
+function openSchedule(tid){currentSchedTask=tid;selectedSchedId=null;document.getElementById('swOverlay').classList.add('open');refreshBodyLock();renderSchedule(tid);reloadSched(tid);}
+function closeSchedule(){currentSchedTask=null;selectedSchedId=null;editingCell=false;document.getElementById('swOverlay').classList.remove('open');refreshBodyLock();}
 function renderSchedule(tid){
   const t=TASKS.find(x=>x.id===tid);const rows=schedCache[tid]||[];const o=OWNERS[tid]||{};
   const canEdit=!!authUser;
   const gcol=t.goal===1?'#1565c0':t.goal===2?'#6a3fb5':'#2e9e5b';
   let monthHead=SW_MONTHS.map(m=>`<th colspan="5" class="sw-mh">26.${String(m).padStart(2,'0')}</th>`).join('');
   let weekHead='';SW_MONTHS.forEach(()=>{for(let w=1;w<=5;w++)weekHead+=`<th class="sw-wh">${w}</th>`;});
-  let body='';let lastPhase=null;
-  rows.forEach(r=>{
+  const ce=canEdit?'contenteditable="true"':'';
+  const ed=(r,f)=>canEdit?`data-id="${r.id}" data-field="${f}" onfocus="cellFocus('${r.id}')" onblur="cellBlur(this)" onkeydown="cellKey(event,this)"`:'';
+  let body='';
+  rows.forEach((r,idx)=>{
     const sc=weekCol(r.start_date),ec=weekCol(r.end_date);
     let cells='';
     for(let i=0;i<30;i++){const on=(sc!=null&&ec!=null&&i>=sc&&i<=ec);cells+=`<td class="sw-c${on?' on':''}" ${on?`style="background:${gcol}"`:''}></td>`;}
-    const phaseCell=(r.phase!==lastPhase)?`<td class="sw-phase">${r.phase||''}</td>`:`<td class="sw-phase sw-phase-cont"></td>`;lastPhase=r.phase;
-    body+=`<tr>${phaseCell}<td class="sw-seq">${r.seq||''}</td><td class="sw-name">${r.name||''}</td><td class="sw-dt">${fmtD(r.start_date)}</td><td class="sw-dt">${fmtD(r.end_date)}</td>${cells}<td class="sw-deliv">${(r.deliverable||'').replace(/ \/ /g,'<br>')}</td><td class="sw-note">${r.note||''}</td>${canEdit?`<td class="sw-act"><button onclick="editSched('${r.id}')" title="수정">✏️</button><button onclick="delSched('${r.id}')" title="삭제">🗑️</button></td>`:''}</tr>`;
+    const rs=rowStyle(r);const sel=selectedSchedId===r.id?' sw-selrow':'';
+    body+=`<tr class="${sel}">`+
+      `<td class="sw-rownum" ${canEdit?`onclick="selectSchedRow('${r.id}')"`:''} title="행 선택">${idx+1}</td>`+
+      `<td class="sw-phase" ${ce} ${ed(r,'phase')} ${rs}>${escH(r.phase)}</td>`+
+      `<td class="sw-seq" ${ce} ${ed(r,'seq')} ${rs}>${escH(r.seq)}</td>`+
+      `<td class="sw-name" ${ce} ${ed(r,'name')} ${rs}>${escH(r.name)}</td>`+
+      `<td class="sw-dt">${canEdit?`<input type="date" class="sw-dinput" value="${r.start_date||''}" onchange="dateChange('${r.id}','start_date',this.value)">`:fmtD(r.start_date)}</td>`+
+      `<td class="sw-dt">${canEdit?`<input type="date" class="sw-dinput" value="${r.end_date||''}" onchange="dateChange('${r.id}','end_date',this.value)">`:fmtD(r.end_date)}</td>`+
+      cells+
+      `<td class="sw-deliv" ${ce} ${ed(r,'deliverable')} ${rs}>${escH(r.deliverable)}</td>`+
+      `<td class="sw-note" ${ce} ${ed(r,'note')} ${rs}>${escH(r.note)}</td>`+
+    `</tr>`;
   });
-  if(!rows.length)body=`<tr><td colspan="${canEdit?38:37}" style="text-align:center;color:var(--muted);padding:24px">아직 등록된 세부 일정이 없습니다.${canEdit?' 아래에서 추가하세요.':''}</td></tr>`;
-  const form=canEdit?schedFormHtml():`<div class="sw-login"><span>🔒 세부 일정 추가·수정·삭제는 <b>구글 로그인</b> 후 가능합니다.</span><button class="sw-login-btn" onclick="signInGoogle()">🔑 구글 로그인</button></div>`;
+  if(!rows.length)body=`<tr><td colspan="38" style="text-align:center;color:var(--muted);padding:24px">아직 등록된 세부계획이 없습니다.${canEdit?' 상단 “➕ 행 추가”로 시작하세요.':''}</td></tr>`;
+  const ribbon=canEdit?`<div class="sw-ribbon">
+      <button class="rb-btn" onclick="deleteSelected()">🗑️ 행 삭제</button>
+      <span class="rb-div"></span>
+      <button class="rb-btn" onclick="toggleBold()" title="선택 행 굵게"><b>B</b> 굵게</button>
+      <label class="rb-btn" title="글자색"><b style="color:#d64545">A</b> 글자색<input type="color" class="rb-color" onchange="applyTextColor(this.value)"></label>
+      <label class="rb-btn" title="셀 채우기">🖌 채우기<input type="color" class="rb-color" onchange="applyFillColor(this.value)"></label>
+      <button class="rb-btn" onclick="clearFormat()" title="서식 지우기">✖ 서식지움</button>
+      <span class="rb-hint">셀 클릭 → 바로 편집 · 왼쪽 번호(#) 클릭 → 행 선택 후 서식 적용</span>
+    </div>`:
+    `<div class="sw-login"><span>🔒 세부계획 편집은 <b>구글 로그인</b> 후 가능합니다.</span><button class="sw-login-btn" onclick="signInGoogle()">🔑 구글 로그인</button></div>`;
   document.getElementById('swPanel').innerHTML=`
     <div class="sw-head" style="border-color:${gcol}">
-      <div><div class="sw-title">${t.id}. ${t.title}</div><div class="sw-sub">담당 ${o.main||'-'}${o.sub?' · 부담당 '+o.sub:''} · 세부 일정 ${rows.length}건${authUser?' · 로그인: '+ (authUser.name||authUser.email):''}</div></div>
+      <div><div class="sw-title">${t.id}. ${t.title}</div><div class="sw-sub">담당 ${o.main||'-'}${o.sub?' · 부담당 '+o.sub:''} · 세부계획 ${rows.length}건${authUser?' · 로그인: '+(authUser.name||authUser.email):''}</div></div>
       <button class="sw-close" onclick="closeSchedule()">×</button>
     </div>
+    ${ribbon}
     <div class="sw-tablewrap"><table class="sw-table">
       <thead>
-        <tr><th rowspan="2" class="sw-phase">추진단계</th><th rowspan="2" class="sw-seq">순번</th><th rowspan="2" class="sw-name">세부 추진과제</th><th rowspan="2" class="sw-dt">시작</th><th rowspan="2" class="sw-dt">완료</th>${monthHead}<th rowspan="2" class="sw-deliv">세부 산출물</th><th rowspan="2" class="sw-note">비고</th>${canEdit?'<th rowspan="2" class="sw-act">관리</th>':''}</tr>
+        <tr><th rowspan="2" class="sw-rownum">#</th><th rowspan="2" class="sw-phase">추진단계</th><th rowspan="2" class="sw-seq">순번</th><th rowspan="2" class="sw-name">세부 추진과제</th><th rowspan="2" class="sw-dt">시작</th><th rowspan="2" class="sw-dt">완료</th>${monthHead}<th rowspan="2" class="sw-deliv">세부 산출물</th><th rowspan="2" class="sw-note">비고</th></tr>
         <tr>${weekHead}</tr>
       </thead>
       <tbody>${body}</tbody>
-    </table></div>
-    ${form}`;
+    </table></div>`;
 }
-function schedFormHtml(){
-  const e=schedEditId?(schedCache[currentSchedTask]||[]).find(x=>x.id===schedEditId):null;
-  const v=(k)=>e&&e[k]!=null?String(e[k]).replace(/"/g,'&quot;'):'';
-  return `<div class="sw-form"><div class="sw-form-title">${e?'✏️ 일정 수정':'➕ 세부 일정 추가'}</div>
-    <div class="sw-form-grid">
-      <label>추진단계<input id="sfPhase" value="${v('phase')}" placeholder="예: 1. 착수 및 현황 분석"></label>
-      <label>순번<input id="sfSeq" value="${v('seq')}" placeholder="1.1." style="max-width:90px"></label>
-      <label>세부 추진과제<input id="sfName" value="${v('name')}" placeholder="필수"></label>
-      <label>시작일<input id="sfStart" type="date" value="${e?e.start_date||'':''}"></label>
-      <label>완료일<input id="sfEnd" type="date" value="${e?e.end_date||'':''}"></label>
-      <label>세부 산출물<input id="sfDeliv" value="${v('deliverable')}"></label>
-      <label>비고<input id="sfNote" value="${v('note')}"></label>
-    </div>
-    <div class="sw-form-btns">${e?`<button class="sw-cancel" onclick="schedEditId=null;renderSchedule(currentSchedTask)">취소</button>`:''}<button class="sw-save" onclick="saveSched()">${e?'저장':'추가'}</button></div>
-  </div>`;
-}
-function editSched(id){schedEditId=id;renderSchedule(currentSchedTask);document.getElementById('swPanel').scrollTop=document.getElementById('swPanel').scrollHeight;}
-async function saveSched(){
-  if(!authUser){alert('구글 로그인 후 이용하세요.');return;}
-  const g=id=>document.getElementById(id).value.trim();
-  const name=g('sfName');if(!name){alert('세부 추진과제(이름)는 필수입니다.');return;}
-  const row={task_id:currentSchedTask,phase:g('sfPhase')||null,seq:g('sfSeq')||null,name,start_date:g('sfStart')||null,end_date:g('sfEnd')||null,deliverable:g('sfDeliv')||null,note:g('sfNote')||null,updated_by:whoAmI(),updated_at:new Date().toISOString()};
-  try{
-    if(schedEditId){const {error}=await supa.from('ax_schedules').update(row).eq('id',schedEditId);if(error)throw error;}
-    else{const rows=schedCache[currentSchedTask]||[];row.sort_order=(rows.length?Math.max(...rows.map(r=>r.sort_order||0)):0)+10;row.created_by=whoAmI();const {error}=await supa.from('ax_schedules').insert(row);if(error)throw error;}
-    schedEditId=null;await reloadSched(currentSchedTask);
-  }catch(e){alert('저장 실패: '+e.message);}
-}
-async function delSched(id){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}if(!confirm('이 세부 일정을 삭제할까요?'))return;try{const {error}=await supa.from('ax_schedules').delete().eq('id',id);if(error)throw error;await reloadSched(currentSchedTask);}catch(e){alert('삭제 실패: '+e.message);}}
+function selectSchedRow(id){selectedSchedId=(selectedSchedId===id?null:id);renderSchedule(currentSchedTask);}
+function cellFocus(id){selectedSchedId=id;editingCell=true;}
+function cellKey(e,el){if(e.key==='Enter'){e.preventDefault();el.blur();}}
+async function cellBlur(el){editingCell=false;const id=el.dataset.id,f=el.dataset.field;const val=el.innerText.trim();const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===id);if(!row){return;}const cur=row[f]==null?'':String(row[f]);if(val===cur){return;}if(f==='name'&&!val){el.innerText=cur;return;}await updateSchedField(id,f,val||null);}
+async function updateSchedField(id,f,value){if(!supa)return;try{const patch={updated_by:whoAmI(),updated_at:new Date().toISOString()};patch[f]=value;const {error}=await supa.from('ax_schedules').update(patch).eq('id',id);if(error)throw error;const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===id);if(row)row[f]=value;await reloadSched(currentSchedTask);}catch(e){alert('저장 실패: '+e.message);}}
+function dateChange(id,f,val){updateSchedField(id,f,val||null);}
+async function addSchedRow(){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}const rows=schedCache[currentSchedTask]||[];const sr=rows.find(x=>x.id===selectedSchedId);const row={task_id:currentSchedTask,phase:sr?sr.phase:'',seq:'',name:'새 세부계획',start_date:null,end_date:null,deliverable:null,note:null,sort_order:(rows.length?Math.max(...rows.map(r=>r.sort_order||0)):0)+10,created_by:whoAmI(),updated_by:whoAmI()};try{const {data,error}=await supa.from('ax_schedules').insert(row).select();if(error)throw error;if(data&&data[0])selectedSchedId=data[0].id;await reloadSched(currentSchedTask);}catch(e){alert('추가 실패: '+e.message);}}
+function needSel(){if(!authUser){alert('구글 로그인 후 이용하세요.');return false;}if(!selectedSchedId){alert('먼저 행을 선택하세요. (표 왼쪽 번호# 클릭)');return false;}return true;}
+async function deleteSelected(){if(!needSel())return;if(!confirm('선택한 행을 삭제할까요?'))return;try{const {error}=await supa.from('ax_schedules').delete().eq('id',selectedSchedId);if(error)throw error;selectedSchedId=null;await reloadSched(currentSchedTask);}catch(e){alert('삭제 실패: '+e.message);}}
+async function toggleBold(){if(!needSel())return;const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===selectedSchedId);await updateSchedField(selectedSchedId,'bold',!(row&&row.bold));}
+async function applyTextColor(c){if(!needSel())return;await updateSchedField(selectedSchedId,'text_color',c);}
+async function applyFillColor(c){if(!needSel())return;await updateSchedField(selectedSchedId,'fill_color',c);}
+async function clearFormat(){if(!needSel())return;try{const {error}=await supa.from('ax_schedules').update({bold:false,text_color:null,fill_color:null,updated_by:whoAmI(),updated_at:new Date().toISOString()}).eq('id',selectedSchedId);if(error)throw error;await reloadSched(currentSchedTask);}catch(e){alert('실패: '+e.message);}}
 
 /* init */
 (function(){
