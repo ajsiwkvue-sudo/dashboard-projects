@@ -49,12 +49,15 @@ body.modal-open{overflow:hidden}
 .live-badge{font-size:.76rem;font-weight:700;padding:5px 11px;border-radius:20px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);color:#fff;white-space:nowrap}
 .live-badge.on{background:rgba(46,158,91,.35);border-color:rgba(120,230,170,.6)}
 .live-badge.off{background:rgba(214,69,69,.35);border-color:rgba(255,150,150,.6)}
-.presence{display:flex;align-items:center}
-.presence .pres-lbl{font-size:.74rem;color:#fff;opacity:.9;margin-right:8px;white-space:nowrap;font-weight:600}
-.presence .pres-av{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:.8rem;font-weight:800;border:2px solid #fff;margin-left:-8px;box-shadow:0 1px 4px rgba(0,0,0,.35);transition:transform .15s}
-.presence .pres-av:first-of-type{margin-left:0}
-.presence .pres-av:hover{transform:translateY(-2px) scale(1.08);z-index:2}
-.presence .pres-more{background:var(--gray)}
+.presence{display:flex;align-items:center;gap:6px;max-width:52vw;overflow-x:auto;overflow-y:hidden;padding-bottom:1px}
+.presence::-webkit-scrollbar{height:4px}
+.presence::-webkit-scrollbar-thumb{background:rgba(255,255,255,.35);border-radius:2px}
+.presence .pres-lbl{font-size:.74rem;color:#fff;opacity:.95;white-space:nowrap;font-weight:700;flex-shrink:0}
+.presence .pres-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:16px;padding:2px 11px 2px 2px;flex-shrink:0;transition:transform .12s}
+.presence .pres-chip:hover{transform:translateY(-1px);background:rgba(255,255,255,.25)}
+.presence .pres-av{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:.72rem;font-weight:800;border:2px solid rgba(255,255,255,.85);box-shadow:0 1px 3px rgba(0,0,0,.3);flex-shrink:0}
+.presence .pres-nm{font-size:.75rem;color:#fff;font-weight:700;white-space:nowrap;max-width:96px;overflow:hidden;text-overflow:ellipsis}
+.presence .pres-more{background:rgba(255,255,255,.22);color:#fff;font-size:.74rem;font-weight:800;border-radius:14px;padding:4px 10px;flex-shrink:0;white-space:nowrap}
 /* Tabs */
 .tabs{background:var(--card);border-bottom:2px solid var(--border);position:sticky;top:0;z-index:50;box-shadow:var(--shadow)}
 .tabs .wrap{display:flex;overflow-x:auto}
@@ -956,7 +959,7 @@ function initSupa(){try{if(window.supabase&&SUPA_URL&&SUPA_KEY){supa=window.supa
 /* ---------- 동시 접속자 표시 (Realtime Presence) ---------- */
 const CLIENT_ID=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():('c'+Math.random().toString(36).slice(2));
 let presenceChannel=null;
-function colorFor(s){const c=['#0b4f9e','#00a3b4','#6a3fb5','#2e9e5b','#e8890c','#d64545','#1e6fc4','#c2185b'];let h=0;s=s||'?';for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return c[h%c.length];}
+function colorFor(s){const c=['#0b4f9e','#00a3b4','#6a3fb5','#2e9e5b','#e8890c','#d64545','#1e6fc4','#c2185b','#00897b','#5e35b1','#f4511e','#3949ab','#00838f','#ad1457'];let h=0;s=s||'?';for(let i=0;i<s.length;i++)h=(h*131+s.charCodeAt(i))>>>0;return c[h%c.length];}
 function myPresence(){const nm=whoAmI();return {id:CLIENT_ID,name:nm,initial:(nm.trim()[0]||'?').toUpperCase(),color:colorFor(nm),login:!!authUser};}
 function initPresence(){if(!supa)return;presenceChannel=supa.channel('ax_presence',{config:{presence:{key:CLIENT_ID}}});presenceChannel.on('presence',{event:'sync'},renderPresence).subscribe(async st=>{if(st==='SUBSCRIBED'){try{await presenceChannel.track(myPresence());}catch(e){}}});}
 function updatePresence(){if(presenceChannel){try{presenceChannel.track(myPresence());}catch(e){}}}
@@ -966,10 +969,10 @@ function renderPresence(){
   const seen={},users=[];
   Object.values(state).forEach(arr=>{const u=arr&&arr[0];if(u&&!seen[u.name]){seen[u.name]=1;users.push(u);}});
   if(!users.length){el.innerHTML='';return;}
-  const show=users.slice(0,5);
+  const MAX=6;const show=users.slice(0,MAX);
   el.innerHTML=`<span class="pres-lbl">👥 ${users.length}명 접속</span>`+
-    show.map(u=>`<span class="pres-av" style="background:${u.color}" title="${u.name}${u.login?'':' (게스트)'}">${u.initial}</span>`).join('')+
-    (users.length>5?`<span class="pres-av pres-more" title="외 ${users.length-5}명">+${users.length-5}</span>`:'');
+    show.map(u=>`<span class="pres-chip" title="${u.name}${u.login?'':' (게스트)'}"><span class="pres-av" style="background:${u.color}">${u.initial}</span><span class="pres-nm">${u.name}</span></span>`).join('')+
+    (users.length>MAX?`<span class="pres-more" title="외 ${users.length-MAX}명">+${users.length-MAX}</span>`:'');
 }
 
 /* ---------- 구글 로그인 (Supabase Auth) ---------- */
