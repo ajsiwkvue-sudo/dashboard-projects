@@ -31,6 +31,9 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6}
+body.modal-open{overflow:hidden}
+/* 팝업 내부 스크롤이 배경으로 번지지 않도록 */
+.overlay,.modal,.sw-overlay,.sw-modal,.chat-log,.sw-tablewrap,.mile-cell{overscroll-behavior:contain}
 .wrap{max-width:1360px;margin:0 auto;padding:0 16px}
 /* Header */
 .header{background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;padding:20px 0}
@@ -680,7 +683,7 @@ function openTask(tid){
     <div class="msec"><h4>마일스톤 <span style="font-weight:400;font-size:.74rem;color:var(--muted)">(상태=목록 선택 · ✏️=일정 수정 · 자동저장)</span></h4>${t.miles.map((m,i)=>{const s=statusOf(t.id,i,m);const ed=mileEdits[mkey(t.id,i)];if(editingMile===mkey(t.id,i)){return `<div class="mef"><div class="mef-row"><label>일정</label><input id="edD" value="${(m.dstr||'').replace(/"/g,'&quot;')}" placeholder="예: 2026.09 또는 2026.7~9"></div><div class="mef-row"><label>내용</label><input id="edL" value="${m.label.replace(/"/g,'&quot;')}"></div><div class="mef-btns">${ed?`<button class="mef-reset" onclick="resetMile('${t.id}',${i})">원래대로</button>`:''}<button class="mef-cancel" onclick="cancelEdit('${t.id}')">취소</button><button class="mef-save" onclick="saveMile('${t.id}',${i})">저장</button></div></div>`;}return `<div class="mile"><span class="md">${m.dstr||'-'}</span><span class="ml">${m.label} <span style="color:var(--muted);font-size:.72rem">(${m.kind})${ed?' <span class="edited">✎수정됨</span>':''}</span></span><select class="ms-select ${s}" onchange="setMileStatus('${t.id}',${i},this.value)">${['plan','prog','done','over'].map(k=>`<option value="${k}"${k===s?' selected':''}>${STAT_LABEL[k]}</option>`).join('')}</select><button class="mile-edit" onclick="editMile('${t.id}',${i})" title="일정 수정">✏️</button></div>`;}).join('')}<div class="hint">상태는 각 항목의 목록(예정·진행중·완료·지연)에서 선택하세요.</div></div>
     <div class="msec"><h4>기대 산출물</h4><div class="txt">${t.outcome}</div></div>
     <div class="msec"><h4>고려사항</h4><div class="txt">${t.review}</div></div>`;
-  document.getElementById('overlay').classList.add('open');
+  document.getElementById('overlay').classList.add('open');refreshBodyLock();
 }
 function setMileStatus(tid,i,v){setStatus(tid,i,v);openTask(tid);renderTasks();renderOverview();}
 let editingMile=null;
@@ -688,7 +691,8 @@ function editMile(tid,i){editingMile=mkey(tid,i);openTask(tid);setTimeout(()=>{c
 function cancelEdit(tid){editingMile=null;openTask(tid);}
 function saveMile(tid,i){const d=document.getElementById('edD').value.trim();const l=document.getElementById('edL').value.trim();if(!l){alert('내용을 입력하세요.');return;}const k=mkey(tid,i);mileEdits[k]={dstr:d,label:l};localStorage.setItem('ax_mile_edits_v1',JSON.stringify(mileEdits));editingMile=null;applyMileEdits();pushState(k);openTask(tid);renderTasks();renderOverview();}
 function resetMile(tid,i){const k=mkey(tid,i);delete mileEdits[k];localStorage.setItem('ax_mile_edits_v1',JSON.stringify(mileEdits));editingMile=null;applyMileEdits();pushState(k);openTask(tid);renderTasks();renderOverview();}
-function closeModal(){editingMile=null;modalTask=null;document.getElementById('overlay').classList.remove('open');}
+function refreshBodyLock(){const any=document.getElementById('overlay').classList.contains('open')||document.getElementById('swOverlay').classList.contains('open');document.body.classList.toggle('modal-open',any);}
+function closeModal(){editingMile=null;modalTask=null;document.getElementById('overlay').classList.remove('open');refreshBodyLock();}
 function milesByStatus(filter){const arr=[];TASKS.forEach(t=>t.miles.forEach((m,i)=>{const s=statusOf(t.id,i,m);if(!filter||s===filter)arr.push(Object.assign({},m,{st:s,tid:t.id,title:t.title}));}));arr.sort((a,b)=>((a.y||9999)*12+(a.m||1))-((b.y||9999)*12+(b.m||1)));return arr;}
 function openKpiList(key){
   modalTask=null;
@@ -707,7 +711,7 @@ function openKpiList(key){
     body=arr.map(m=>`<div class="kl-item click" onclick="openTask('${m.tid}')"><span class="kl-main"><span class="dot ${m.st}"></span>${m.label}</span><span class="kl-sub">${m.dstr||'-'} · ${m.tid}</span><span class="ms ${m.st}">${STAT_LABEL[m.st]}</span></div>`).join('')||'<div class="hint">항목이 없습니다.</div>';
   }
   document.getElementById('modal').innerHTML=`<div class="mh"><div class="mt">${title}</div><button class="close" onclick="closeModal()">×</button></div><div class="hint" style="margin:2px 0 10px">항목을 클릭하면 해당 전략과제 상세로 이동합니다.</div><div class="kl-list">${body}</div>`;
-  document.getElementById('overlay').classList.add('open');
+  document.getElementById('overlay').classList.add('open');refreshBodyLock();
 }
 document.getElementById('overlay').onclick=e=>{if(e.target.id==='overlay')closeModal();};
 
@@ -771,7 +775,7 @@ function openDeptList(team,key){
   if(key==='tasks'){title+='담당 과제 '+tt.length+'개';body=tt.map(t=>`<div class="kl-item click" onclick="openTask('${t.id}')"><span class="kl-main">${t.id} ${t.title}</span><span class="kl-pct">${taskProgress(t)}%</span></div>`).join('');}
   else{const lab={all:'세부 마일스톤 전체',done:'완료 마일스톤',prog:'진행중 마일스톤',over:'지연 마일스톤'};const arr=[];tt.forEach(t=>t.miles.forEach((m,i)=>{const s=statusOf(t.id,i,m);if(key==='all'||s===key)arr.push(Object.assign({},m,{st:s,tid:t.id}));}));arr.sort((a,b)=>((a.y||9999)*12+(a.m||1))-((b.y||9999)*12+(b.m||1)));title+=lab[key]+' '+arr.length+'개';body=arr.map(m=>`<div class="kl-item click" onclick="openTask('${m.tid}')"><span class="kl-main"><span class="dot ${m.st}"></span>${m.label}</span><span class="kl-sub">${m.dstr||'-'} · ${m.tid}</span><span class="ms ${m.st}">${STAT_LABEL[m.st]}</span></div>`).join('')||'<div class="hint">항목이 없습니다.</div>';}
   document.getElementById('modal').innerHTML=`<div class="mh"><div class="mt">${title}</div><button class="close" onclick="closeModal()">×</button></div><div class="hint" style="margin:2px 0 10px">항목을 클릭하면 해당 전략과제 상세로 이동합니다.</div><div class="kl-list">${body}</div>`;
-  document.getElementById('overlay').classList.add('open');
+  document.getElementById('overlay').classList.add('open');refreshBodyLock();
 }
 
 /* ---------- 로드맵 ---------- */
@@ -971,8 +975,8 @@ function weekCol(ds){if(!ds)return null;const d=new Date(ds);const m=d.getMonth(
 function fmtD(ds){if(!ds)return '';const d=new Date(ds);return `${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;}
 async function reloadSched(tid){if(!supa)return;try{const {data,error}=await supa.from('ax_schedules').select('*').eq('task_id',tid).order('sort_order');if(error)throw error;schedCache[tid]=data||[];}catch(e){schedCache[tid]=schedCache[tid]||[];}if(currentSchedTask===tid)renderSchedule(tid);}
 function subscribeSchedules(){if(!supa)return;supa.channel('ax_sch_ch').on('postgres_changes',{event:'*',schema:'public',table:'ax_schedules'},payload=>{const r=(payload.new&&payload.new.task_id)?payload.new:payload.old;if(r&&r.task_id===currentSchedTask)reloadSched(r.task_id);}).subscribe();}
-function openSchedule(tid){currentSchedTask=tid;schedEditId=null;document.getElementById('swOverlay').classList.add('open');renderSchedule(tid);reloadSched(tid);}
-function closeSchedule(){currentSchedTask=null;schedEditId=null;document.getElementById('swOverlay').classList.remove('open');}
+function openSchedule(tid){currentSchedTask=tid;schedEditId=null;document.getElementById('swOverlay').classList.add('open');refreshBodyLock();renderSchedule(tid);reloadSched(tid);}
+function closeSchedule(){currentSchedTask=null;schedEditId=null;document.getElementById('swOverlay').classList.remove('open');refreshBodyLock();}
 function renderSchedule(tid){
   const t=TASKS.find(x=>x.id===tid);const rows=schedCache[tid]||[];const o=OWNERS[tid]||{};
   const canEdit=!!authUser;
