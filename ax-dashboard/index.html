@@ -34,6 +34,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
 body.modal-open{overflow:hidden}
 /* 팝업 내부 스크롤이 배경으로 번지지 않도록 */
 .overlay,.modal,.sw-overlay,.sw-modal,.chat-log,.sw-tablewrap,.mile-cell{overscroll-behavior:contain}
+/* 크로스브라우저 스크롤바(파이어폭스 등) */
+.sw-tablewrap,.sw-modal,.presence,.pm-wrap,.gantt,.bm-grid,.chat-log,.chips,.modal,.tabs .wrap{scrollbar-width:thin}
+button,input,select,textarea,[contenteditable]{-webkit-tap-highlight-color:transparent}
+input[type="color"]{-webkit-appearance:none;appearance:none}
 .wrap{max-width:1360px;margin:0 auto;padding:0 16px}
 /* Header */
 .header{background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;padding:20px 0}
@@ -1029,7 +1033,7 @@ function renderSchedule(tid){
   const gcol=t.goal===1?'#1565c0':t.goal===2?'#6a3fb5':'#2e9e5b';
   let monthHead=SW_MONTHS.map(m=>`<th colspan="5" class="sw-mh">26.${String(m).padStart(2,'0')}</th>`).join('');
   let weekHead='';SW_MONTHS.forEach(()=>{for(let w=1;w<=5;w++)weekHead+=`<th class="sw-wh">${w}</th>`;});
-  const ce=canEdit?'contenteditable="true"':'';
+  const ce=canEdit?'contenteditable="true" spellcheck="false" onpaste="pastePlain(event)"':'';
   const ed=(r,f)=>canEdit?`data-id="${r.id}" data-field="${f}" onfocus="cellFocus('${r.id}')" onblur="cellBlur(this)" onkeydown="cellKey(event,this)"`:'';
   let body='';
   rows.forEach((r,idx)=>{
@@ -1076,7 +1080,8 @@ function renderSchedule(tid){
 }
 function selectSchedRow(id){selectedSchedId=(selectedSchedId===id?null:id);renderSchedule(currentSchedTask);}
 function cellFocus(id){selectedSchedId=id;editingCell=true;}
-function cellKey(e,el){if(e.key==='Enter'){e.preventDefault();el.blur();}}
+function cellKey(e,el){if((e.key==='Enter'||e.keyCode===13)&&!e.isComposing){e.preventDefault();el.blur();}if(e.key==='Escape'){e.preventDefault();el.blur();}}
+function pastePlain(e){e.preventDefault();const cd=e.clipboardData||window.clipboardData;const txt=cd?cd.getData('text/plain'):'';try{document.execCommand('insertText',false,txt.replace(/[\r\n\t]+/g,' '));}catch(_){const sel=window.getSelection&&window.getSelection();if(sel&&sel.rangeCount){const r=sel.getRangeAt(0);r.deleteContents();r.insertNode(document.createTextNode(txt));}}}
 async function cellBlur(el){editingCell=false;const id=el.dataset.id,f=el.dataset.field;const val=el.innerText.trim();const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===id);if(!row){return;}const cur=row[f]==null?'':String(row[f]);if(val===cur){return;}if(f==='name'&&!val){el.innerText=cur;return;}await updateSchedField(id,f,val||null);}
 async function updateSchedField(id,f,value){if(!supa)return;try{const patch={updated_by:whoAmI(),updated_at:new Date().toISOString()};patch[f]=value;const {error}=await supa.from('ax_schedules').update(patch).eq('id',id);if(error)throw error;const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===id);if(row)row[f]=value;await reloadSched(currentSchedTask);}catch(e){alert('저장 실패: '+e.message);}}
 function dateChange(id,f,val){updateSchedField(id,f,val||null);}
