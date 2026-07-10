@@ -292,6 +292,46 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
 .dept-task .dt-bf{height:100%;border-radius:5px;transition:width .5s}
 .dept-task .dt-pct{font-size:.82rem;font-weight:800;min-width:40px;text-align:right;font-variant-numeric:tabular-nums;flex-shrink:0}
 @media(max-width:640px){.dept-metrics{grid-template-columns:repeat(3,1fr)}.dept-task .dt-dots{display:none}.dept-task .dt-title{flex-basis:auto}}
+/* 실행계획 워크스페이스 */
+.sw-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1200;justify-content:center;align-items:flex-start;padding:16px;overflow-y:auto}
+.sw-overlay.open{display:flex}
+.sw-modal{background:var(--card);border-radius:14px;width:100%;max-width:1500px;max-height:94vh;overflow-y:auto;margin:auto;box-shadow:0 12px 40px rgba(0,0,0,.3)}
+.sw-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px 20px;border-bottom:3px solid var(--primary);position:sticky;top:0;background:var(--card);z-index:5}
+.sw-title{font-size:1.15rem;font-weight:900;line-height:1.35}
+.sw-sub{font-size:.8rem;color:var(--muted);margin-top:4px}
+.sw-close{background:none;border:none;font-size:1.6rem;cursor:pointer;color:var(--muted);line-height:1}
+.sw-tablewrap{overflow-x:auto;padding:12px 16px}
+.sw-table{border-collapse:collapse;font-size:.78rem;min-width:1200px}
+.sw-table th,.sw-table td{border:1px solid var(--border);padding:5px 7px;vertical-align:middle}
+.sw-table thead th{background:var(--bg);font-weight:800;text-align:center;position:sticky;top:0}
+.sw-table .sw-mh{font-size:.74rem;color:var(--primary)}
+.sw-table .sw-wh{font-size:.68rem;color:var(--muted);padding:2px;min-width:20px}
+.sw-phase{min-width:130px;font-weight:700;font-size:.76rem;background:var(--bg)}
+.sw-phase-cont{background:var(--card)}
+.sw-seq{min-width:40px;text-align:center;color:var(--muted)}
+.sw-name{min-width:200px;font-weight:600}
+.sw-dt{min-width:46px;text-align:center;color:var(--muted);white-space:nowrap}
+.sw-c{width:20px;padding:0;height:22px}
+.sw-c.on{border-radius:2px}
+.sw-deliv{min-width:170px;font-size:.74rem;line-height:1.4}
+.sw-note{min-width:110px;font-size:.74rem;color:var(--muted)}
+.sw-act{white-space:nowrap;text-align:center}
+.sw-act button{background:none;border:1px solid var(--border);border-radius:5px;cursor:pointer;font-size:.8rem;padding:2px 5px;margin:0 1px}
+.sw-act button:hover{background:var(--bg)}
+.sw-login{margin:8px 16px 20px;padding:16px;background:var(--bg);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:.86rem}
+.sw-login-btn,.sw-save,.sw-cancel{padding:9px 18px;border:none;border-radius:8px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:.85rem}
+.sw-login-btn{background:#fff;color:#444;border:1px solid var(--border)}
+.sw-form{margin:8px 16px 22px;padding:16px;background:var(--bg);border-radius:10px}
+.sw-form-title{font-weight:800;margin-bottom:12px;font-size:.9rem}
+.sw-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.sw-form-grid label{display:flex;flex-direction:column;gap:4px;font-size:.76rem;font-weight:700;color:var(--muted)}
+.sw-form-grid input{padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-family:var(--font);font-size:.85rem;background:var(--card);color:var(--text)}
+.sw-form-btns{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.sw-save{background:var(--primary);color:#fff}
+.sw-cancel{background:var(--gray);color:#fff}
+/* 과제 상세 → 실행계획 버튼 */
+.open-sched-btn{width:100%;margin-top:14px;padding:12px;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border:none;border-radius:10px;cursor:pointer;font-family:var(--font);font-weight:800;font-size:.92rem}
+.open-sched-btn:hover{opacity:.92}
 /* table */
 .tbl{width:100%;border-collapse:collapse;font-size:.85rem;background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
 .tbl th{background:var(--primary);color:#fff;padding:11px 14px;text-align:left;font-size:.82rem}
@@ -413,7 +453,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
   <div class="hint" style="margin-top:14px">※ 카드 내용은 웹 공개자료 기반 요약(조사 기준 2026.7)이며, 각 카드의 <b>🔎 최신 뉴스</b> 버튼으로 해당 기관의 최근 소식을 실시간 확인할 수 있습니다. 출처 링크는 원문입니다.</div>
 </div></section>
 
-<div class="footer">국민건강보험일산병원 AX추진부 · 추진전략(안) v0.97 기반 대시보드 · 진척 데이터는 브라우저에 저장됩니다.</div>
+<div class="footer">국민건강보험일산병원 AX추진부 · 추진전략(안) v0.97 기반 대시보드 · 진척·일정 데이터는 공용 DB(Supabase)에 실시간 저장됩니다.</div>
+
+<!-- 과제별 실행계획 간트 워크스페이스 -->
+<div class="sw-overlay" id="swOverlay"><div class="sw-modal" id="swPanel"></div></div>
 
 <!-- AI 비서 플로팅 위젯 -->
 <button class="agent-fab" id="agentFab" title="AX 사업계획 비서에게 물어보기">🤖<span class="fab-label">AI 비서</span></button>
@@ -631,6 +674,8 @@ function openTask(tid){
   modal.innerHTML=`<div class="mh"><div><div class="tno" style="color:var(--muted);font-size:.8rem;font-weight:700">${t.id} · 목표${t.goal} (${g.axis}축)</div><div class="mt">${t.title}</div></div><button class="close" onclick="closeModal()">×</button></div>
     <div class="dept-line"><span class="dept-lbl">담당 부서</span><span class="badge b-team">${t.team}</span></div>
     <div class="dept-line"><span class="dept-lbl">협업 부서</span><span class="dept-badges">${t.coop.map(c=>`<span class="badge b-coop">${c}</span>`).join('')}</span></div>
+    ${OWNERS[t.id]?`<div class="dept-line"><span class="dept-lbl" style="background:var(--accent2)">담당자</span><span class="dept-badges"><span class="badge" style="background:rgba(106,63,181,.14);color:var(--accent2)">정 ${OWNERS[t.id].main}</span>${OWNERS[t.id].sub?`<span class="badge b-coop">부 ${OWNERS[t.id].sub}</span>`:''}</span></div>`:''}
+    <button class="open-sched-btn" onclick="openSchedule('${t.id}')">📅 실행계획(세세부 일정) 워크스페이스 열기</button>
     <div class="msec"><h4>추진목표</h4><div class="txt">${t.obj}</div></div>
     <div class="msec"><h4>마일스톤 <span style="font-weight:400;font-size:.74rem;color:var(--muted)">(상태=목록 선택 · ✏️=일정 수정 · 자동저장)</span></h4>${t.miles.map((m,i)=>{const s=statusOf(t.id,i,m);const ed=mileEdits[mkey(t.id,i)];if(editingMile===mkey(t.id,i)){return `<div class="mef"><div class="mef-row"><label>일정</label><input id="edD" value="${(m.dstr||'').replace(/"/g,'&quot;')}" placeholder="예: 2026.09 또는 2026.7~9"></div><div class="mef-row"><label>내용</label><input id="edL" value="${m.label.replace(/"/g,'&quot;')}"></div><div class="mef-btns">${ed?`<button class="mef-reset" onclick="resetMile('${t.id}',${i})">원래대로</button>`:''}<button class="mef-cancel" onclick="cancelEdit('${t.id}')">취소</button><button class="mef-save" onclick="saveMile('${t.id}',${i})">저장</button></div></div>`;}return `<div class="mile"><span class="md">${m.dstr||'-'}</span><span class="ml">${m.label} <span style="color:var(--muted);font-size:.72rem">(${m.kind})${ed?' <span class="edited">✎수정됨</span>':''}</span></span><select class="ms-select ${s}" onchange="setMileStatus('${t.id}',${i},this.value)">${['plan','prog','done','over'].map(k=>`<option value="${k}"${k===s?' selected':''}>${STAT_LABEL[k]}</option>`).join('')}</select><button class="mile-edit" onclick="editMile('${t.id}',${i})" title="일정 수정">✏️</button></div>`;}).join('')}<div class="hint">상태는 각 항목의 목록(예정·진행중·완료·지연)에서 선택하세요.</div></div>
     <div class="msec"><h4>기대 산출물</h4><div class="txt">${t.outcome}</div></div>
@@ -893,9 +938,100 @@ function setLive(state){const b=document.getElementById('liveBadge');const rb=do
 function rerenderActive(){renderTasks();const active=document.querySelector('.tab.active');if(active){const n=active.dataset.t;if(n==='overview')renderOverview();if(n==='analytics')renderAnalytics();if(n==='route')renderRoute();}if(modalTask&&document.getElementById('overlay').classList.contains('open'))openTask(modalTask);document.getElementById('mileCountTxt').textContent=overallProgress().tot;}
 function applyRow(r){const k=r.mkey;if(r.status)overrides[k]=r.status;else delete overrides[k];if(r.edited_date!=null||r.edited_label!=null)mileEdits[k]={dstr:r.edited_date||'',label:r.edited_label||''};else delete mileEdits[k];}
 async function loadRemote(){if(!supa)return;try{const {data,error}=await supa.from('ax_milestone_state').select('*');if(error)throw error;overrides={};mileEdits={};(data||[]).forEach(applyRow);localStorage.setItem(STORE_KEY,JSON.stringify(overrides));localStorage.setItem('ax_mile_edits_v1',JSON.stringify(mileEdits));applyMileEdits();remoteReady=true;setLive('on');rerenderActive();}catch(e){remoteReady=false;setLive('off');}}
-async function pushState(k){if(!supa)return;const p=k.split('#');const ed=mileEdits[k];const row={mkey:k,task_id:p[0],mile_index:+p[1],status:overrides[k]||null,edited_date:ed?ed.dstr:null,edited_label:ed?ed.label:null,updated_by:ensureUser(),updated_at:new Date().toISOString()};try{const {error}=await supa.from('ax_milestone_state').upsert(row,{onConflict:'mkey'});if(error)throw error;}catch(e){setLive('off');}}
+async function pushState(k){if(!supa)return;const p=k.split('#');const ed=mileEdits[k];const row={mkey:k,task_id:p[0],mile_index:+p[1],status:overrides[k]||null,edited_date:ed?ed.dstr:null,edited_label:ed?ed.label:null,updated_by:whoAmI(),updated_at:new Date().toISOString()};try{const {error}=await supa.from('ax_milestone_state').upsert(row,{onConflict:'mkey'});if(error)throw error;}catch(e){setLive('off');}}
 function subscribeRemote(){if(!supa)return;supa.channel('ax_ms_ch').on('postgres_changes',{event:'*',schema:'public',table:'ax_milestone_state'},payload=>{const r=(payload.new&&payload.new.mkey)?payload.new:payload.old;if(!r)return;if(payload.eventType==='DELETE'){delete overrides[r.mkey];delete mileEdits[r.mkey];}else applyRow(r);localStorage.setItem(STORE_KEY,JSON.stringify(overrides));localStorage.setItem('ax_mile_edits_v1',JSON.stringify(mileEdits));applyMileEdits();rerenderActive();}).subscribe(st=>{if(st==='SUBSCRIBED')setLive('on');else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')setLive('off');});}
-function initSupa(){try{if(window.supabase&&SUPA_URL&&SUPA_KEY){supa=window.supabase.createClient(SUPA_URL,SUPA_KEY,{realtime:{params:{eventsPerSecond:5}}});}}catch(e){supa=null;}setUserBadge();if(supa){loadRemote();subscribeRemote();}else{setLive('off');}}
+function initSupa(){try{if(window.supabase&&SUPA_URL&&SUPA_KEY){supa=window.supabase.createClient(SUPA_URL,SUPA_KEY,{realtime:{params:{eventsPerSecond:5}}});}}catch(e){supa=null;}setUserBadge();if(supa){loadRemote();subscribeRemote();initAuth();subscribeSchedules();}else{setLive('off');}}
+
+/* ---------- 구글 로그인 (Supabase Auth) ---------- */
+const OWNERS={
+ "1-1":{main:"한소라",sub:"한정미, 오기용"},"1-2":{main:"이효정",sub:"오기용"},
+ "1-3":{main:"한정미",sub:"한소라, 임현선"},"1-4":{main:"오성진",sub:"박민현, 오기용, 김윤환"},
+ "2-1":{main:"이효정",sub:"신성철"},"2-2":{main:"조경민",sub:"임현선, 신성철"},
+ "2-3":{main:"신성철",sub:"조경민, 김윤환"},"2-4":{main:"임현선",sub:"이효정"},
+ "3-1":{main:"한소라, 한정미",sub:"신성철, 조경민, 김정, 김윤환"},"3-2":{main:"한소라",sub:"신성철, 조경민, 김정"},
+ "3-3":{main:"임현선",sub:"오기용, 김윤환"},"3-4":{main:"한정미, 김정",sub:"한소라, 임현선, 조경민"}
+};
+let authUser=null;
+async function initAuth(){if(!supa)return;try{const {data}=await supa.auth.getSession();setAuthUser(data.session);supa.auth.onAuthStateChange((_e,s)=>setAuthUser(s));}catch(e){}}
+function setAuthUser(session){authUser=(session&&session.user)?{email:session.user.email,name:(session.user.user_metadata&&(session.user.user_metadata.full_name||session.user.user_metadata.name))||session.user.email}:null;updateAuthUI();}
+function updateAuthUI(){
+  const chip=document.getElementById('userChip'),nm=document.getElementById('userName');
+  if(authUser){nm.textContent=authUser.name||authUser.email;chip.title='로그아웃';chip.onclick=()=>{if(confirm('로그아웃할까요?'))signOutUser();};}
+  else{nm.textContent='구글 로그인';chip.title='구글 계정으로 로그인';chip.onclick=signInGoogle;}
+  if(currentSchedTask)renderSchedule(currentSchedTask);
+}
+async function signInGoogle(){if(!supa){alert('공용 DB에 연결되지 않았습니다.');return;}try{const {error}=await supa.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.href.split('#')[0]}});if(error)throw error;}catch(e){alert('구글 로그인이 아직 설정되지 않았습니다.\n관리자: Supabase → Authentication → Providers → Google 활성화가 필요합니다.\n('+e.message+')');}}
+async function signOutUser(){if(supa){try{await supa.auth.signOut();}catch(e){}authUser=null;updateAuthUI();}}
+function whoAmI(){return authUser?(authUser.name||authUser.email):(userName||'익명');}
+
+/* ---------- 과제별 실행계획 간트 워크스페이스 ---------- */
+const SW_MONTHS=[7,8,9,10,11,12];
+let schedCache={},currentSchedTask=null,schedEditId=null;
+function weekCol(ds){if(!ds)return null;const d=new Date(ds);const m=d.getMonth()+1;if(m<7)return 0;if(m>12)return 29;return (m-7)*5+(Math.min(5,Math.ceil(d.getDate()/7))-1);}
+function fmtD(ds){if(!ds)return '';const d=new Date(ds);return `${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;}
+async function reloadSched(tid){if(!supa)return;try{const {data,error}=await supa.from('ax_schedules').select('*').eq('task_id',tid).order('sort_order');if(error)throw error;schedCache[tid]=data||[];}catch(e){schedCache[tid]=schedCache[tid]||[];}if(currentSchedTask===tid)renderSchedule(tid);}
+function subscribeSchedules(){if(!supa)return;supa.channel('ax_sch_ch').on('postgres_changes',{event:'*',schema:'public',table:'ax_schedules'},payload=>{const r=(payload.new&&payload.new.task_id)?payload.new:payload.old;if(r&&r.task_id===currentSchedTask)reloadSched(r.task_id);}).subscribe();}
+function openSchedule(tid){currentSchedTask=tid;schedEditId=null;document.getElementById('swOverlay').classList.add('open');renderSchedule(tid);reloadSched(tid);}
+function closeSchedule(){currentSchedTask=null;schedEditId=null;document.getElementById('swOverlay').classList.remove('open');}
+function renderSchedule(tid){
+  const t=TASKS.find(x=>x.id===tid);const rows=schedCache[tid]||[];const o=OWNERS[tid]||{};
+  const canEdit=!!authUser;
+  const gcol=t.goal===1?'#1565c0':t.goal===2?'#6a3fb5':'#2e9e5b';
+  let monthHead=SW_MONTHS.map(m=>`<th colspan="5" class="sw-mh">26.${String(m).padStart(2,'0')}</th>`).join('');
+  let weekHead='';SW_MONTHS.forEach(()=>{for(let w=1;w<=5;w++)weekHead+=`<th class="sw-wh">${w}</th>`;});
+  let body='';let lastPhase=null;
+  rows.forEach(r=>{
+    const sc=weekCol(r.start_date),ec=weekCol(r.end_date);
+    let cells='';
+    for(let i=0;i<30;i++){const on=(sc!=null&&ec!=null&&i>=sc&&i<=ec);cells+=`<td class="sw-c${on?' on':''}" ${on?`style="background:${gcol}"`:''}></td>`;}
+    const phaseCell=(r.phase!==lastPhase)?`<td class="sw-phase">${r.phase||''}</td>`:`<td class="sw-phase sw-phase-cont"></td>`;lastPhase=r.phase;
+    body+=`<tr>${phaseCell}<td class="sw-seq">${r.seq||''}</td><td class="sw-name">${r.name||''}</td><td class="sw-dt">${fmtD(r.start_date)}</td><td class="sw-dt">${fmtD(r.end_date)}</td>${cells}<td class="sw-deliv">${(r.deliverable||'').replace(/ \/ /g,'<br>')}</td><td class="sw-note">${r.note||''}</td>${canEdit?`<td class="sw-act"><button onclick="editSched('${r.id}')" title="수정">✏️</button><button onclick="delSched('${r.id}')" title="삭제">🗑️</button></td>`:''}</tr>`;
+  });
+  if(!rows.length)body=`<tr><td colspan="${canEdit?38:37}" style="text-align:center;color:var(--muted);padding:24px">아직 등록된 세부 일정이 없습니다.${canEdit?' 아래에서 추가하세요.':''}</td></tr>`;
+  const form=canEdit?schedFormHtml():`<div class="sw-login"><span>🔒 세부 일정 추가·수정·삭제는 <b>구글 로그인</b> 후 가능합니다.</span><button class="sw-login-btn" onclick="signInGoogle()">🔑 구글 로그인</button></div>`;
+  document.getElementById('swPanel').innerHTML=`
+    <div class="sw-head" style="border-color:${gcol}">
+      <div><div class="sw-title">${t.id}. ${t.title}</div><div class="sw-sub">담당 ${o.main||'-'}${o.sub?' · 부담당 '+o.sub:''} · 세부 일정 ${rows.length}건${authUser?' · 로그인: '+ (authUser.name||authUser.email):''}</div></div>
+      <button class="sw-close" onclick="closeSchedule()">×</button>
+    </div>
+    <div class="sw-tablewrap"><table class="sw-table">
+      <thead>
+        <tr><th rowspan="2" class="sw-phase">추진단계</th><th rowspan="2" class="sw-seq">순번</th><th rowspan="2" class="sw-name">세부 추진과제</th><th rowspan="2" class="sw-dt">시작</th><th rowspan="2" class="sw-dt">완료</th>${monthHead}<th rowspan="2" class="sw-deliv">세부 산출물</th><th rowspan="2" class="sw-note">비고</th>${canEdit?'<th rowspan="2" class="sw-act">관리</th>':''}</tr>
+        <tr>${weekHead}</tr>
+      </thead>
+      <tbody>${body}</tbody>
+    </table></div>
+    ${form}`;
+}
+function schedFormHtml(){
+  const e=schedEditId?(schedCache[currentSchedTask]||[]).find(x=>x.id===schedEditId):null;
+  const v=(k)=>e&&e[k]!=null?String(e[k]).replace(/"/g,'&quot;'):'';
+  return `<div class="sw-form"><div class="sw-form-title">${e?'✏️ 일정 수정':'➕ 세부 일정 추가'}</div>
+    <div class="sw-form-grid">
+      <label>추진단계<input id="sfPhase" value="${v('phase')}" placeholder="예: 1. 착수 및 현황 분석"></label>
+      <label>순번<input id="sfSeq" value="${v('seq')}" placeholder="1.1." style="max-width:90px"></label>
+      <label>세부 추진과제<input id="sfName" value="${v('name')}" placeholder="필수"></label>
+      <label>시작일<input id="sfStart" type="date" value="${e?e.start_date||'':''}"></label>
+      <label>완료일<input id="sfEnd" type="date" value="${e?e.end_date||'':''}"></label>
+      <label>세부 산출물<input id="sfDeliv" value="${v('deliverable')}"></label>
+      <label>비고<input id="sfNote" value="${v('note')}"></label>
+    </div>
+    <div class="sw-form-btns">${e?`<button class="sw-cancel" onclick="schedEditId=null;renderSchedule(currentSchedTask)">취소</button>`:''}<button class="sw-save" onclick="saveSched()">${e?'저장':'추가'}</button></div>
+  </div>`;
+}
+function editSched(id){schedEditId=id;renderSchedule(currentSchedTask);document.getElementById('swPanel').scrollTop=document.getElementById('swPanel').scrollHeight;}
+async function saveSched(){
+  if(!authUser){alert('구글 로그인 후 이용하세요.');return;}
+  const g=id=>document.getElementById(id).value.trim();
+  const name=g('sfName');if(!name){alert('세부 추진과제(이름)는 필수입니다.');return;}
+  const row={task_id:currentSchedTask,phase:g('sfPhase')||null,seq:g('sfSeq')||null,name,start_date:g('sfStart')||null,end_date:g('sfEnd')||null,deliverable:g('sfDeliv')||null,note:g('sfNote')||null,updated_by:whoAmI(),updated_at:new Date().toISOString()};
+  try{
+    if(schedEditId){const {error}=await supa.from('ax_schedules').update(row).eq('id',schedEditId);if(error)throw error;}
+    else{const rows=schedCache[currentSchedTask]||[];row.sort_order=(rows.length?Math.max(...rows.map(r=>r.sort_order||0)):0)+10;row.created_by=whoAmI();const {error}=await supa.from('ax_schedules').insert(row);if(error)throw error;}
+    schedEditId=null;await reloadSched(currentSchedTask);
+  }catch(e){alert('저장 실패: '+e.message);}
+}
+async function delSched(id){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}if(!confirm('이 세부 일정을 삭제할까요?'))return;try{const {error}=await supa.from('ax_schedules').delete().eq('id',id);if(error)throw error;await reloadSched(currentSchedTask);}catch(e){alert('삭제 실패: '+e.message);}}
 
 /* init */
 (function(){
