@@ -280,6 +280,9 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .dept-line:first-of-type .dept-lbl{background:var(--accent)}
 .dept-badges{display:flex;gap:6px;flex-wrap:wrap}
 .badge.b-coop{background:var(--bg);color:var(--muted);border:1px solid var(--border)}
+.badge .bl{display:inline-block;background:rgba(0,0,0,.16);border-radius:5px;padding:1px 6px;margin-right:6px;font-size:.64rem;font-weight:800;letter-spacing:.3px;vertical-align:middle}
+.badge.b-coop .bl{background:rgba(0,0,0,.10)}
+[data-theme="dark"] .badge .bl{background:rgba(255,255,255,.22)}
 /* Department detail cards */
 .dept-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:16px;border-top:5px solid var(--primary)}
 .dept-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
@@ -695,7 +698,7 @@ function renderTasks(){
   document.getElementById('taskCount').textContent=`${list.length} / ${TASKS.length} 과제`;
   document.getElementById('taskGrid').innerHTML=list.map(t=>{
     const p=taskProgress(t),c=taskStatusSummary(t);
-    return `<div class="tcard g${t.goal}" onclick="openTask('${t.id}')"><div class="tno">${t.id} · 목표${t.goal}</div><div class="tt">${t.title}</div><div class="tmeta"><span class="badge b-team">담당 ${t.team}</span><span class="badge b-coop">협업 ${t.coop.length}곳</span></div><div class="tprog"><div class="pb"><div class="pf" style="width:${p}%;background:${progColor(p)}"></div></div><div class="pt">${p}%</div></div><div class="mstat">${Object.keys(c).map(k=>`<span><span class="dot ${k}"></span>${STAT_LABEL[k]} ${c[k]}</span>`).join('')}</div></div>`;
+    return `<div class="tcard g${t.goal}" onclick="openTask('${t.id}')"><div class="tno">${t.id} · 목표${t.goal}</div><div class="tt">${t.title}</div><div class="tmeta"><span class="badge b-team"><span class="bl">담당</span>${t.team}</span><span class="badge b-coop"><span class="bl">협업</span>${t.coop.length}곳</span></div><div class="tprog"><div class="pb"><div class="pf" style="width:${p}%;background:${progColor(p)}"></div></div><div class="pt">${p}%</div></div><div class="mstat">${Object.keys(c).map(k=>`<span><span class="dot ${k}"></span>${STAT_LABEL[k]} ${c[k]}</span>`).join('')}</div></div>`;
   }).join('')||'<div class="hint">조건에 맞는 과제가 없습니다.</div>';
 }
 let modalTask=null;
@@ -955,6 +958,8 @@ function toggleTheme(){
   const active=document.querySelector('.tab.active');if(active)switchTab(active.dataset.t,active);
 }
 document.getElementById('themeBtn').onclick=toggleTheme;
+// ESC로 열린 팝업 닫기 (편집 중 셀은 cellKey에서 처리)
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(document.getElementById('swOverlay').classList.contains('open')){closeSchedule();}else if(document.getElementById('overlay').classList.contains('open')){closeModal();}else if(document.getElementById('agentWidget').classList.contains('open')){closeAgent();}});
 
 /* ---------- 공용 DB(Supabase) 실시간 동기화 ---------- */
 const SUPA_URL="https://bgivrphfzlpnimojhvcv.supabase.co";
@@ -1080,7 +1085,7 @@ function renderSchedule(tid){
 }
 function selectSchedRow(id){selectedSchedId=(selectedSchedId===id?null:id);renderSchedule(currentSchedTask);}
 function cellFocus(id){selectedSchedId=id;editingCell=true;}
-function cellKey(e,el){if((e.key==='Enter'||e.keyCode===13)&&!e.isComposing){e.preventDefault();el.blur();}if(e.key==='Escape'){e.preventDefault();el.blur();}}
+function cellKey(e,el){if((e.key==='Enter'||e.keyCode===13)&&!e.isComposing){e.preventDefault();el.blur();}if(e.key==='Escape'){e.preventDefault();e.stopPropagation();el.blur();}}
 function pastePlain(e){e.preventDefault();const cd=e.clipboardData||window.clipboardData;const txt=cd?cd.getData('text/plain'):'';try{document.execCommand('insertText',false,txt.replace(/[\r\n\t]+/g,' '));}catch(_){const sel=window.getSelection&&window.getSelection();if(sel&&sel.rangeCount){const r=sel.getRangeAt(0);r.deleteContents();r.insertNode(document.createTextNode(txt));}}}
 async function cellBlur(el){editingCell=false;const id=el.dataset.id,f=el.dataset.field;const val=el.innerText.trim();const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===id);if(!row){return;}const cur=row[f]==null?'':String(row[f]);if(val===cur){return;}if(f==='name'&&!val){el.innerText=cur;return;}await updateSchedField(id,f,val||null);}
 async function updateSchedField(id,f,value){if(!supa)return;try{const patch={updated_by:whoAmI(),updated_at:new Date().toISOString()};patch[f]=value;const {error}=await supa.from('ax_schedules').update(patch).eq('id',id);if(error)throw error;const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===id);if(row)row[f]=value;await reloadSched(currentSchedTask);}catch(e){alert('저장 실패: '+e.message);}}
