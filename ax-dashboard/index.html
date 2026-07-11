@@ -1152,9 +1152,9 @@ function renderSchedule(tid){
       </span>
       <span class="rb-div"></span>
       <span class="rb-grp">
-        <button class="rb-ib" onclick="fmtAlign('left')" title="왼쪽 정렬">☰⯇</button>
-        <button class="rb-ib" onclick="fmtAlign('center')" title="가운데 정렬">☰</button>
-        <button class="rb-ib" onclick="fmtAlign('right')" title="오른쪽 정렬">⯈☰</button>
+        <button class="rb-ib" onclick="fmtAlign('left')" title="왼쪽 정렬"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M2 4h12M2 8h8M2 12h11"/></svg></button>
+        <button class="rb-ib" onclick="fmtAlign('center')" title="가운데 정렬"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 4h10M5 8h6M4 12h8"/></svg></button>
+        <button class="rb-ib" onclick="fmtAlign('right')" title="오른쪽 정렬"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M2 4h12M6 8h8M3 12h11"/></svg></button>
       </span>
       <span class="rb-div"></span>
       <span class="rb-grp">
@@ -1232,7 +1232,7 @@ function openMenu(e,items){closeMenu();const m=document.createElement('div');m.c
 function menuOutside(e){const m=document.getElementById('swCtxMenu');if(m&&!m.contains(e.target))closeMenu();}
 function closeMenu(){const m=document.getElementById('swCtxMenu');if(m)m.remove();document.removeEventListener('mousedown',menuOutside);}
 function rowMenu(e,id){e.preventDefault();selectedSchedId=id;renderSchedule(currentSchedTask);openMenu(e,[{t:'⬆ 위에 행 삽입',f:()=>insertRow('above')},{t:'⬇ 아래에 행 삽입',f:()=>insertRow('below')},{sep:1},{t:'⧉ 행 복사',f:()=>copyRow()},{t:'📋 붙여넣기',f:()=>pasteRow()},{sep:1},{t:'🗑️ 행 삭제',f:()=>deleteRow(id)}]);}
-function colMenu(e,field){e.preventDefault();const isCustom=field.indexOf('c_')===0;openMenu(e,[{t:'⯇ 왼쪽 정렬',f:()=>setColAlign(field,'left')},{t:'≡ 가운데 정렬',f:()=>setColAlign(field,'center')},{t:'⯈ 오른쪽 정렬',f:()=>setColAlign(field,'right')},{sep:1},{t:'➕ 열 추가',f:()=>addColumn()}].concat(isCustom?[{t:'🗑️ 이 열 삭제',f:()=>deleteColumn(field)}]:[]));}
+function colMenu(e,field){e.preventDefault();const isCustom=field.indexOf('c_')===0;openMenu(e,[{t:'◧ 왼쪽 정렬',f:()=>setColAlign(field,'left')},{t:'▤ 가운데 정렬',f:()=>setColAlign(field,'center')},{t:'◨ 오른쪽 정렬',f:()=>setColAlign(field,'right')},{sep:1},{t:'➕ 열 추가',f:()=>addColumn()}].concat(isCustom?[{t:'🗑️ 이 열 삭제',f:()=>deleteColumn(field)}]:[]));}
 
 /* init */
 (function(){
