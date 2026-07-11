@@ -361,8 +361,17 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .sw-ribbon .rb-ib .rb-a{border-bottom:3px solid #d64545;padding-bottom:0}
 .sw-ribbon .rb-ib.rb-ins:hover{border-color:var(--success);color:var(--success);background:rgba(46,158,91,.09)}
 .sw-ribbon .rb-ib.rb-del:hover{border-color:var(--danger);color:var(--danger);background:rgba(214,69,69,.09)}
-.sw-ribbon .rb-color{position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;cursor:pointer}
 .sw-ribbon .rb-ib .rb-fill{font-size:.85rem}
+.sw-palette{position:fixed;z-index:1300;background:var(--card);border:1px solid var(--border);border-radius:11px;box-shadow:0 14px 38px rgba(0,0,0,.30);padding:10px 11px}
+.sw-palette .pal-head{font-size:.72rem;font-weight:800;color:var(--muted);margin:0 2px 6px}
+.sw-palette .pal-reset{display:flex;align-items:center;gap:7px;width:100%;background:none;border:0;border-radius:7px;padding:7px 8px;font-family:var(--font);font-size:.82rem;font-weight:600;color:var(--text);cursor:pointer;margin-bottom:8px}
+.sw-palette .pal-reset:hover{background:rgba(0,0,0,.06)}
+[data-theme="dark"] .sw-palette .pal-reset:hover{background:rgba(255,255,255,.08)}
+.sw-palette .pal-x{display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:50%;color:#d64545;font-weight:800;font-size:.9rem}
+.sw-palette .pal-grid{display:grid;grid-template-columns:repeat(10,22px);gap:5px}
+.sw-palette .pal-sw{width:22px;height:22px;border-radius:50%;border:1px solid rgba(0,0,0,.20);cursor:pointer;padding:0;transition:transform .1s}
+.sw-palette .pal-sw:hover{transform:scale(1.2);box-shadow:0 0 0 2px var(--primary)}
+.sw-palette .pal-sw.cur{box-shadow:0 0 0 2px var(--primary),0 0 0 4px var(--card)}
 .sw-ctxmenu{position:fixed;z-index:1000;background:var(--card);border:1px solid var(--border);border-radius:9px;box-shadow:0 10px 30px rgba(0,0,0,.22);padding:5px;min-width:172px;font-family:var(--font)}
 .sw-ctxmenu .cm-item{padding:8px 12px;border-radius:6px;font-size:.83rem;color:var(--text);cursor:pointer;white-space:nowrap}
 .sw-ctxmenu .cm-item:hover{background:rgba(30,111,196,.12);color:var(--primary)}
@@ -988,7 +997,7 @@ function toggleTheme(){
 }
 document.getElementById('themeBtn').onclick=toggleTheme;
 // ESC로 열린 팝업 닫기 (편집 중 셀은 cellKey에서 처리)
-document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;const cm=document.getElementById('swCtxMenu');if(cm){e.stopPropagation();closeMenu();return;}if(document.getElementById('swOverlay').classList.contains('open')){closeSchedule();}else if(document.getElementById('overlay').classList.contains('open')){closeModal();}else if(document.getElementById('agentWidget').classList.contains('open')){closeAgent();}});
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;const pal=document.getElementById('swPalette');if(pal){e.stopPropagation();closePalette();return;}const cm=document.getElementById('swCtxMenu');if(cm){e.stopPropagation();closeMenu();return;}if(document.getElementById('swOverlay').classList.contains('open')){closeSchedule();}else if(document.getElementById('overlay').classList.contains('open')){closeModal();}else if(document.getElementById('agentWidget').classList.contains('open')){closeAgent();}});
 // 세부계획 워크스페이스 단축키 (Win/Mac 공용). 셀 편집 중에는 텍스트 편집을 방해하지 않음
 document.addEventListener('keydown',e=>{
   const sw=document.getElementById('swOverlay');if(!sw||!sw.classList.contains('open'))return;
@@ -1147,8 +1156,8 @@ function renderSchedule(tid){
       </span>
       <span class="rb-div"></span>
       <span class="rb-grp">
-        <label class="rb-ib" title="글자색"><span class="rb-a">가</span><input type="color" class="rb-color" onchange="fmtTextColor(this.value)"></label>
-        <label class="rb-ib" title="채우기 색"><span class="rb-fill">🖌</span><input type="color" class="rb-color" onchange="fmtFillColor(this.value)"></label>
+        <button class="rb-ib" title="글자색" onclick="openColorPalette('text',this)"><span class="rb-a">가</span></button>
+        <button class="rb-ib" title="채우기 색(표 서식)" onclick="openColorPalette('fill',this)"><span class="rb-fill">🖌</span></button>
       </span>
       <span class="rb-div"></span>
       <span class="rb-grp">
@@ -1218,6 +1227,36 @@ function fmtUnderline(){fmtToggle('underline');}
 async function fmtSize(delta){const row=fmtNeedRow();if(!row)return;const id=selectedSchedId,cur=row.font_size||13,ns=Math.max(9,Math.min(30,cur+delta));await updateSchedRaw(id,{font_size:ns},{label:'글자크기',run:async()=>updateSchedRaw(id,{font_size:row.font_size||null},null)});}
 async function fmtTextColor(v){const row=fmtNeedRow();if(!row)return;const id=selectedSchedId,old=row.text_color;await updateSchedRaw(id,{text_color:v},{label:'글자색',run:async()=>updateSchedRaw(id,{text_color:old},null)});}
 async function fmtFillColor(v){const row=fmtNeedRow();if(!row)return;const id=selectedSchedId,old=row.fill_color;await updateSchedRaw(id,{fill_color:v},{label:'채우기',run:async()=>updateSchedRaw(id,{fill_color:old},null)});}
+/* 색상 팔레트 드롭다운 (OS 기본 색선택기 대신 구글시트식 스와치) */
+const PALETTE=[
+ ['#000000','#434343','#666666','#999999','#b7b7b7','#cccccc','#d9d9d9','#efefef','#f3f3f3','#ffffff'],
+ ['#980000','#ff0000','#ff9900','#ffff00','#00ff00','#00ffff','#4a86e8','#0000ff','#9900ff','#ff00ff'],
+ ['#e6b8af','#f4cccc','#fce5cd','#fff2cc','#d9ead3','#d0e0e3','#c9daf8','#cfe2f3','#d9d2e9','#ead1dc'],
+ ['#dd7e6b','#ea9999','#f9cb9c','#ffe599','#b6d7a8','#a2c4c9','#a4c2f4','#9fc5e8','#b4a7d6','#d5a6bd'],
+ ['#cc4125','#e06666','#f6b26b','#ffd966','#93c47d','#76a5af','#6d9eeb','#6fa8dc','#8e7cc3','#c27ba0'],
+ ['#a61c00','#cc0000','#e69138','#f1c232','#6aa84f','#45818e','#3c78d8','#3d85c6','#674ea7','#a64d79'],
+ ['#85200c','#990000','#b45f06','#bf9000','#38761d','#134f5c','#1155cc','#0b5394','#351c75','#741b47'],
+ ['#5b0f00','#660000','#783f04','#7f6000','#274e13','#0c343d','#1c4587','#073763','#20124d','#4c1130']
+];
+function openColorPalette(kind,anchorEl){
+  closeMenu();closePalette();
+  const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===selectedSchedId);
+  const cur=row?(kind==='text'?row.text_color:row.fill_color):null;
+  const curLc=(cur||'').toLowerCase();
+  const pop=document.createElement('div');pop.className='sw-palette';pop.id='swPalette';
+  pop.innerHTML=`<div class="pal-head">${kind==='text'?'글자색':'채우기 색'}</div>`+
+    `<button class="pal-reset" onclick="fmtClearColor('${kind}')"><span class="pal-x">⊘</span> 재설정(색 없음)</button>`+
+    `<div class="pal-grid">`+PALETTE.map(rw=>rw.map(c=>`<button class="pal-sw${curLc===c?' cur':''}" style="background:${c}" title="${c}" onclick="pickColor('${kind}','${c}')"></button>`).join('')).join('')+`</div>`;
+  document.body.appendChild(pop);
+  const r=anchorEl.getBoundingClientRect();const vw=window.innerWidth,vh=window.innerHeight;
+  pop.style.left=Math.max(6,Math.min(r.left,vw-pop.offsetWidth-8))+'px';
+  pop.style.top=Math.min(r.bottom+5,vh-pop.offsetHeight-8)+'px';
+  setTimeout(()=>document.addEventListener('mousedown',palOutside),0);
+}
+function palOutside(e){const p=document.getElementById('swPalette');if(p&&!p.contains(e.target))closePalette();}
+function closePalette(){const p=document.getElementById('swPalette');if(p)p.remove();document.removeEventListener('mousedown',palOutside);}
+function pickColor(kind,c){closePalette();if(kind==='text')fmtTextColor(c);else fmtFillColor(c);}
+async function fmtClearColor(kind){closePalette();const row=fmtNeedRow();if(!row)return;const id=selectedSchedId;if(kind==='text'){const old=row.text_color;await updateSchedRaw(id,{text_color:null},{label:'글자색',run:async()=>updateSchedRaw(id,{text_color:old},null)});}else{const old=row.fill_color;await updateSchedRaw(id,{fill_color:null},{label:'채우기',run:async()=>updateSchedRaw(id,{fill_color:old},null)});}}
 async function fmtAlign(a){if(selectedCol){await setColAlign(selectedCol,a);return;}const row=fmtNeedRow();if(!row)return;const id=selectedSchedId,old=row.align;await updateSchedRaw(id,{align:a},{label:'정렬',run:async()=>updateSchedRaw(id,{align:old},null)});}
 function selectSchedCol(field){selectedCol=(selectedCol===field?null:field);renderSchedule(currentSchedTask);}
 function renameColPrompt(id){if(!authUser)return;const col=(schedCfg.cols||[]).find(c=>c.id===id);if(!col)return;const label=(prompt('열 이름을 입력하세요.',col.label)||'').trim();if(!label||label===col.label)return;renameColumn(id,label).then(()=>renderSchedule(currentSchedTask));}
