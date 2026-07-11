@@ -1133,7 +1133,7 @@ function renderSchedule(tid){
     const sc=weekCol(r.start_date),ec=weekCol(r.end_date);
     let cells='';
     for(let i=0;i<30;i++){const on=(sc!=null&&ec!=null&&i>=sc&&i<=ec);cells+=`<td class="sw-c${on?' on':''}" ${on?`style="background:${gcol}"`:''}></td>`;}
-    const sel=selectedSchedId===r.id?' sw-selrow':'';
+    const sel=(!selectedCells.length&&!selectedCol&&selectedSchedId===r.id)?' sw-selrow':'';
     const di=(f)=>canEdit?`<input type="text" inputmode="numeric" class="sw-dinput" value="${r[f]||''}" placeholder="예:0715" title="숫자만 입력 — 0715·20260715" onfocus="dateFocus('${r.id}','${f}')" onblur="dateBlur('${r.id}','${f}',this)" onkeydown="dateKey(event,this)">`:fmtD(r[f]);
     let customCells=cols.map(c=>`<td class="sw-custom${csel('extra:'+c.id)}" ${ce} data-id="${r.id}" data-field="extra:${c.id}" ${canEdit?`onmousedown="cellDown(event,'${r.id}','extra:${c.id}')" onfocus="cellFocus('${r.id}','extra:${c.id}')" onblur="cellBlur(this)" onkeydown="cellKey(event,this)"`:''} ${cellStyle(r,'extra:'+c.id)}>${escH(r.extra&&r.extra[c.id])}</td>`).join('');
     body+=`<tr class="${sel}">`+
