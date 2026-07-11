@@ -60,7 +60,9 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .presence .pres-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:16px;padding:2px 11px 2px 2px;flex-shrink:0;transition:transform .12s}
 .presence .pres-chip:hover{transform:translateY(-1px);background:rgba(255,255,255,.25)}
 .presence .pres-av{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:.72rem;font-weight:800;border:2px solid rgba(255,255,255,.85);box-shadow:0 1px 3px rgba(0,0,0,.3);flex-shrink:0}
-.presence .pres-nm{font-size:.75rem;color:#fff;font-weight:700;white-space:nowrap;max-width:96px;overflow:hidden;text-overflow:ellipsis}
+.presence .pres-txt{display:inline-flex;flex-direction:column;line-height:1.15}
+.presence .pres-nm{font-size:.75rem;color:#fff;font-weight:700;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+.presence .pres-loc{font-size:.62rem;font-weight:800;white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis;background:#fff;border-radius:8px;padding:0 5px;margin-top:1px}
 .presence .pres-more{background:rgba(255,255,255,.22);color:#fff;font-size:.74rem;font-weight:800;border-radius:14px;padding:4px 10px;flex-shrink:0;white-space:nowrap}
 /* Tabs */
 .tabs{background:var(--card);border-bottom:2px solid var(--border);position:sticky;top:0;z-index:50;box-shadow:var(--shadow)}
@@ -334,7 +336,11 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .sw-table tr.sw-selrow td{background:rgba(232,137,12,.10)}
 .sw-table tr.sw-selrow .sw-rownum{background:var(--warning);color:#fff}
 .sw-dinput{border:1px solid var(--border);border-radius:5px;font-family:var(--font);font-size:.7rem;padding:2px 3px;background:var(--card);color:var(--text);width:118px}
-.sw-tablewrap{overflow-x:auto;padding:12px 16px}
+.sw-tablewrap{overflow:auto;padding:12px 16px;max-height:calc(94vh - 172px)}
+.sw-table td.peer-edit{position:relative}
+.peer-badge{position:absolute;top:-8px;right:-4px;min-width:16px;height:16px;padding:0 3px;border-radius:8px;color:#fff;font-size:.62rem;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.35);z-index:3;pointer-events:none}
+.sw-ribbon .rb-sel{font-size:.76rem;font-weight:800;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:5px 10px;white-space:nowrap;max-width:230px;overflow:hidden;text-overflow:ellipsis}
+.sw-ribbon .rb-sel.has{color:var(--primary);border-color:var(--primary);background:rgba(30,111,196,.08)}
 .sw-table{border-collapse:collapse;font-size:.78rem;min-width:1200px}
 .sw-table th,.sw-table td{border:1px solid var(--border);padding:5px 7px;vertical-align:middle}
 .sw-table thead th{background:var(--bg);font-weight:800;text-align:center;position:sticky;top:0}
@@ -678,6 +684,7 @@ function switchTab(name,el){
   if(name==='overview') renderOverview();
   if(name==='analytics') renderAnalytics();
   if(name==='route') renderRoute();
+  myView=el?el.textContent.trim():name;updatePresence();
 }
 
 /* ---------- 개요 ---------- */
@@ -1020,8 +1027,10 @@ function initSupa(){try{if(window.supabase&&SUPA_URL&&SUPA_KEY){supa=window.supa
 /* ---------- 동시 접속자 표시 (Realtime Presence) ---------- */
 const CLIENT_ID=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():('c'+Math.random().toString(36).slice(2));
 let presenceChannel=null;
+let myView='개요',myCell=null,presenceUsers=[];
 function colorFor(s){const c=['#0b4f9e','#00a3b4','#6a3fb5','#2e9e5b','#e8890c','#d64545','#1e6fc4','#c2185b','#00897b','#5e35b1','#f4511e','#3949ab','#00838f','#ad1457'];let h=0;s=s||'?';for(let i=0;i<s.length;i++)h=(h*131+s.charCodeAt(i))>>>0;return c[h%c.length];}
-function myPresence(){const nm=whoAmI();return {id:CLIENT_ID,name:nm,initial:(nm.trim()[0]||'?').toUpperCase(),color:colorFor(nm),login:!!authUser};}
+function myPresence(){const nm=whoAmI();return {id:CLIENT_ID,name:nm,initial:(nm.trim()[0]||'?').toUpperCase(),color:colorFor(nm),login:!!authUser,view:myView,task:currentSchedTask||null,cell:myCell};}
+function locLabel(u){if(u.task){return `📝 ${u.task} 세부계획${u.cell?' 편집중':''}`;}return (u.view||'둘러보는 중');}
 function initPresence(){if(!supa)return;presenceChannel=supa.channel('ax_presence',{config:{presence:{key:CLIENT_ID}}});presenceChannel.on('presence',{event:'sync'},renderPresence).subscribe(async st=>{if(st==='SUBSCRIBED'){try{await presenceChannel.track(myPresence());}catch(e){}}});}
 function updatePresence(){if(presenceChannel){try{presenceChannel.track(myPresence());}catch(e){}}}
 function renderPresence(){
@@ -1029,11 +1038,25 @@ function renderPresence(){
   const state=presenceChannel?presenceChannel.presenceState():{};
   const seen={},users=[];
   Object.values(state).forEach(arr=>{const u=arr&&arr[0];if(u&&!seen[u.name]){seen[u.name]=1;users.push(u);}});
-  if(!users.length){el.innerHTML='';return;}
+  presenceUsers=users;
+  if(!users.length){el.innerHTML='';paintPresenceCells(users);return;}
   const MAX=6;const show=users.slice(0,MAX);
   el.innerHTML=`<span class="pres-lbl">👥 ${users.length}명 접속</span>`+
-    show.map(u=>`<span class="pres-chip" title="${u.name}${u.login?'':' (게스트)'}"><span class="pres-av" style="background:${u.color}">${u.initial}</span><span class="pres-nm">${u.name}</span></span>`).join('')+
+    show.map(u=>`<span class="pres-chip" title="${u.name}${u.login?'':' (게스트)'} · ${locLabel(u)}"><span class="pres-av" style="background:${u.color}">${u.initial}</span><span class="pres-txt"><span class="pres-nm">${u.name}</span><span class="pres-loc" style="color:${u.color}">${locLabel(u)}</span></span></span>`).join('')+
     (users.length>MAX?`<span class="pres-more" title="외 ${users.length-MAX}명">+${users.length-MAX}</span>`:'');
+  paintPresenceCells(users);
+}
+// 다른 사용자가 편집 중인 셀을 색 테두리+이니셜 배지로 표시
+function paintPresenceCells(users){
+  document.querySelectorAll('.sw-table td.peer-edit').forEach(td=>{td.classList.remove('peer-edit');td.style.removeProperty('outline');const b=td.querySelector('.peer-badge');if(b)b.remove();});
+  if(!currentSchedTask)return;
+  (users||[]).forEach(u=>{
+    if(u.id===CLIENT_ID||u.task!==currentSchedTask||!u.cell)return;
+    const td=document.querySelector(`.sw-table td[data-id="${u.cell.rowId}"][data-field="${u.cell.field}"]`);
+    if(!td)return;
+    td.classList.add('peer-edit');td.style.outline='2px solid '+u.color;td.style.outlineOffset='-2px';
+    const b=document.createElement('span');b.className='peer-badge';b.textContent=u.initial;b.style.background=u.color;b.title=u.name+' 편집 중';td.appendChild(b);
+  });
 }
 
 /* ---------- 구글 로그인 (Supabase Auth) ---------- */
@@ -1076,8 +1099,8 @@ function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
 function rowStyle(r){let s='';if(r.fill_color)s+=`background:${r.fill_color};`;if(r.text_color)s+=`color:${r.text_color};`;if(r.bold)s+='font-weight:800;';return s?`style="${s}"`:'';}
 async function reloadSched(tid){if(!supa)return;try{const {data,error}=await supa.from('ax_schedules').select('*').eq('task_id',tid).order('sort_order');if(error)throw error;schedCache[tid]=data||[];}catch(e){schedCache[tid]=schedCache[tid]||[];}await loadCfg(tid);if(currentSchedTask===tid&&!editingCell)renderSchedule(tid);}
 function subscribeSchedules(){if(!supa)return;supa.channel('ax_sch_ch').on('postgres_changes',{event:'*',schema:'public',table:'ax_schedules'},payload=>{const r=(payload.new&&payload.new.task_id)?payload.new:payload.old;if(r&&r.task_id===currentSchedTask)reloadSched(r.task_id);}).on('postgres_changes',{event:'*',schema:'public',table:'ax_sched_cfg'},payload=>{const r=(payload.new&&payload.new.task_id)?payload.new:payload.old;if(r&&r.task_id===currentSchedTask&&!editingCell)reloadSched(r.task_id);}).subscribe();}
-function openSchedule(tid){currentSchedTask=tid;selectedSchedId=null;document.getElementById('swOverlay').classList.add('open');refreshBodyLock();renderSchedule(tid);reloadSched(tid);}
-function closeSchedule(){currentSchedTask=null;selectedSchedId=null;editingCell=false;document.getElementById('swOverlay').classList.remove('open');refreshBodyLock();}
+function openSchedule(tid){currentSchedTask=tid;selectedSchedId=null;selectedCol=null;myCell=null;document.getElementById('swOverlay').classList.add('open');refreshBodyLock();renderSchedule(tid);reloadSched(tid);updatePresence();}
+function closeSchedule(){currentSchedTask=null;selectedSchedId=null;selectedCol=null;editingCell=false;myCell=null;document.getElementById('swOverlay').classList.remove('open');refreshBodyLock();updatePresence();}
 function defAlign(f){return f==='seq'?'center':'left';}
 function cellAlign(r,f){return (r&&r.align)||(schedCfg.aligns&&schedCfg.aligns[f])||defAlign(f);}
 function cellStyle(r,f){let s='';if(r.fill_color)s+=`background:${r.fill_color};`;if(r.text_color)s+=`color:${r.text_color};`;if(r.bold)s+='font-weight:800;';if(r.italic)s+='font-style:italic;';if(r.underline)s+='text-decoration:underline;';if(r.font_size)s+=`font-size:${r.font_size}px;`;s+='text-align:'+cellAlign(r,f)+';';return `style="${s}"`;}
@@ -1088,7 +1111,7 @@ function renderSchedule(tid){
   let monthHead=SW_MONTHS.map(m=>`<th colspan="5" class="sw-mh">26.${String(m).padStart(2,'0')}</th>`).join('');
   let weekHead='';SW_MONTHS.forEach(()=>{for(let w=1;w<=5;w++)weekHead+=`<th class="sw-wh">${w}</th>`;});
   const ce=canEdit?'contenteditable="true" spellcheck="false" onpaste="pastePlain(event)"':'';
-  const ed=(r,f)=>canEdit?`data-id="${r.id}" data-field="${f}" onfocus="cellFocus('${r.id}')" onblur="cellBlur(this)" onkeydown="cellKey(event,this)"`:'';
+  const ed=(r,f)=>canEdit?`data-id="${r.id}" data-field="${f}" onfocus="cellFocus('${r.id}','${f}')" onblur="cellBlur(this)" onkeydown="cellKey(event,this)"`:'';
   const cmH=f=>canEdit?`oncontextmenu="colMenu(event,'${f}')" onclick="selectSchedCol('${f}')"`:'';
   const csel=f=>selectedCol===f?' sw-selcol':'';
   let body='';
@@ -1097,8 +1120,8 @@ function renderSchedule(tid){
     let cells='';
     for(let i=0;i<30;i++){const on=(sc!=null&&ec!=null&&i>=sc&&i<=ec);cells+=`<td class="sw-c${on?' on':''}" ${on?`style="background:${gcol}"`:''}></td>`;}
     const sel=selectedSchedId===r.id?' sw-selrow':'';
-    const di=(f)=>canEdit?`<input type="text" inputmode="numeric" class="sw-dinput" value="${r[f]||''}" placeholder="예:0715" title="숫자만 입력 — 0715·20260715" onfocus="editingCell=true;selectedSchedId='${r.id}'" onblur="dateBlur('${r.id}','${f}',this)" onkeydown="dateKey(event,this)">`:fmtD(r[f]);
-    let customCells=cols.map(c=>`<td class="sw-custom${csel(c.id)}" ${ce} data-id="${r.id}" data-field="extra:${c.id}" ${canEdit?`onfocus="cellFocus('${r.id}')" onblur="cellBlur(this)" onkeydown="cellKey(event,this)"`:''} ${cellStyle(r,c.id)}>${escH(r.extra&&r.extra[c.id])}</td>`).join('');
+    const di=(f)=>canEdit?`<input type="text" inputmode="numeric" class="sw-dinput" value="${r[f]||''}" placeholder="예:0715" title="숫자만 입력 — 0715·20260715" onfocus="dateFocus('${r.id}','${f}')" onblur="dateBlur('${r.id}','${f}',this)" onkeydown="dateKey(event,this)">`:fmtD(r[f]);
+    let customCells=cols.map(c=>`<td class="sw-custom${csel(c.id)}" ${ce} data-id="${r.id}" data-field="extra:${c.id}" ${canEdit?`onfocus="cellFocus('${r.id}','extra:${c.id}')" onblur="cellBlur(this)" onkeydown="cellKey(event,this)"`:''} ${cellStyle(r,c.id)}>${escH(r.extra&&r.extra[c.id])}</td>`).join('');
     body+=`<tr class="${sel}">`+
       `<td class="sw-rownum" ${canEdit?`onclick="selectSchedRow('${r.id}')" oncontextmenu="rowMenu(event,'${r.id}')"`:''} title="클릭: 행 선택 · 우클릭: 삽입/삭제/복사">${idx+1}</td>`+
       `<td class="sw-phase${csel('phase')}" ${ce} ${ed(r,'phase')} ${cellStyle(r,'phase')}>${escH(r.phase)}</td>`+
@@ -1140,7 +1163,9 @@ function renderSchedule(tid){
         <button class="rb-ib rb-ins" onclick="addColumn()" title="열 추가">⊞열</button>
         <button class="rb-ib rb-del" onclick="deleteSelCol()" title="선택 열 삭제 (추가한 열만)">⊟열</button>
       </span>
-      <span class="rb-hint">서식 클릭 → <b>즉시 적용</b> · 복사 <b>⌘/Ctrl+C</b> · 붙여넣기 <b>⌘/Ctrl+V</b> · 되돌리기 <b>⌘/Ctrl+Z</b> · 행/열 삽입 <b>⌘/Ctrl +</b> · 삭제 <b>⌘/Ctrl −</b> · 우클릭 메뉴도 지원</span>
+      <span class="rb-div"></span>
+      <span class="rb-sel" id="swSel">선택: 없음</span>
+      <span class="rb-hint">셀·행 클릭해 선택 → 서식 클릭 <b>즉시 적용</b> · 복사 <b>⌘/Ctrl+C</b> · 붙여넣기 <b>⌘/Ctrl+V</b> · 되돌리기 <b>⌘/Ctrl+Z</b> · 행/열 삽입 <b>⌘/Ctrl +</b> · 삭제 <b>⌘/Ctrl −</b></span>
     </div>`:
     `<div class="sw-login"><span>🔒 세부계획 편집은 <b>구글 로그인</b> 후 가능합니다.</span><button class="sw-login-btn" onclick="signInGoogle()">🔑 구글 로그인</button></div>`;
   let customHead=cols.map(c=>`<th rowspan="2" class="sw-custom colhdr${csel(c.id)}" ${cmH(c.id)} ondblclick="renameColPrompt('${c.id}')" title="클릭: 열 선택 · 더블클릭: 이름변경 · 우클릭: 메뉴"><span>${escH(c.label)}</span></th>`).join('');
@@ -1157,12 +1182,15 @@ function renderSchedule(tid){
       </thead>
       <tbody>${body}</tbody>
     </table></div>`;
+  updateSelLabel();paintPresenceCells(presenceUsers);
 }
+function updateSelLabel(){const el=document.getElementById('swSel');if(!el)return;let txt='선택: 없음',has=false;const lbls={phase:'추진단계',seq:'순번',name:'세부과제',deliverable:'산출물',note:'비고'};if(selectedCol){has=true;const c=(schedCfg.cols||[]).find(x=>x.id===selectedCol);txt='선택: 열 · '+(c?c.label:(lbls[selectedCol]||selectedCol));}else if(selectedSchedId){const rows=schedCache[currentSchedTask]||[];const i=rows.findIndex(r=>r.id===selectedSchedId);if(i>=0){has=true;const r=rows[i];txt='선택: '+(i+1)+'행'+(r&&r.name?' · '+r.name:'');}}el.textContent=txt;el.classList.toggle('has',has);}
 function selectSchedRow(id){selectedSchedId=(selectedSchedId===id?null:id);selectedCol=null;renderSchedule(currentSchedTask);}
-function cellFocus(id){selectedSchedId=id;editingCell=true;}
+function cellFocus(id,field){selectedSchedId=id;selectedCol=null;editingCell=true;myCell=field?{rowId:id,field:field}:null;updatePresence();updateSelLabel();}
+function dateFocus(id,field){selectedSchedId=id;selectedCol=null;editingCell=true;myCell={rowId:id,field:field};updatePresence();updateSelLabel();}
 function cellKey(e,el){if((e.key==='Enter'||e.keyCode===13)&&!e.isComposing){e.preventDefault();el.blur();}if(e.key==='Escape'){e.preventDefault();e.stopPropagation();el.blur();}}
 function pastePlain(e){e.preventDefault();const cd=e.clipboardData||window.clipboardData;const txt=cd?cd.getData('text/plain'):'';try{document.execCommand('insertText',false,txt.replace(/[\r\n\t]+/g,' '));}catch(_){const sel=window.getSelection&&window.getSelection();if(sel&&sel.rangeCount){const r=sel.getRangeAt(0);r.deleteContents();r.insertNode(document.createTextNode(txt));}}}
-async function cellBlur(el){editingCell=false;const id=el.dataset.id,f=el.dataset.field;const val=el.innerText.trim();const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===id);if(!row){return;}
+async function cellBlur(el){editingCell=false;myCell=null;updatePresence();const id=el.dataset.id,f=el.dataset.field;const val=el.innerText.trim();const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===id);if(!row){return;}
   if(f.indexOf('extra:')===0){const colId=f.slice(6);const cur=(row.extra&&row.extra[colId])||'';if(val===cur)return;await updateExtraField(id,colId,val||null);return;}
   const cur=row[f]==null?'':String(row[f]);if(val===cur){return;}if(f==='name'&&!val){el.innerText=cur;return;}await updateSchedField(id,f,val||null);}
 /* 저수준: 한 건 업데이트 + 되돌리기 등록 */
@@ -1172,7 +1200,7 @@ async function updateExtraField(id,colId,value,skipUndo){const row=(schedCache[c
 /* 날짜: 숫자패드 입력 → 파싱 */
 function parseDateInput(str){const d=String(str||'').replace(/\D/g,'');if(!d)return null;let y,m,day;if(d.length>=8){y=+d.slice(0,4);m=+d.slice(4,6);day=+d.slice(6,8);}else if(d.length===6){y=2000+ +d.slice(0,2);m=+d.slice(2,4);day=+d.slice(4,6);}else if(d.length===4){y=2026;m=+d.slice(0,2);day=+d.slice(2,4);}else if(d.length===3){y=2026;m=+d.slice(0,1);day=+d.slice(1,3);}else return null;if(m<1||m>12||day<1||day>31)return null;return `${y}-${String(m).padStart(2,'0')}-${String(day).padStart(2,'0')}`;}
 function dateKey(e,el){if(e.key==='Enter'){e.preventDefault();el.blur();}if(e.key==='Escape'){e.preventDefault();e.stopPropagation();el.blur();}}
-function dateBlur(id,f,el){editingCell=false;const iso=parseDateInput(el.value);const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===id);const cur=row?row[f]:null;el.value=iso||'';if(iso===cur)return;updateSchedField(id,f,iso);}
+function dateBlur(id,f,el){editingCell=false;myCell=null;updatePresence();const iso=parseDateInput(el.value);const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===id);const cur=row?row[f]:null;el.value=iso||'';if(iso===cur)return;updateSchedField(id,f,iso);}
 function needSel(){if(!authUser){alert('구글 로그인 후 이용하세요.');return false;}if(!selectedSchedId){alert('먼저 행을 선택하세요. (표 왼쪽 번호# 클릭)');return false;}return true;}
 /* 행 삽입/삭제 */
 async function insertRow(pos){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}const rows=schedCache[currentSchedTask]||[];let sort;if(selectedSchedId&&pos!=='end'){const i=rows.findIndex(r=>r.id===selectedSchedId);const sel=rows[i];const prev=rows[i-1],next=rows[i+1];sort=(pos==='above')?((prev?prev.sort_order:sel.sort_order-20)+sel.sort_order)/2:((next?next.sort_order:sel.sort_order+20)+sel.sort_order)/2;}else sort=(rows.length?Math.max(...rows.map(r=>r.sort_order||0)):0)+10;const row={task_id:currentSchedTask,phase:'',seq:'',name:'새 세부계획',start_date:null,end_date:null,deliverable:null,note:null,extra:{},sort_order:sort,created_by:whoAmI(),updated_by:whoAmI()};try{const {data,error}=await supa.from('ax_schedules').insert(row).select();if(error)throw error;const nid=data&&data[0]&&data[0].id;selectedSchedId=nid;pushUndo({label:'행 삽입',run:async()=>{await supa.from('ax_schedules').delete().eq('id',nid);if(selectedSchedId===nid)selectedSchedId=null;await reloadSched(currentSchedTask);}});await reloadSched(currentSchedTask);}catch(e){alert('추가 실패: '+e.message);}}
@@ -1182,7 +1210,7 @@ async function deleteSelected(){if(!needSel())return;await deleteRow(selectedSch
 function copyRow(){if(!needSel())return;const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===selectedSchedId);if(!row)return;schedClip=JSON.parse(JSON.stringify(row));toast('행을 복사했습니다. 붙여넣기로 추가하세요.');}
 async function pasteRow(){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}if(!schedClip){alert('먼저 행을 복사하세요. (행 선택 → 복사)');return;}const rows=schedCache[currentSchedTask]||[];let sort;if(selectedSchedId){const i=rows.findIndex(r=>r.id===selectedSchedId);const sel=rows[i],next=rows[i+1];sort=((next?next.sort_order:sel.sort_order+20)+sel.sort_order)/2;}else sort=(rows.length?Math.max(...rows.map(r=>r.sort_order||0)):0)+10;const c=schedClip;const row={task_id:currentSchedTask,phase:c.phase,seq:c.seq,name:c.name||'복사된 계획',start_date:c.start_date,end_date:c.end_date,deliverable:c.deliverable,note:c.note,extra:c.extra||{},bold:c.bold,text_color:c.text_color,fill_color:c.fill_color,align:c.align,sort_order:sort,created_by:whoAmI(),updated_by:whoAmI()};try{const {data,error}=await supa.from('ax_schedules').insert(row).select();if(error)throw error;const nid=data&&data[0]&&data[0].id;selectedSchedId=nid;pushUndo({label:'붙여넣기',run:async()=>{await supa.from('ax_schedules').delete().eq('id',nid);if(selectedSchedId===nid)selectedSchedId=null;await reloadSched(currentSchedTask);}});await reloadSched(currentSchedTask);}catch(e){alert('붙여넣기 실패: '+e.message);}}
 /* 서식: 클릭 즉시 적용 (선택 셀/행 대상) */
-function fmtNeedRow(){if(!authUser){alert('구글 로그인 후 이용하세요.');return null;}if(!selectedSchedId){toast('먼저 셀 또는 행을 선택하세요.');return null;}return (schedCache[currentSchedTask]||[]).find(x=>x.id===selectedSchedId)||null;}
+function fmtNeedRow(){if(!authUser){alert('구글 로그인 후 이용하세요.');return null;}if(!selectedSchedId){toast('먼저 표에서 셀이나 왼쪽 번호(#)를 클릭해 행을 선택하세요.');return null;}editingCell=false;return (schedCache[currentSchedTask]||[]).find(x=>x.id===selectedSchedId)||null;}
 async function fmtToggle(field){const row=fmtNeedRow();if(!row)return;const id=selectedSchedId,old=!!row[field];const p={};p[field]=!old;const o={};o[field]=old;await updateSchedRaw(id,p,{label:'서식',run:async()=>updateSchedRaw(id,o,null)});}
 function fmtBold(){fmtToggle('bold');}
 function fmtItalic(){fmtToggle('italic');}
