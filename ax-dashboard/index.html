@@ -1161,6 +1161,7 @@ function renderSchedule(tid){
   const cAttrDate=(r,f)=>canEdit?`data-id="${r.id}" data-field="${f}" onmousedown="cellDown(event,'${r.id}','${f}')" oncontextmenu="cellMenu(event,'${r.id}','${f}')"`:'';
   const defs=colDefsAll();const leftD=defs.left.filter(c=>!colHidden(c.f)),rightD=defs.right.filter(c=>!colHidden(c.f));
   const colgroup=`<colgroup><col style="width:36px">`+leftD.map(cd=>`<col data-col="${cd.f}" style="width:${widthOf(cd.f)}px">`).join('')+Array(wkCount).fill('<col style="width:22px">').join('')+rightD.map(cd=>`<col data-col="${cd.f}" style="width:${widthOf(cd.f)}px">`).join('')+`</colgroup>`;
+  const tableW=36+leftD.reduce((a,cd)=>a+widthOf(cd.f),0)+wkCount*22+rightD.reduce((a,cd)=>a+widthOf(cd.f),0);
   const rsz=cd=>canEdit?`<span class="col-rsz" onmousedown="resizeStart(event,'${cd.f}')" title="너비 조절"></span>`:'';
   const headTh=cd=>`<th rowspan="2" class="${cd.cls} colhdr${csel(cd.f)}" data-col="${cd.f}" ${cmH(cd.f)} ${cd.custom?`ondblclick="renameColPrompt('${cd.cid}')"`:''} title="클릭: 열 선택 · 우클릭: 메뉴${cd.custom?' · 더블클릭: 이름변경':''}">${cd.custom?`<span>${escH(cd.label)}</span>`:cd.label}${rsz(cd)}</th>`;
   const bodyTd=(r,cd)=>{
@@ -1214,7 +1215,7 @@ function renderSchedule(tid){
       <button class="sw-close" onclick="closeSchedule()">×</button>
     </div>
     ${ribbon}
-    <div class="sw-tablewrap"><table class="sw-table">
+    <div class="sw-tablewrap"><table class="sw-table" style="width:${tableW}px">
       ${colgroup}
       <thead>
         <tr><th rowspan="2" class="sw-rownum">#</th>${leftD.map(headTh).join('')}${monthHead}${rightD.map(headTh).join('')}</tr>
@@ -1250,8 +1251,8 @@ document.addEventListener('mouseup',()=>{
 });
 /* 열 너비 드래그 조절 */
 let resizing=null;
-function resizeStart(e,field){e.preventDefault();e.stopPropagation();const th=e.target.closest('th');if(!th)return;resizing={field,startX:e.clientX,startW:th.offsetWidth,w:th.offsetWidth};document.body.style.cursor='col-resize';document.body.style.userSelect='none';}
-document.addEventListener('mousemove',e=>{if(!resizing)return;const w=Math.max(40,Math.min(600,resizing.startW+(e.clientX-resizing.startX)));resizing.w=w;const col=document.querySelector(`.sw-table col[data-col="${resizing.field}"]`);if(col)col.style.width=w+'px';});
+function resizeStart(e,field){e.preventDefault();e.stopPropagation();const th=e.target.closest('th');if(!th)return;const table=document.querySelector('.sw-table');resizing={field,startX:e.clientX,startW:th.offsetWidth,w:th.offsetWidth,table,tableW:table?table.offsetWidth:0};document.body.style.cursor='col-resize';document.body.style.userSelect='none';}
+document.addEventListener('mousemove',e=>{if(!resizing)return;const w=Math.max(40,Math.min(600,resizing.startW+(e.clientX-resizing.startX)));resizing.w=w;const col=document.querySelector(`.sw-table col[data-col="${resizing.field}"]`);if(col)col.style.width=w+'px';if(resizing.table)resizing.table.style.width=(resizing.tableW+(w-resizing.startW))+'px';});
 document.addEventListener('mouseup',()=>{if(!resizing)return;const f=resizing.field,w=resizing.w;document.body.style.cursor='';document.body.style.userSelect='';resizing=null;saveColWidth(f,w);});
 async function saveColWidth(field,w){if(!authUser)return;schedCfg.widths=schedCfg.widths||{};const old=Object.assign({},schedCfg.widths);if(schedCfg.widths[field]===w)return;schedCfg.widths=Object.assign({},schedCfg.widths);schedCfg.widths[field]=w;pushUndo({label:'열 너비',run:async()=>{schedCfg.widths=old;await saveCfg();await reloadSched(currentSchedTask);}});await saveCfg();}
 function fieldLabel(f){const lbls={phase:'추진단계',seq:'순번',name:'세부과제',deliverable:'산출물',note:'비고'};if(f&&f.indexOf('extra:')===0){const c=(schedCfg.cols||[]).find(x=>x.id===f.slice(6));return c?c.label:'추가열';}return lbls[f]||f;}
