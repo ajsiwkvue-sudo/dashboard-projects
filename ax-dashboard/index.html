@@ -353,7 +353,8 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .sw-table .colhdr:hover{color:var(--primary)}
 .sw-table th.sw-selcol{background:rgba(30,111,196,.16)!important;box-shadow:inset 0 0 0 2px var(--primary)}
 .sw-table td.sw-selcol{box-shadow:inset 0 0 0 2px rgba(30,111,196,.45)}
-.sw-table td.sw-selcell{box-shadow:inset 0 0 0 2px var(--primary)!important}
+.sw-table td.sw-selcell{box-shadow:inset 0 0 0 2px var(--primary)!important;background:rgba(30,111,196,.06)}
+.sw-table.dragging,.sw-table.dragging *{user-select:none!important;-webkit-user-select:none!important;cursor:cell!important}
 .sw-ribbon .rb-grp{display:inline-flex;align-items:center;gap:3px}
 .sw-ribbon .rb-ib{display:inline-flex;align-items:center;justify-content:center;gap:2px;min-width:32px;height:32px;padding:0 7px;background:var(--card);border:1px solid var(--border);border-radius:7px;font-family:var(--font);font-size:.9rem;font-weight:600;color:var(--text);cursor:pointer;position:relative;line-height:1}
 .sw-ribbon .rb-ib:hover{border-color:var(--primary);color:var(--primary);background:rgba(30,111,196,.08)}
@@ -1095,6 +1096,8 @@ function whoAmI(){return authUser?(authUser.name||authUser.email):(userName||'�
 /* ---------- 과제별 실행계획 간트 워크스페이스 ---------- */
 const SW_MONTHS=[7,8,9,10,11,12];
 let schedCache={},currentSchedTask=null,selectedSchedId=null,selectedCol=null,selectedCell=null,editingCell=false;
+let selectedCells=[],dragAnchor=null,isDragging=false,justDragged=false;   // 다중 셀 선택 + 드래그
+function setSelCells(arr){selectedCells=arr||[];selectedCell=selectedCells.length?selectedCells[0]:null;}
 let schedCfg={cols:[],aligns:{}};   // 과제별 열 설정(커스텀 열·열 정렬)
 let schedClip=null;                 // 행 복사 클립보드
 let undoStack=[];                   // 되돌리기 스택
@@ -1109,8 +1112,8 @@ function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
 function rowStyle(r){let s='';if(r.fill_color)s+=`background:${r.fill_color};`;if(r.text_color)s+=`color:${r.text_color};`;if(r.bold)s+='font-weight:800;';return s?`style="${s}"`:'';}
 async function reloadSched(tid){if(!supa)return;try{const {data,error}=await supa.from('ax_schedules').select('*').eq('task_id',tid).order('sort_order');if(error)throw error;schedCache[tid]=data||[];}catch(e){schedCache[tid]=schedCache[tid]||[];}await loadCfg(tid);if(currentSchedTask===tid&&!editingCell)renderSchedule(tid);}
 function subscribeSchedules(){if(!supa)return;supa.channel('ax_sch_ch').on('postgres_changes',{event:'*',schema:'public',table:'ax_schedules'},payload=>{const r=(payload.new&&payload.new.task_id)?payload.new:payload.old;if(r&&r.task_id===currentSchedTask)reloadSched(r.task_id);}).on('postgres_changes',{event:'*',schema:'public',table:'ax_sched_cfg'},payload=>{const r=(payload.new&&payload.new.task_id)?payload.new:payload.old;if(r&&r.task_id===currentSchedTask&&!editingCell)reloadSched(r.task_id);}).subscribe();}
-function openSchedule(tid){currentSchedTask=tid;selectedSchedId=null;selectedCol=null;selectedCell=null;myCell=null;document.getElementById('swOverlay').classList.add('open');refreshBodyLock();renderSchedule(tid);reloadSched(tid);updatePresence();}
-function closeSchedule(){currentSchedTask=null;selectedSchedId=null;selectedCol=null;selectedCell=null;editingCell=false;myCell=null;document.getElementById('swOverlay').classList.remove('open');refreshBodyLock();updatePresence();}
+function openSchedule(tid){currentSchedTask=tid;selectedSchedId=null;selectedCol=null;setSelCells([]);myCell=null;document.getElementById('swOverlay').classList.add('open');refreshBodyLock();renderSchedule(tid);reloadSched(tid);updatePresence();}
+function closeSchedule(){currentSchedTask=null;selectedSchedId=null;selectedCol=null;setSelCells([]);editingCell=false;myCell=null;document.getElementById('swOverlay').classList.remove('open');refreshBodyLock();updatePresence();}
 function defAlign(f){return f==='seq'?'center':'left';}
 function cellFmt(r,f){return (r&&r.fmt&&r.fmt[f])||{};}   // 셀 단위 서식 {b,i,u,tc,fc,fs,al}
 function cellAlign(r,f){const c=cellFmt(r,f);return c.al||(schedCfg.aligns&&schedCfg.aligns[f])||defAlign(f);}
@@ -1122,7 +1125,7 @@ function renderSchedule(tid){
   let monthHead=SW_MONTHS.map(m=>`<th colspan="5" class="sw-mh">26.${String(m).padStart(2,'0')}</th>`).join('');
   let weekHead='';SW_MONTHS.forEach(()=>{for(let w=1;w<=5;w++)weekHead+=`<th class="sw-wh">${w}</th>`;});
   const ce=canEdit?'contenteditable="true" spellcheck="false" onpaste="pastePlain(event)"':'';
-  const ed=(r,f)=>canEdit?`data-id="${r.id}" data-field="${f}" onfocus="cellFocus('${r.id}','${f}')" onblur="cellBlur(this)" onkeydown="cellKey(event,this)"`:'';
+  const ed=(r,f)=>canEdit?`data-id="${r.id}" data-field="${f}" onmousedown="cellDown(event,'${r.id}','${f}')" onfocus="cellFocus('${r.id}','${f}')" onblur="cellBlur(this)" onkeydown="cellKey(event,this)"`:'';
   const cmH=f=>canEdit?`oncontextmenu="colMenu(event,'${f}')" onclick="selectSchedCol('${f}')"`:'';
   const csel=f=>selectedCol===f?' sw-selcol':'';
   let body='';
@@ -1132,7 +1135,7 @@ function renderSchedule(tid){
     for(let i=0;i<30;i++){const on=(sc!=null&&ec!=null&&i>=sc&&i<=ec);cells+=`<td class="sw-c${on?' on':''}" ${on?`style="background:${gcol}"`:''}></td>`;}
     const sel=selectedSchedId===r.id?' sw-selrow':'';
     const di=(f)=>canEdit?`<input type="text" inputmode="numeric" class="sw-dinput" value="${r[f]||''}" placeholder="예:0715" title="숫자만 입력 — 0715·20260715" onfocus="dateFocus('${r.id}','${f}')" onblur="dateBlur('${r.id}','${f}',this)" onkeydown="dateKey(event,this)">`:fmtD(r[f]);
-    let customCells=cols.map(c=>`<td class="sw-custom${csel('extra:'+c.id)}" ${ce} data-id="${r.id}" data-field="extra:${c.id}" ${canEdit?`onfocus="cellFocus('${r.id}','extra:${c.id}')" onblur="cellBlur(this)" onkeydown="cellKey(event,this)"`:''} ${cellStyle(r,'extra:'+c.id)}>${escH(r.extra&&r.extra[c.id])}</td>`).join('');
+    let customCells=cols.map(c=>`<td class="sw-custom${csel('extra:'+c.id)}" ${ce} data-id="${r.id}" data-field="extra:${c.id}" ${canEdit?`onmousedown="cellDown(event,'${r.id}','extra:${c.id}')" onfocus="cellFocus('${r.id}','extra:${c.id}')" onblur="cellBlur(this)" onkeydown="cellKey(event,this)"`:''} ${cellStyle(r,'extra:'+c.id)}>${escH(r.extra&&r.extra[c.id])}</td>`).join('');
     body+=`<tr class="${sel}">`+
       `<td class="sw-rownum" ${canEdit?`onclick="selectSchedRow('${r.id}')" oncontextmenu="rowMenu(event,'${r.id}')"`:''} title="클릭: 행 선택 · 우클릭: 삽입/삭제/복사">${idx+1}</td>`+
       `<td class="sw-phase${csel('phase')}" ${ce} ${ed(r,'phase')} ${cellStyle(r,'phase')}>${escH(r.phase)}</td>`+
@@ -1193,17 +1196,39 @@ function renderSchedule(tid){
       </thead>
       <tbody>${body}</tbody>
     </table></div>`;
-  updateSelLabel();markSelectedCell();paintPresenceCells(presenceUsers);
+  updateSelLabel();markSelectedCells();paintPresenceCells(presenceUsers);
 }
-function markSelectedCell(){document.querySelectorAll('.sw-table td.sw-selcell').forEach(td=>td.classList.remove('sw-selcell'));if(!selectedCell)return;const td=document.querySelector(`.sw-table td[data-id="${selectedCell.rowId}"][data-field="${selectedCell.field}"]`);if(td)td.classList.add('sw-selcell');}
+function markSelectedCells(){document.querySelectorAll('.sw-table td.sw-selcell').forEach(td=>td.classList.remove('sw-selcell'));(selectedCells||[]).forEach(sc=>{const td=document.querySelector(`.sw-table td[data-id="${sc.rowId}"][data-field="${sc.field}"]`);if(td)td.classList.add('sw-selcell');});}
+/* 드래그 범위 선택 */
+function fmtCols(){return ['phase','seq','name','deliverable','note'].concat((schedCfg.cols||[]).map(c=>'extra:'+c.id));}
+function cellsInRect(aRow,aCol,bRow,bCol){const rows=schedCache[currentSchedTask]||[];const cols=fmtCols();const r1=Math.min(aRow,bRow),r2=Math.max(aRow,bRow),c1=Math.min(aCol,bCol),c2=Math.max(aCol,bCol);const out=[];for(let r=r1;r<=r2;r++)for(let c=c1;c<=c2;c++){if(rows[r]&&cols[c])out.push({rowId:rows[r].id,field:cols[c]});}return out;}
+function cellDown(e,id,field){if(!authUser||e.button!==0)return;dragAnchor={rowId:id,field:field};isDragging=false;}
+document.addEventListener('mousemove',e=>{
+  if(!dragAnchor||!(e.buttons&1))return;
+  const td=(e.target&&e.target.closest)?e.target.closest('td[data-field]'):null;if(!td)return;
+  const rows=schedCache[currentSchedTask]||[];const cols=fmtCols();
+  const aRow=rows.findIndex(r=>r.id===dragAnchor.rowId),aCol=cols.indexOf(dragAnchor.field);
+  const bRow=rows.findIndex(r=>r.id===td.dataset.id),bCol=cols.indexOf(td.dataset.field);
+  if(aRow<0||bRow<0||aCol<0||bCol<0)return;
+  if(!isDragging&&bRow===aRow&&bCol===aCol)return;
+  isDragging=true;
+  const tb=document.querySelector('.sw-table');if(tb)tb.classList.add('dragging');
+  const sel=window.getSelection&&window.getSelection();if(sel)sel.removeAllRanges();
+  setSelCells(cellsInRect(aRow,aCol,bRow,bCol));selectedCol=null;
+  markSelectedCells();updateSelLabel();
+});
+document.addEventListener('mouseup',()=>{
+  if(dragAnchor&&isDragging){justDragged=true;setTimeout(()=>{justDragged=false;},0);const tb=document.querySelector('.sw-table');if(tb)tb.classList.remove('dragging');if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();editingCell=false;}
+  dragAnchor=null;isDragging=false;
+});
 function fieldLabel(f){const lbls={phase:'추진단계',seq:'순번',name:'세부과제',deliverable:'산출물',note:'비고'};if(f&&f.indexOf('extra:')===0){const c=(schedCfg.cols||[]).find(x=>x.id===f.slice(6));return c?c.label:'추가열';}return lbls[f]||f;}
-function updateSelLabel(){const el=document.getElementById('swSel');if(!el)return;let txt='선택: 없음',has=false;if(selectedCell){const rows=schedCache[currentSchedTask]||[];const i=rows.findIndex(r=>r.id===selectedCell.rowId);if(i>=0){has=true;txt='선택 셀: '+(i+1)+'행 · '+fieldLabel(selectedCell.field);}}else if(selectedCol){has=true;txt='선택: 열 · '+fieldLabel(selectedCol);}else if(selectedSchedId){const rows=schedCache[currentSchedTask]||[];const i=rows.findIndex(r=>r.id===selectedSchedId);if(i>=0){has=true;const r=rows[i];txt='선택: '+(i+1)+'행 전체'+(r&&r.name?' · '+r.name:'');}}el.textContent=txt;el.classList.toggle('has',has);}
-function selectSchedRow(id){selectedSchedId=(selectedSchedId===id?null:id);selectedCol=null;selectedCell=null;renderSchedule(currentSchedTask);}
-function cellFocus(id,field){selectedSchedId=id;selectedCol=null;selectedCell=field?{rowId:id,field:field}:null;editingCell=true;myCell=field?{rowId:id,field:field}:null;updatePresence();updateSelLabel();}
-function dateFocus(id,field){selectedSchedId=id;selectedCol=null;selectedCell=null;editingCell=true;myCell={rowId:id,field:field};updatePresence();updateSelLabel();}
+function updateSelLabel(){const el=document.getElementById('swSel');if(!el)return;let txt='선택: 없음',has=false;const rows=schedCache[currentSchedTask]||[];if(selectedCells.length>1){has=true;txt='선택: '+selectedCells.length+'개 셀';}else if(selectedCells.length===1){const sc=selectedCells[0];const i=rows.findIndex(r=>r.id===sc.rowId);if(i>=0){has=true;txt='선택 셀: '+(i+1)+'행 · '+fieldLabel(sc.field);}}else if(selectedCol){has=true;txt='선택: 열 · '+fieldLabel(selectedCol);}else if(selectedSchedId){const i=rows.findIndex(r=>r.id===selectedSchedId);if(i>=0){has=true;const r=rows[i];txt='선택: '+(i+1)+'행 전체'+(r&&r.name?' · '+r.name:'');}}el.textContent=txt;el.classList.toggle('has',has);}
+function selectSchedRow(id){selectedSchedId=(selectedSchedId===id?null:id);selectedCol=null;setSelCells([]);renderSchedule(currentSchedTask);}
+function cellFocus(id,field){if(justDragged)return;selectedSchedId=id;selectedCol=null;setSelCells(field?[{rowId:id,field:field}]:[]);editingCell=true;myCell=field?{rowId:id,field:field}:null;updatePresence();updateSelLabel();markSelectedCells();}
+function dateFocus(id,field){selectedSchedId=id;selectedCol=null;setSelCells([]);editingCell=true;myCell={rowId:id,field:field};updatePresence();updateSelLabel();markSelectedCells();}
 function cellKey(e,el){if((e.key==='Enter'||e.keyCode===13)&&!e.isComposing){e.preventDefault();el.blur();}if(e.key==='Escape'){e.preventDefault();e.stopPropagation();el.blur();}}
 function pastePlain(e){e.preventDefault();const cd=e.clipboardData||window.clipboardData;const txt=cd?cd.getData('text/plain'):'';try{document.execCommand('insertText',false,txt.replace(/[\r\n\t]+/g,' '));}catch(_){const sel=window.getSelection&&window.getSelection();if(sel&&sel.rangeCount){const r=sel.getRangeAt(0);r.deleteContents();r.insertNode(document.createTextNode(txt));}}}
-async function cellBlur(el){editingCell=false;myCell=null;updatePresence();markSelectedCell();const id=el.dataset.id,f=el.dataset.field;const val=el.innerText.trim();const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===id);if(!row){return;}
+async function cellBlur(el){editingCell=false;myCell=null;updatePresence();markSelectedCells();const id=el.dataset.id,f=el.dataset.field;const val=el.innerText.trim();const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===id);if(!row){return;}
   if(f.indexOf('extra:')===0){const colId=f.slice(6);const cur=(row.extra&&row.extra[colId])||'';if(val===cur)return;await updateExtraField(id,colId,val||null);return;}
   const cur=row[f]==null?'':String(row[f]);if(val===cur){return;}if(f==='name'&&!val){el.innerText=cur;return;}await updateSchedField(id,f,val||null);}
 /* 저수준: 한 건 업데이트 + 되돌리기 등록 */
@@ -1222,15 +1247,22 @@ async function deleteSelected(){if(!needSel())return;await deleteRow(selectedSch
 /* 복사/붙여넣기 */
 function copyRow(){if(!needSel())return;const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===selectedSchedId);if(!row)return;schedClip=JSON.parse(JSON.stringify(row));toast('행을 복사했습니다. 붙여넣기로 추가하세요.');}
 async function pasteRow(){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}if(!schedClip){alert('먼저 행을 복사하세요. (행 선택 → 복사)');return;}const rows=schedCache[currentSchedTask]||[];let sort;if(selectedSchedId){const i=rows.findIndex(r=>r.id===selectedSchedId);const sel=rows[i],next=rows[i+1];sort=((next?next.sort_order:sel.sort_order+20)+sel.sort_order)/2;}else sort=(rows.length?Math.max(...rows.map(r=>r.sort_order||0)):0)+10;const c=schedClip;const row={task_id:currentSchedTask,phase:c.phase,seq:c.seq,name:c.name||'복사된 계획',start_date:c.start_date,end_date:c.end_date,deliverable:c.deliverable,note:c.note,extra:c.extra||{},fmt:c.fmt||{},sort_order:sort,created_by:whoAmI(),updated_by:whoAmI()};try{const {data,error}=await supa.from('ax_schedules').insert(row).select();if(error)throw error;const nid=data&&data[0]&&data[0].id;selectedSchedId=nid;pushUndo({label:'붙여넣기',run:async()=>{await supa.from('ax_schedules').delete().eq('id',nid);if(selectedSchedId===nid)selectedSchedId=null;await reloadSched(currentSchedTask);}});await reloadSched(currentSchedTask);}catch(e){alert('붙여넣기 실패: '+e.message);}}
-/* 서식: 클릭 즉시 적용 — 선택한 '셀'에만 (fmt jsonb, 필드별) */
-function fmtNeedCell(){if(!authUser){alert('구글 로그인 후 이용하세요.');return null;}if(!selectedCell){toast('먼저 표에서 서식을 넣을 셀을 클릭해 선택하세요.');return null;}editingCell=false;const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===selectedCell.rowId);if(!row)return null;return {id:selectedCell.rowId,field:selectedCell.field,row};}
-async function applyCellFmt(t,changes,label){const id=t.id,field=t.field,row=t.row;const oldFmt=JSON.parse(JSON.stringify(row.fmt||{}));const fmt=JSON.parse(JSON.stringify(row.fmt||{}));const cell=Object.assign({},fmt[field]||{});for(const k in changes){const v=changes[k];if(v===null||v===false||v===undefined||v==='')delete cell[k];else cell[k]=v;}if(Object.keys(cell).length)fmt[field]=cell;else delete fmt[field];await updateSchedRaw(id,{fmt},{label:label||'서식',run:async()=>updateSchedRaw(id,{fmt:oldFmt},null)});}
-function fmtBold(){const t=fmtNeedCell();if(!t)return;const c=cellFmt(t.row,t.field);applyCellFmt(t,{b:!c.b},'굵게');}
-function fmtItalic(){const t=fmtNeedCell();if(!t)return;const c=cellFmt(t.row,t.field);applyCellFmt(t,{i:!c.i},'기울임');}
-function fmtUnderline(){const t=fmtNeedCell();if(!t)return;const c=cellFmt(t.row,t.field);applyCellFmt(t,{u:!c.u},'밑줄');}
-function fmtSize(delta){const t=fmtNeedCell();if(!t)return;const c=cellFmt(t.row,t.field);const ns=Math.max(9,Math.min(30,(c.fs||13)+delta));applyCellFmt(t,{fs:ns},'글자크기');}
-function fmtTextColor(v){const t=fmtNeedCell();if(!t)return;applyCellFmt(t,{tc:v},'글자색');}
-function fmtFillColor(v){const t=fmtNeedCell();if(!t)return;applyCellFmt(t,{fc:v},'채우기');}
+/* 서식: 클릭 즉시 적용 — 선택한 '셀(들)'에만 (fmt jsonb, 필드별) */
+function fmtNeedCells(){if(!authUser){alert('구글 로그인 후 이용하세요.');return null;}if(!selectedCells.length){toast('먼저 표에서 서식을 넣을 셀을 클릭(또는 드래그)해 선택하세요.');return null;}editingCell=false;const rows=schedCache[currentSchedTask]||[];const out=[];selectedCells.forEach(sc=>{const row=rows.find(x=>x.id===sc.rowId);if(row)out.push({id:sc.rowId,field:sc.field,row});});return out.length?out:null;}
+async function applyFmtToCells(changesFn,label){
+  const targets=fmtNeedCells();if(!targets)return;
+  const byRow={};targets.forEach(t=>{(byRow[t.id]=byRow[t.id]||{row:t.row,fields:[]}).fields.push(t.field);});
+  const ids=Object.keys(byRow);
+  const snaps=ids.map(id=>({id,fmt:JSON.parse(JSON.stringify(byRow[id].row.fmt||{}))}));
+  for(const id of ids){const o=byRow[id];const fmt=JSON.parse(JSON.stringify(o.row.fmt||{}));o.fields.forEach(field=>{const cell=Object.assign({},fmt[field]||{});const ch=changesFn(cell);for(const k in ch){const v=ch[k];if(v===null||v===false||v===undefined||v==='')delete cell[k];else cell[k]=v;}if(Object.keys(cell).length)fmt[field]=cell;else delete fmt[field];});await updateSchedRaw(id,{fmt},null);}
+  pushUndo({label:label||'서식',run:async()=>{for(const s of snaps)await updateSchedRaw(s.id,{fmt:s.fmt},null);}});
+}
+function fmtBold(){applyFmtToCells(c=>({b:!c.b}),'굵게');}
+function fmtItalic(){applyFmtToCells(c=>({i:!c.i}),'기울임');}
+function fmtUnderline(){applyFmtToCells(c=>({u:!c.u}),'밑줄');}
+function fmtSize(delta){applyFmtToCells(c=>({fs:Math.max(9,Math.min(30,(c.fs||13)+delta))}),'글자크기');}
+function fmtTextColor(v){applyFmtToCells(()=>({tc:v}),'글자색');}
+function fmtFillColor(v){applyFmtToCells(()=>({fc:v}),'채우기');}
 /* 색상 팔레트 드롭다운 (OS 기본 색선택기 대신 구글시트식 스와치) */
 const PALETTE=[
  ['#000000','#434343','#666666','#999999','#b7b7b7','#cccccc','#d9d9d9','#efefef','#f3f3f3','#ffffff'],
@@ -1261,9 +1293,9 @@ function openColorPalette(kind,anchorEl){
 function palOutside(e){const p=document.getElementById('swPalette');if(p&&!p.contains(e.target))closePalette();}
 function closePalette(){const p=document.getElementById('swPalette');if(p)p.remove();document.removeEventListener('mousedown',palOutside);}
 function pickColor(kind,c){closePalette();if(kind==='text')fmtTextColor(c);else fmtFillColor(c);}
-function fmtClearColor(kind){closePalette();const t=fmtNeedCell();if(!t)return;applyCellFmt(t,kind==='text'?{tc:null}:{fc:null},kind==='text'?'글자색':'채우기');}
-async function fmtAlign(a){if(selectedCol){await setColAlign(selectedCol,a);return;}const t=fmtNeedCell();if(!t)return;applyCellFmt(t,{al:a},'정렬');}
-function selectSchedCol(field){selectedCol=(selectedCol===field?null:field);selectedCell=null;renderSchedule(currentSchedTask);}
+function fmtClearColor(kind){closePalette();applyFmtToCells(()=>kind==='text'?{tc:null}:{fc:null},kind==='text'?'글자색':'채우기');}
+async function fmtAlign(a){if(selectedCol){await setColAlign(selectedCol,a);return;}applyFmtToCells(()=>({al:a}),'정렬');}
+function selectSchedCol(field){selectedCol=(selectedCol===field?null:field);setSelCells([]);renderSchedule(currentSchedTask);}
 function renameColPrompt(id){if(!authUser)return;const col=(schedCfg.cols||[]).find(c=>c.id===id);if(!col)return;const label=(prompt('열 이름을 입력하세요.',col.label)||'').trim();if(!label||label===col.label)return;renameColumn(id,label).then(()=>renderSchedule(currentSchedTask));}
 function deleteSelCol(){if(!selectedCol){toast('삭제할 열을 먼저 선택하세요. (머리글 클릭)');return;}if(selectedCol.indexOf('extra:')!==0){toast('기본 열은 삭제할 수 없어요. 추가한 열만 삭제됩니다.');return;}const c=selectedCol.slice(6);selectedCol=null;deleteColumn(c);}
 /* 열: 추가/삭제/정렬/이름변경 */
