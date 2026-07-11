@@ -1149,8 +1149,8 @@ function renderSchedule(tid){
   const ce=canEdit?'contenteditable="true" spellcheck="false" onpaste="pastePlain(event)"':'';
   const cmH=f=>canEdit?`oncontextmenu="colMenu(event,'${f}')" onclick="selectSchedCol('${f}')"`:'';
   const csel=f=>selectedCol===f?' sw-selcol':'';
-  const cAttr=(r,f)=>canEdit?`data-id="${r.id}" data-field="${f}" onmousedown="cellDown(event,'${r.id}','${f}')" onfocus="cellFocus('${r.id}','${f}')" onblur="cellBlur(this)" onkeydown="cellKey(event,this)"`:'';
-  const cAttrDate=(r,f)=>canEdit?`data-id="${r.id}" data-field="${f}" onmousedown="cellDown(event,'${r.id}','${f}')"`:'';
+  const cAttr=(r,f)=>canEdit?`data-id="${r.id}" data-field="${f}" onmousedown="cellDown(event,'${r.id}','${f}')" oncontextmenu="cellMenu(event,'${r.id}','${f}')" onfocus="cellFocus('${r.id}','${f}')" onblur="cellBlur(this)" onkeydown="cellKey(event,this)"`:'';
+  const cAttrDate=(r,f)=>canEdit?`data-id="${r.id}" data-field="${f}" onmousedown="cellDown(event,'${r.id}','${f}')" oncontextmenu="cellMenu(event,'${r.id}','${f}')"`:'';
   const defs=colDefsAll();const leftD=defs.left.filter(c=>!colHidden(c.f)),rightD=defs.right.filter(c=>!colHidden(c.f));
   const headTh=cd=>`<th rowspan="2" class="${cd.cls} colhdr${csel(cd.f)}" data-col="${cd.f}" ${cmH(cd.f)} ${cd.custom?`ondblclick="renameColPrompt('${cd.cid}')"`:''} title="클릭: 열 선택 · 우클릭: 메뉴${cd.custom?' · 더블클릭: 이름변경':''}">${cd.custom?`<span>${escH(cd.label)}</span>`:cd.label}</th>`;
   const bodyTd=(r,cd)=>{
@@ -1326,7 +1326,21 @@ async function unhideAllCols(){if(!authUser)return;const old=(schedCfg.hidden||[
 function openMenu(e,items){closeMenu();const m=document.createElement('div');m.className='sw-ctxmenu';m.id='swCtxMenu';m.innerHTML=items.map((it,i)=>it.sep?'<div class="cm-sep"></div>':`<div class="cm-item" data-i="${i}">${it.t}</div>`).join('');document.body.appendChild(m);const vw=window.innerWidth,vh=window.innerHeight;m.style.left=Math.max(6,Math.min(e.clientX,vw-190))+'px';m.style.top=Math.max(6,Math.min(e.clientY,vh-10-m.offsetHeight))+'px';m.querySelectorAll('.cm-item').forEach(el=>el.onclick=()=>{const it=items[+el.dataset.i];closeMenu();if(it&&it.f)it.f();});setTimeout(()=>document.addEventListener('mousedown',menuOutside),0);}
 function menuOutside(e){const m=document.getElementById('swCtxMenu');if(m&&!m.contains(e.target))closeMenu();}
 function closeMenu(){const m=document.getElementById('swCtxMenu');if(m)m.remove();document.removeEventListener('mousedown',menuOutside);}
-function rowMenu(e,id){e.preventDefault();selectedSchedId=id;renderSchedule(currentSchedTask);openMenu(e,[{t:'⬆ 위에 행 삽입',f:()=>insertRow('above')},{t:'⬇ 아래에 행 삽입',f:()=>insertRow('below')},{sep:1},{t:'⧉ 행 복사',f:()=>copyRow()},{t:'📋 붙여넣기',f:()=>pasteRow()},{sep:1},{t:'🗑️ 행 삭제',f:()=>deleteRow(id)}]);}
+function rowMenu(e,id){e.preventDefault();selectedSchedId=id;selectedCol=null;setSelCells([]);renderSchedule(currentSchedTask);openMenu(e,[{t:'⬆ 위에 행 삽입',f:()=>insertRow('above')},{t:'⬇ 아래에 행 삽입',f:()=>insertRow('below')},{sep:1},{t:'⧉ 행 복사',f:()=>copyRow()},{t:'📋 붙여넣기',f:()=>pasteRow()},{sep:1},{t:'🗑️ 행 삭제',f:()=>deleteRow(id)}]);}
+/* 셀 우클릭(=맥 트랙패드 두 손가락) — 구글시트식 통합 메뉴 */
+function cellMenu(e,id,field){e.preventDefault();e.stopPropagation();selectedSchedId=id;selectedCol=null;clearColHi();setSelCells([{rowId:id,field:field}]);updateSelLabel();markSelectedCells();const isCustom=field.indexOf('extra:')===0;openMenu(e,[
+  {t:'⧉ 복사 (⌘/Ctrl+C)',f:()=>copyRow()},
+  {t:'📋 붙여넣기 (⌘/Ctrl+V)',f:()=>pasteRow()},
+  {sep:1},
+  {t:'⬆ 위에 행 삽입',f:()=>insertRow('above')},
+  {t:'⬇ 아래에 행 삽입',f:()=>insertRow('below')},
+  {t:'🗑️ 행 삭제',f:()=>deleteRow(id)},
+  {sep:1},
+  {t:'➕ 왼쪽에 열 삽입',f:()=>insertColumn(field,'left')},
+  {t:'➕ 오른쪽에 열 삽입',f:()=>insertColumn(field,'right')},
+  {t:'🧹 열 데이터 삭제',f:()=>clearColumnData(field)},
+  {t:'🙈 열 숨기기',f:()=>hideColumn(field)}
+].concat(isCustom?[{sep:1},{t:'🗑️ 이 열 삭제',f:()=>deleteColumn(field.slice(6))}]:[]));}
 function colMenu(e,field){e.preventDefault();selectSchedCol(field);const isCustom=field.indexOf('extra:')===0;openMenu(e,[
   {t:'◧ 왼쪽 정렬',f:()=>setColAlign(field,'left')},
   {t:'▤ 가운데 정렬',f:()=>setColAlign(field,'center')},
