@@ -147,11 +147,54 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .filters .chip{margin-left:auto;font-size:.82rem;color:var(--muted)}
 /* Task cards */
 .task-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
-/* 뷰 전환 세그먼트 */
-.seg{display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:2px;gap:2px}
-.seg .seg-b{background:none;border:0;border-radius:7px;padding:6px 12px;font-family:var(--font);font-size:.82rem;font-weight:700;color:var(--muted);cursor:pointer}
-.seg .seg-b.on{background:var(--primary);color:#fff}
-.seg .seg-b:not(.on):hover{color:var(--primary)}
+/* 노션식 뷰 전환 탭 */
+.nz-views{display:inline-flex;align-items:center;gap:2px;flex-wrap:wrap}
+.nz-views .nz-vt{display:inline-flex;align-items:center;gap:6px;background:none;border:0;border-radius:7px;padding:6px 10px;font-family:var(--font);font-size:.85rem;font-weight:600;color:var(--muted);cursor:pointer;position:relative}
+.nz-views .nz-vt svg{opacity:.75}
+.nz-views .nz-vt:hover{background:rgba(0,0,0,.05);color:var(--text)}
+[data-theme="dark"] .nz-views .nz-vt:hover{background:rgba(255,255,255,.07)}
+.nz-views .nz-vt.on{color:var(--text);font-weight:800}
+.nz-views .nz-vt.on svg{opacity:1;color:var(--primary)}
+.nz-views .nz-vt.on::after{content:"";position:absolute;left:8px;right:8px;bottom:-6px;height:2.5px;border-radius:2px;background:var(--primary)}
+/* 공통 태그·진척바·상태칩 */
+.nz-tag{display:inline-flex;align-items:center;background:rgba(30,111,196,.12);color:var(--primary);border-radius:6px;padding:1px 8px;font-size:.72rem;font-weight:700;white-space:nowrap}
+.nz-tag.ghost{background:var(--bg);color:var(--muted);border:1px solid var(--border)}
+.nz-bar{flex:1;height:6px;background:var(--track);border-radius:4px;overflow:hidden;min-width:44px}
+.nz-bar i{display:block;height:100%;border-radius:4px}
+.nz-prog{display:flex;align-items:center;gap:7px}
+.nz-prog>span{font-size:.72rem;font-weight:800;color:var(--muted)}
+.nz-stats{display:inline-flex;gap:8px;flex-wrap:wrap}
+.nz-stats .nz-st{display:inline-flex;align-items:center;gap:3px;font-size:.72rem;color:var(--muted);font-weight:600}
+.nz-emoji{opacity:.8}
+/* 갤러리 */
+.nz-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.nz-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;transition:.15s}
+.nz-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.12)}
+.nz-cover{height:56px}
+.nz-cover.g1{background:linear-gradient(120deg,#1565c0,#42a5f5)}.nz-cover.g2{background:linear-gradient(120deg,#6a3fb5,#b388ff)}.nz-cover.g3{background:linear-gradient(120deg,#2e9e5b,#81c784)}
+.nz-cbody{padding:12px 13px}
+.nz-cno{font-size:.72rem;color:var(--muted);font-weight:700}
+.nz-ctitle{font-size:.95rem;font-weight:800;line-height:1.3;margin:3px 0 8px}
+.nz-ctags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px}
+.nz-card .nz-prog{margin-bottom:8px}
+/* 표 */
+.nz-table{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
+.nz-tr{display:grid;grid-template-columns:minmax(240px,2.4fr) 1.1fr .7fr 1.1fr 1.1fr;align-items:center;border-bottom:1px solid var(--border);cursor:pointer}
+.nz-tr:last-child{border-bottom:0}
+.nz-tr:not(.nz-th):hover{background:rgba(30,111,196,.05)}
+.nz-th{background:var(--bg);cursor:default;font-size:.74rem;color:var(--muted);font-weight:800;position:sticky;top:0}
+.nz-td{padding:9px 12px;font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nz-tt{white-space:normal}
+.nz-td.nz-num{color:var(--muted)}
+/* 리스트 */
+.nz-list{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
+.nz-li{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer}
+.nz-li:last-child{border-bottom:0}
+.nz-li:hover{background:rgba(30,111,196,.05)}
+.nz-litt{flex:1;font-size:.86rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nz-litt b{color:var(--muted)}
+.nz-liprops{display:flex;align-items:center;gap:9px;flex-shrink:0}
+@media(max-width:820px){.nz-tr{grid-template-columns:minmax(160px,2fr) 1fr 1fr}.nz-tr .nz-td:nth-child(3),.nz-tr .nz-td:nth-child(4){display:none}.nz-liprops .nz-stats{display:none}}
 /* 칸반 */
 .task-kanwrap,.task-calwrap{display:block}
 .kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:start}
@@ -527,12 +570,13 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 
 <!-- 전략과제 -->
 <section class="view" id="v-tasks"><div class="wrap">
-  <div class="sec-title">📋 전략과제 팔로업 <span class="hint" style="font-weight:400">(카드=클릭 상세 · 칸반=드래그로 상태변경 · 캘린더=월별 보기)</span></div>
+  <div class="sec-title">📋 전략과제 팔로업 <span class="hint" style="font-weight:400">(레이아웃: 갤러리 · 표 · 보드 · 리스트 — 보드는 드래그로 상태 변경)</span></div>
   <div class="filters">
-    <span class="seg" id="taskViewSeg">
-      <button class="seg-b on" data-v="card" onclick="setTaskView('card')">📇 카드</button>
-      <button class="seg-b" data-v="kanban" onclick="setTaskView('kanban')">🗂️ 칸반</button>
-      <button class="seg-b" data-v="calendar" onclick="setTaskView('calendar')">📅 캘린더</button>
+    <span class="nz-views" id="taskViewSeg">
+      <button class="nz-vt on" data-v="gallery" onclick="setTaskView('gallery')"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2.5" width="5" height="5" rx="1"/><rect x="9" y="2.5" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="4.5" rx="1"/><rect x="9" y="9" width="5" height="4.5" rx="1"/></svg>갤러리</button>
+      <button class="nz-vt" data-v="table" onclick="setTaskView('table')"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3" width="12" height="10" rx="1.2"/><path d="M2 6.5h12M2 9.8h12M6.2 3v10"/></svg>표</button>
+      <button class="nz-vt" data-v="board" onclick="setTaskView('board')"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2.5" width="3.4" height="11" rx="1"/><rect x="6.3" y="2.5" width="3.4" height="8" rx="1"/><rect x="10.6" y="2.5" width="3.4" height="6" rx="1"/></svg>보드</button>
+      <button class="nz-vt" data-v="list" onclick="setTaskView('list')"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 4h9M5 8h9M5 12h9"/><circle cx="2.5" cy="4" r=".8" fill="currentColor" stroke="none"/><circle cx="2.5" cy="8" r=".8" fill="currentColor" stroke="none"/><circle cx="2.5" cy="12" r=".8" fill="currentColor" stroke="none"/></svg>리스트</button>
     </span>
     <select id="fGoal"><option value="">전체 핵심목표</option></select>
     <select id="fTeam"><option value="">전체 담당팀</option></select>
@@ -796,27 +840,42 @@ function fillFilters(){
   document.getElementById('resetProg').onclick=()=>{if(supa&&remoteReady){loadRemote();return;}if(confirm('진척 상태를 초기값(자동 산정)으로 되돌릴까요?')){overrides={};localStorage.removeItem(STORE_KEY);renderTasks();renderOverview();}};
   const rg=document.getElementById('rGoal');goals.forEach(g=>rg.add(new Option(`목표${g.id}`,g.id)));rg.onchange=renderGantt;
 }
-let taskView='card';
-function setTaskView(v){taskView=v;const seg=document.getElementById('taskViewSeg');if(seg)seg.querySelectorAll('.seg-b').forEach(b=>b.classList.toggle('on',b.dataset.v===v));const grid=document.getElementById('taskGrid');if(grid)grid.className=v==='card'?'task-grid':(v==='kanban'?'task-kanwrap':'task-calwrap');renderTasks();}
+let taskView='gallery';
+function setTaskView(v){taskView=v;const seg=document.getElementById('taskViewSeg');if(seg)seg.querySelectorAll('.nz-vt').forEach(b=>b.classList.toggle('on',b.dataset.v===v));const grid=document.getElementById('taskGrid');if(grid)grid.className='nz-view';renderTasks();}
 function taskFilters(){return {g:document.getElementById('fGoal').value,tm:document.getElementById('fTeam').value,st:document.getElementById('fStatus').value};}
-function renderTasks(){if(taskView==='kanban')return renderKanban();if(taskView==='calendar')return renderCalendarView();return renderCardView();}
-function renderCardView(){
-  const {g,tm,st}=taskFilters();
-  let list=TASKS.filter(t=>(!g||t.goal==g)&&(!tm||t.team===tm));
-  if(st) list=list.filter(t=>{const c=taskStatusSummary(t);return c[st]>0;});
-  document.getElementById('taskCount').textContent=`${list.length} / ${TASKS.length} 과제`;
-  document.getElementById('taskGrid').innerHTML=list.map(t=>{
-    const p=taskProgress(t),c=taskStatusSummary(t);
-    return `<div class="tcard g${t.goal}" onclick="openTask('${t.id}')"><div class="tno">${t.id} · 목표${t.goal}</div><div class="tt">${t.title}</div><div class="tmeta"><span class="badge b-team"><span class="bl">담당</span>${t.team}</span><span class="badge b-coop"><span class="bl">협업</span>${t.coop.length}곳</span></div><div class="tprog"><div class="pb"><div class="pf" style="width:${p}%;background:${progColor(p)}"></div></div><div class="pt">${p}%</div></div><div class="mstat">${Object.keys(c).map(k=>`<span><span class="dot ${k}"></span>${STAT_LABEL[k]} ${c[k]}</span>`).join('')}</div></div>`;
-  }).join('')||'<div class="hint">조건에 맞는 과제가 없습니다.</div>';
+function taskList(){const {g,tm,st}=taskFilters();let list=TASKS.filter(t=>(!g||t.goal==g)&&(!tm||t.team===tm));if(st)list=list.filter(t=>{const c=taskStatusSummary(t);return c[st]>0;});return list;}
+function statChips(c){return `<span class="nz-stats">`+Object.keys(c).filter(k=>c[k]).map(k=>`<span class="nz-st"><span class="dot ${k}"></span>${c[k]}</span>`).join('')+`</span>`;}
+function renderTasks(){if(taskView==='board')return renderBoard();if(taskView==='table')return renderTable();if(taskView==='list')return renderList();return renderGallery();}
+/* ---- 갤러리(카드) ---- */
+function renderGallery(){
+  const list=taskList();document.getElementById('taskCount').textContent=`${list.length} / ${TASKS.length} 과제`;
+  document.getElementById('taskGrid').innerHTML=list.length?`<div class="nz-gallery">`+list.map(t=>{const p=taskProgress(t),c=taskStatusSummary(t);
+    return `<div class="nz-card g${t.goal}" onclick="openTask('${t.id}')"><div class="nz-cover g${t.goal}"></div><div class="nz-cbody"><div class="nz-cno">${t.id} · 목표${t.goal}</div><div class="nz-ctitle">${escH(t.title)}</div><div class="nz-ctags"><span class="nz-tag">${escH(t.team)}</span><span class="nz-tag ghost">협업 ${t.coop.length}</span></div><div class="nz-prog"><div class="nz-bar"><i style="width:${p}%;background:${progColor(p)}"></i></div><span>${p}%</span></div>${statChips(c)}</div></div>`;
+  }).join('')+`</div>`:'<div class="hint">조건에 맞는 과제가 없습니다.</div>';
 }
-/* ---- 칸반: 마일스톤을 상태 컬럼으로, 드래그해서 상태 변경(실시간 저장) ---- */
+/* ---- 표(테이블) ---- */
+function renderTable(){
+  const list=taskList();document.getElementById('taskCount').textContent=`${list.length} / ${TASKS.length} 과제`;
+  const head=`<div class="nz-tr nz-th"><div class="nz-td nz-tt">과제</div><div class="nz-td">담당팀</div><div class="nz-td nz-num">협업</div><div class="nz-td">진척률</div><div class="nz-td">상태</div></div>`;
+  const rows=list.map(t=>{const p=taskProgress(t),c=taskStatusSummary(t);
+    return `<div class="nz-tr" onclick="openTask('${t.id}')"><div class="nz-td nz-tt"><span class="nz-emoji">📄</span><b>${t.id}</b>&nbsp;${escH(t.title)}</div><div class="nz-td"><span class="nz-tag">${escH(t.team)}</span></div><div class="nz-td nz-num">${t.coop.length}곳</div><div class="nz-td"><div class="nz-prog"><div class="nz-bar"><i style="width:${p}%;background:${progColor(p)}"></i></div><span>${p}%</span></div></div><div class="nz-td">${statChips(c)}</div></div>`;
+  }).join('')||`<div class="nz-tr"><div class="nz-td" style="grid-column:1/-1;color:var(--muted)">조건에 맞는 과제가 없습니다.</div></div>`;
+  document.getElementById('taskGrid').innerHTML=`<div class="nz-table">${head}${rows}</div>`;
+}
+/* ---- 리스트 ---- */
+function renderList(){
+  const list=taskList();document.getElementById('taskCount').textContent=`${list.length} / ${TASKS.length} 과제`;
+  document.getElementById('taskGrid').innerHTML=list.length?`<div class="nz-list">`+list.map(t=>{const p=taskProgress(t),c=taskStatusSummary(t);
+    return `<div class="nz-li" onclick="openTask('${t.id}')"><span class="nz-emoji">📄</span><span class="nz-litt"><b>${t.id}</b> ${escH(t.title)}</span><span class="nz-liprops"><span class="nz-tag">${escH(t.team)}</span>${statChips(c)}<span class="nz-tag ghost">${p}%</span></span></div>`;
+  }).join('')+`</div>`:'<div class="hint">조건에 맞는 과제가 없습니다.</div>';
+}
+/* ---- 보드: 마일스톤을 상태 컬럼으로, 드래그해서 상태 변경(실시간 저장) ---- */
 let kanDrag=null;
 function kanStart(e,tid,i){kanDrag={tid,i:+i};try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',tid);}catch(_){}}
 function kanOver(e){e.preventDefault();e.currentTarget.classList.add('drop');}
 function kanLeave(e){e.currentTarget.classList.remove('drop');}
 function kanDrop(e,st){e.preventDefault();e.currentTarget.classList.remove('drop');if(!kanDrag)return;const d=kanDrag;kanDrag=null;setStatus(d.tid,d.i,st);renderTasks();renderOverview();}
-function renderKanban(){
+function renderBoard(){
   const {g,tm}=taskFilters();
   let list=TASKS.filter(t=>(!g||t.goal==g)&&(!tm||t.team===tm));
   const cells=[];list.forEach(t=>t.miles.forEach((m,i)=>cells.push({tid:t.id,i,m,st:statusOf(t.id,i,m),goal:t.goal,title:t.title})));
@@ -827,20 +886,6 @@ function renderKanban(){
     const cardsHtml=items.map(c=>`<div class="kan-card g${c.goal}" draggable="true" ondragstart="kanStart(event,'${c.tid}',${c.i})" onclick="openTask('${c.tid}')"><div class="kc-top">${c.tid} · ${escH(c.m.dstr||'-')}</div><div class="kc-lbl">${escH(c.m.label)}</div><div class="kc-team">${escH(c.title)}</div></div>`).join('')||'<div class="kan-empty">여기로 드래그</div>';
     return `<div class="kan-col" ondragover="kanOver(event)" ondragleave="kanLeave(event)" ondrop="kanDrop(event,'${k}')"><div class="kan-head ${k}"><span class="dot ${k}"></span>${label}<span class="kan-cnt">${items.length}</span></div><div class="kan-body">${cardsHtml}</div></div>`;
   }).join('')+`</div>`;
-}
-/* ---- 캘린더: 마일스톤을 월별 타일로 ---- */
-function renderCalendarView(){
-  const {g,tm}=taskFilters();
-  let list=TASKS.filter(t=>(!g||t.goal==g)&&(!tm||t.team===tm));
-  const byMonth={};let minK=null,maxK=null,total=0;
-  list.forEach(t=>t.miles.forEach((m,i)=>{if(!m.y)return;const k=m.y*12+(m.m-1);(byMonth[k]=byMonth[k]||[]).push({tid:t.id,i,m,st:statusOf(t.id,i,m),goal:t.goal});total++;if(minK==null||k<minK)minK=k;if(maxK==null||k>maxK)maxK=k;}));
-  document.getElementById('taskCount').textContent=`마일스톤 ${total}개`;
-  if(minK==null){document.getElementById('taskGrid').innerHTML='<div class="hint">표시할 마일스톤이 없습니다.</div>';return;}
-  let html='<div class="cal-grid">';
-  for(let k=minK;k<=maxK;k++){const y=Math.floor(k/12),mo=(k%12)+1;const items=(byMonth[k]||[]).slice().sort((a,b)=>a.tid<b.tid?-1:1);const now=new Date();const isNow=(y===now.getFullYear()&&mo===now.getMonth()+1);
-    html+=`<div class="cal-cell${isNow?' now':''}"><div class="cal-mh">${y}.${String(mo).padStart(2,'0')}${isNow?' <span class="cal-now">이번달</span>':''}<span class="cal-cnt">${items.length}</span></div>`+
-      items.map(c=>`<div class="cal-chip ${c.st}" onclick="openTask('${c.tid}')" title="${escH(c.m.label)}"><span class="dot ${c.st}"></span><b>${c.tid}</b> ${escH(c.m.label)}</div>`).join('')+`</div>`;}
-  html+='</div>';document.getElementById('taskGrid').innerHTML=html;
 }
 let modalTask=null;
 function openTask(tid){
