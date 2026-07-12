@@ -1133,16 +1133,11 @@ function cellStyle(r,f){return `style="${cellStyleInner(r,f)}"`;}
 function pad2(n){return String(n).padStart(2,'0');}
 function mKey(y,m){return y*12+(m-1);}
 function gridMonths(){
-  // 시스템 현재 월부터 시작 → 최소 다음 해 12월까지(가로 스크롤). 데이터가 더 과거/미래면 확장.
-  const rows=schedCache[currentSchedTask]||[];
-  const now=new Date();const curK=mKey(now.getFullYear(),now.getMonth()+1);
-  let min=curK,max=curK;
-  rows.forEach(r=>[r.start_date,r.end_date].forEach(ds=>{if(ds){const d=new Date(ds+'T00:00:00');if(!isNaN(d)){const k=mKey(d.getFullYear(),d.getMonth()+1);if(k<min)min=k;if(k>max)max=k;}}}));
-  max=Math.max(max,mKey(now.getFullYear()+1,12));   // 다음 해 12월까지는 항상 스크롤 가능
-  const out=[];for(let k=min;k<=max;k++)out.push({y:Math.floor(k/12),m:(k%12)+1});
+  // 좌우 스크롤 없이 6개월 고정: 이전 달 + 현재 달 + 이후 4개월
+  const now=new Date();const startK=mKey(now.getFullYear(),now.getMonth()+1)-1;
+  const out=[];for(let i=0;i<6;i++){const k=startK+i;out.push({y:Math.floor(k/12),m:(k%12)+1});}
   return out;
 }
-function curMonthIndex(gm){const now=new Date();return gm.findIndex(x=>x.y===now.getFullYear()&&x.m===now.getMonth()+1);}
 function weekIndexOf(gm,ds){if(!ds)return null;const d=new Date(ds+'T00:00:00');if(isNaN(d))return null;const k=mKey(d.getFullYear(),d.getMonth()+1);const first=mKey(gm[0].y,gm[0].m),last=mKey(gm[gm.length-1].y,gm[gm.length-1].m);if(k<first)return 0;if(k>last)return gm.length*5-1;const mi=gm.findIndex(x=>mKey(x.y,x.m)===k);const w=Math.min(5,Math.max(1,Math.ceil(d.getDate()/7)))-1;return mi*5+w;}
 /* ---- 열 모델 (숨김/커스텀 포함) ---- */
 function colHidden(f){return (schedCfg.hidden||[]).indexOf(f)>=0;}
@@ -1167,8 +1162,9 @@ function renderSchedule(tid){
   const cAttr=(r,f)=>canEdit?`data-id="${r.id}" data-field="${f}" onmousedown="cellDown(event,'${r.id}','${f}')" oncontextmenu="cellMenu(event,'${r.id}','${f}')" onfocus="cellFocus('${r.id}','${f}')" onblur="cellBlur(this)" onkeydown="cellKey(event,this)"`:'';
   const cAttrDate=(r,f)=>canEdit?`data-id="${r.id}" data-field="${f}" onmousedown="cellDown(event,'${r.id}','${f}')" oncontextmenu="cellMenu(event,'${r.id}','${f}')"`:'';
   const defs=colDefsAll();const leftD=defs.left.filter(c=>!colHidden(c.f)),rightD=defs.right.filter(c=>!colHidden(c.f));
-  const colgroup=`<colgroup><col style="width:36px">`+leftD.map(cd=>`<col data-col="${cd.f}" style="width:${widthOf(cd.f)}px">`).join('')+Array(wkCount).fill('<col style="width:22px">').join('')+rightD.map(cd=>`<col data-col="${cd.f}" style="width:${widthOf(cd.f)}px">`).join('')+`</colgroup>`;
-  const tableW=36+leftD.reduce((a,cd)=>a+widthOf(cd.f),0)+wkCount*22+rightD.reduce((a,cd)=>a+widthOf(cd.f),0);
+  const WKW=16;
+  const colgroup=`<colgroup><col style="width:36px">`+leftD.map(cd=>`<col data-col="${cd.f}" style="width:${widthOf(cd.f)}px">`).join('')+Array(wkCount).fill(`<col style="width:${WKW}px">`).join('')+rightD.map(cd=>`<col data-col="${cd.f}" style="width:${widthOf(cd.f)}px">`).join('')+`</colgroup>`;
+  const tableW=36+leftD.reduce((a,cd)=>a+widthOf(cd.f),0)+wkCount*WKW+rightD.reduce((a,cd)=>a+widthOf(cd.f),0);
   const frozenLeft={};let _lo=36;leftD.forEach(cd=>{frozenLeft[cd.f]=_lo;_lo+=widthOf(cd.f);});
   const rsz=cd=>canEdit?`<span class="col-rsz" onmousedown="resizeStart(event,'${cd.f}')" title="너비 조절"></span>`:'';
   const headTh=cd=>{const fr=frozenLeft[cd.f]!=null;return `<th rowspan="2" class="${cd.cls} colhdr${csel(cd.f)}${fr?' sw-frozen':''}" ${fr?`style="left:${frozenLeft[cd.f]}px"`:''} data-col="${cd.f}" ${cmH(cd.f)} ${cd.custom?`ondblclick="renameColPrompt('${cd.cid}')"`:''} title="클릭: 열 선택 · 우클릭: 메뉴${cd.custom?' · 더블클릭: 이름변경':''}">${cd.custom?`<span>${escH(cd.label)}</span>`:cd.label}${rsz(cd)}</th>`;};
@@ -1232,7 +1228,7 @@ function renderSchedule(tid){
       <tbody>${body}</tbody>
     </table></div>`;
   updateSelLabel();markSelectedCells();paintPresenceCells(presenceUsers);fixStickyHeader();
-  const _nw=document.querySelector('.sw-tablewrap');if(_nw){if(schedInitScroll){schedInitScroll=false;const ci=curMonthIndex(gm);_nw.scrollLeft=ci>0?ci*5*22:0;_nw.scrollTop=0;}else{_nw.scrollLeft=_psl;_nw.scrollTop=_pst;}}
+  const _nw=document.querySelector('.sw-tablewrap');if(_nw){if(schedInitScroll){schedInitScroll=false;_nw.scrollLeft=0;_nw.scrollTop=0;}else{_nw.scrollLeft=_psl;_nw.scrollTop=_pst;}}
 }
 function fixStickyHeader(){const thead=document.querySelector('.sw-table thead');if(!thead||!thead.rows[0])return;const h=thead.rows[0].offsetHeight;thead.querySelectorAll('tr:nth-child(2) th').forEach(th=>th.style.top=h+'px');}
 function markSelectedCells(){document.querySelectorAll('.sw-table td.sw-selcell').forEach(td=>td.classList.remove('sw-selcell'));(selectedCells||[]).forEach(sc=>{const td=document.querySelector(`.sw-table td[data-id="${sc.rowId}"][data-field="${sc.field}"]`);if(td)td.classList.add('sw-selcell');});}
