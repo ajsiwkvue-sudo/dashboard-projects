@@ -542,7 +542,7 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
   <div class="help-card" id="helpCard">
     <h3>👋 이 대시보드는 무엇인가요? <button class="help-toggle" id="helpToggle">접기</button></h3>
     <div id="helpBody">
-      <p><b>AX(AI Transformation)</b>는 병원 업무 전반에 AI를 도입해 일하는 방식을 바꾸는 것을 뜻합니다. 이 대시보드는 <b>일산병원 AX추진부의 추진전략(2026.6~12)</b>을 한눈에 따라가기 위한 도구예요. 사업은 <b>3대 핵심목표 → 12개 전략과제 → <span id="mileCountTxt">--</span>개 세부 마일스톤(할 일)</b>으로 이루어져 있고, 각 할 일이 얼마나 진행됐는지를 색으로 표시합니다. 상단 탭에서 과제 현황·담당팀별 분석·일정 로드맵·목표 달성 경로·타 병원 사례·AI 비서를 확인할 수 있어요.</p>
+      <p><b>AX(AI Transformation)</b>는 병원 업무 전반에 AI를 도입해 일하는 방식을 근본적으로 바꾸는 것을 뜻합니다. 이 대시보드는 일산병원이 <b>‘대한민국 공공의료를 선도하는 AX 플랫폼병원’</b> 비전 아래 추진하는 AX 전략을 한눈에 따라가기 위한 도구예요. 사업은 <b>거버넌스·프로세스·문화</b> 3대 축의 <b>3대 핵심목표 → 12개 전략과제 → <span id="mileCountTxt">--</span>개 세부 마일스톤(할 일)</b>으로 이루어져 있고, 각 할 일의 진행 상태를 색으로 표시합니다. 이 전략은 <b>2026년 추진기반 구축·AI 실증</b>을 시작으로 <b>2027년 전사 확산, 2028년 이후 표준모델·지역 공공의료 확산</b>까지 이어지는 <b>다개년(multi-year) 로드맵</b>이에요(2026년 단일 사업이 아닙니다). 상단 탭에서 전략과제 현황·담당팀별 분석·사업 타임라인·타 병원 벤치마크·AI 비서를 확인할 수 있습니다.</p>
       <div class="help-legend">
         <span style="font-weight:700;font-size:.82rem">진행 상태 색상:</span>
         <span class="li"><span class="dot done"></span><b>완료</b> <small>끝난 일</small></span>
@@ -560,7 +560,7 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
   </div>
   <div class="grid2">
     <div class="card"><h3>핵심목표별 진척도</h3><div class="chart-box"><canvas id="goalChart"></canvas></div></div>
-    <div class="card"><h3>월별 마일스톤 추이 (2026)</h3><div class="chart-box"><canvas id="monthChart"></canvas></div></div>
+    <div class="card"><h3>월별 마일스톤 추이 <span style="font-weight:400;font-size:.78rem;color:var(--muted)">(2026 착수연도 · 이후 2027~2028 확산 단계로 이어짐)</span></h3><div class="chart-box"><canvas id="monthChart"></canvas></div></div>
   </div>
   <div class="card">
     <h3>🎯 비전 체계도 <span class="tip" data-tip="병원 AX를 이끄는 3대 핵심목표(거버넌스·프로세스·문화)와 12개 전략과제의 달성률을 보여줍니다. 막대가 길수록 많이 진행된 과제예요.">?</span> <span style="font-weight:400;font-size:.82rem;color:var(--muted)">거버넌스·프로세스·문화 · 3대 핵심목표 · 12개 전략과제</span></h3>
@@ -873,7 +873,7 @@ let kanDrag=null;
 function kanStart(e,tid,i){kanDrag={tid,i:+i};try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',tid);}catch(_){}}
 function kanOver(e){e.preventDefault();e.currentTarget.classList.add('drop');}
 function kanLeave(e){e.currentTarget.classList.remove('drop');}
-function kanDrop(e,st){e.preventDefault();e.currentTarget.classList.remove('drop');if(!kanDrag)return;const d=kanDrag;kanDrag=null;setStatus(d.tid,d.i,st);renderTasks();renderOverview();}
+function kanDrop(e,st){e.preventDefault();e.currentTarget.classList.remove('drop');if(!kanDrag)return;const d=kanDrag;kanDrag=null;setStatusUndoable(d.tid,d.i,st,'보드 상태 변경');renderTasks();renderOverview();}
 function renderBoard(){
   const {g,tm}=taskFilters();
   let list=TASKS.filter(t=>(!g||t.goal==g)&&(!tm||t.team===tm));
@@ -901,7 +901,8 @@ function openTask(tid){
     <div class="msec"><h4>고려사항</h4><div class="txt">${t.review}</div></div>`;
   document.getElementById('overlay').classList.add('open');refreshBodyLock();
 }
-function setMileStatus(tid,i,v){setStatus(tid,i,v);openTask(tid);renderTasks();renderOverview();}
+function setStatusUndoable(tid,i,v,label){const k=mkey(tid,i);const old=overrides[k];if(old===v)return;setStatus(tid,i,v);pushUndo({label:label||'상태 변경',run:async()=>{if(old===undefined)delete overrides[k];else overrides[k]=old;localStorage.setItem(STORE_KEY,JSON.stringify(overrides));pushState(k);renderTasks();renderOverview();if(modalTask&&document.getElementById('overlay').classList.contains('open'))openTask(modalTask);}});}
+function setMileStatus(tid,i,v){setStatusUndoable(tid,i,v,'상태 변경');openTask(tid);renderTasks();renderOverview();}
 let editingMile=null;
 function editMile(tid,i){editingMile=mkey(tid,i);openTask(tid);setTimeout(()=>{const el=document.getElementById('edD');if(el)el.focus();},60);}
 function cancelEdit(tid){editingMile=null;openTask(tid);}
@@ -1145,14 +1146,21 @@ function toggleTheme(){
 document.getElementById('themeBtn').onclick=toggleTheme;
 // ESC로 열린 팝업 닫기 (편집 중 셀은 cellKey에서 처리)
 document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;const ff=document.getElementById('swFilter');if(ff){e.stopPropagation();closeFilter();return;}const pal=document.getElementById('swPalette');if(pal){e.stopPropagation();closePalette();return;}const cm=document.getElementById('swCtxMenu');if(cm){e.stopPropagation();closeMenu();return;}if(document.getElementById('swOverlay').classList.contains('open')){closeSchedule();}else if(document.getElementById('overlay').classList.contains('open')){closeModal();}else if(document.getElementById('agentWidget').classList.contains('open')){closeAgent();}});
-// 세부계획 워크스페이스 단축키 (Win/Mac 공용). 셀 편집 중에는 텍스트 편집을 방해하지 않음
+// 전역 되돌리기: 모든 작업 화면에서 ⌘/Ctrl+Z (입력 필드 편집 중엔 브라우저 기본 실행취소)
+document.addEventListener('keydown',e=>{
+  if(!((e.metaKey||e.ctrlKey)&&(e.key==='z'||e.key==='Z')&&!e.shiftKey))return;
+  const a=document.activeElement;
+  if(a&&((a.getAttribute&&a.getAttribute('contenteditable')==='true')||a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT'))return;
+  if(!undoStack.length)return;
+  e.preventDefault();undoAction();
+});
+// 세부계획 워크스페이스 전용 단축키 (표가 열렸을 때). 셀 편집 중에는 텍스트 편집을 방해하지 않음
 document.addEventListener('keydown',e=>{
   const sw=document.getElementById('swOverlay');if(!sw||!sw.classList.contains('open'))return;
   if(!(e.metaKey||e.ctrlKey))return;
   const ae=document.activeElement;
   const editing=!!(ae&&((ae.getAttribute&&ae.getAttribute('contenteditable')==='true')||ae.tagName==='INPUT'));
   const k=(e.key||'').toLowerCase();
-  if(k==='z'&&!e.shiftKey){if(editing)return;e.preventDefault();undoAction();return;}          // 되돌리기
   if(k==='c'){if(editing)return;e.preventDefault();if(selectedCells.length)copyCells();else if(selectedSchedId)copyRow();return;}   // 복사(셀/행)
   if(k==='v'){if(editing)return;e.preventDefault();if(selectedCells.length)pasteCells();else pasteRow();return;}                  // 붙여넣기(셀/행)
   if(k==='x'){if(editing)return;if(selectedCells.length){e.preventDefault();cutCells();}return;}                                  // 잘라내기(셀)
@@ -1262,7 +1270,7 @@ function weekCol(ds){if(!ds)return null;const d=new Date(ds);const m=d.getMonth(
 function fmtD(ds){if(!ds)return '';const d=new Date(ds);return `${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;}
 function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function rowStyle(r){let s='';if(r.fill_color)s+=`background:${r.fill_color};`;if(r.text_color)s+=`color:${r.text_color};`;if(r.bold)s+='font-weight:800;';return s?`style="${s}"`:'';}
-async function reloadSched(tid){if(!supa)return;try{const {data,error}=await supa.from('ax_schedules').select('*').eq('task_id',tid).order('sort_order');if(error)throw error;schedCache[tid]=data||[];}catch(e){schedCache[tid]=schedCache[tid]||[];}await loadCfg(tid);if(currentSchedTask===tid&&!editingCell)renderSchedule(tid);}
+async function reloadSched(tid){if(!supa||!tid)return;try{const {data,error}=await supa.from('ax_schedules').select('*').eq('task_id',tid).order('sort_order');if(error)throw error;schedCache[tid]=data||[];}catch(e){schedCache[tid]=schedCache[tid]||[];}await loadCfg(tid);if(currentSchedTask===tid&&!editingCell)renderSchedule(tid);}
 function subscribeSchedules(){if(!supa)return;supa.channel('ax_sch_ch').on('postgres_changes',{event:'*',schema:'public',table:'ax_schedules'},payload=>{const r=(payload.new&&payload.new.task_id)?payload.new:payload.old;if(r&&r.task_id===currentSchedTask)reloadSched(r.task_id);}).on('postgres_changes',{event:'*',schema:'public',table:'ax_sched_cfg'},payload=>{const r=(payload.new&&payload.new.task_id)?payload.new:payload.old;if(r&&r.task_id===currentSchedTask&&!editingCell)reloadSched(r.task_id);}).subscribe();}
 function openSchedule(tid){currentSchedTask=tid;selectedSchedId=null;selectedCol=null;setSelCells([]);myCell=null;schedInitScroll=true;schedView={sort:null,dir:'asc',filters:{}};document.getElementById('swOverlay').classList.add('open');refreshBodyLock();renderSchedule(tid);reloadSched(tid);updatePresence();}
 function closeSchedule(){currentSchedTask=null;selectedSchedId=null;selectedCol=null;setSelCells([]);editingCell=false;myCell=null;document.getElementById('swOverlay').classList.remove('open');refreshBodyLock();updatePresence();}
