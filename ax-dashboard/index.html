@@ -1147,7 +1147,7 @@ function colDefsAll(){
   return {left,right};
 }
 function fmtCols(){const d=colDefsAll();return d.left.concat(d.right).map(c=>c.f).filter(f=>!colHidden(f));}
-function widthOf(f){const d={phase:150,seq:46,name:210,start_date:120,end_date:120,deliverable:180,note:120};return (schedCfg.widths&&schedCfg.widths[f])||d[f]||120;}
+function widthOf(f){const d={phase:126,seq:42,name:170,start_date:104,end_date:104,deliverable:150,note:104};return (schedCfg.widths&&schedCfg.widths[f])||d[f]||110;}
 function renderSchedule(tid){
   const t=TASKS.find(x=>x.id===tid);const rows=schedCache[tid]||[];const o=OWNERS[tid]||{};
   const canEdit=!!authUser;const cols=(schedCfg.cols||[]);
