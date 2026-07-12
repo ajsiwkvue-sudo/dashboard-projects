@@ -147,6 +147,37 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .filters .chip{margin-left:auto;font-size:.82rem;color:var(--muted)}
 /* Task cards */
 .task-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+/* 뷰 전환 세그먼트 */
+.seg{display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:2px;gap:2px}
+.seg .seg-b{background:none;border:0;border-radius:7px;padding:6px 12px;font-family:var(--font);font-size:.82rem;font-weight:700;color:var(--muted);cursor:pointer}
+.seg .seg-b.on{background:var(--primary);color:#fff}
+.seg .seg-b:not(.on):hover{color:var(--primary)}
+/* 칸반 */
+.task-kanwrap,.task-calwrap{display:block}
+.kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:start}
+.kan-col{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:8px;min-height:120px;transition:.15s}
+.kan-col.drop{border-color:var(--primary);background:rgba(30,111,196,.08);box-shadow:inset 0 0 0 2px var(--primary)}
+.kan-head{display:flex;align-items:center;gap:6px;font-weight:800;font-size:.86rem;padding:6px 8px 10px}
+.kan-head .kan-cnt{margin-left:auto;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0 8px;font-size:.72rem;color:var(--muted)}
+.kan-head.done{color:var(--success)}.kan-head.prog{color:var(--warning)}.kan-head.over{color:var(--danger)}.kan-head.plan{color:var(--muted)}
+.kan-body{display:flex;flex-direction:column;gap:8px;min-height:40px}
+.kan-card{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--primary);border-radius:9px;padding:9px 10px;box-shadow:var(--shadow);cursor:grab}
+.kan-card:active{cursor:grabbing}
+.kan-card.g1{border-left-color:#1565c0}.kan-card.g2{border-left-color:#6a3fb5}.kan-card.g3{border-left-color:#2e9e5b}
+.kan-card .kc-top{font-size:.72rem;color:var(--muted);font-weight:700}
+.kan-card .kc-lbl{font-size:.82rem;font-weight:700;margin:2px 0;line-height:1.3}
+.kan-card .kc-team{font-size:.7rem;color:var(--muted)}
+.kan-empty{color:var(--muted);font-size:.76rem;text-align:center;padding:14px 4px;border:1.5px dashed var(--border);border-radius:8px}
+/* 캘린더(월별 타일) */
+.cal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.cal-cell{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;box-shadow:var(--shadow);min-height:90px}
+.cal-cell.now{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary),var(--shadow)}
+.cal-mh{display:flex;align-items:center;gap:6px;font-weight:800;font-size:.9rem;margin-bottom:8px;color:var(--primary)}
+.cal-mh .cal-cnt{margin-left:auto;font-size:.72rem;color:var(--muted);font-weight:700}
+.cal-mh .cal-now{background:var(--primary);color:#fff;font-size:.64rem;padding:1px 6px;border-radius:8px}
+.cal-chip{display:flex;align-items:center;gap:5px;font-size:.74rem;padding:4px 6px;border-radius:6px;background:var(--bg);margin-bottom:5px;cursor:pointer;line-height:1.3}
+.cal-chip:hover{background:rgba(30,111,196,.1)}
+.cal-chip b{font-weight:800;color:var(--muted)}
 .tcard{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);cursor:pointer;transition:.2s;border-left:4px solid var(--primary)}
 .tcard:hover{transform:translateY(-3px);box-shadow:0 6px 18px rgba(20,40,80,.15)}
 .tcard.g1{border-left-color:var(--g1)}.tcard.g2{border-left-color:var(--g2)}.tcard.g3{border-left-color:var(--g3)}
@@ -496,8 +527,13 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 
 <!-- 전략과제 -->
 <section class="view" id="v-tasks"><div class="wrap">
-  <div class="sec-title">📋 전략과제 팔로업 <span class="hint" style="font-weight:400">(카드 클릭 → 상세 · 마일스톤 클릭 → 상태 변경/저장)</span></div>
+  <div class="sec-title">📋 전략과제 팔로업 <span class="hint" style="font-weight:400">(카드=클릭 상세 · 칸반=드래그로 상태변경 · 캘린더=월별 보기)</span></div>
   <div class="filters">
+    <span class="seg" id="taskViewSeg">
+      <button class="seg-b on" data-v="card" onclick="setTaskView('card')">📇 카드</button>
+      <button class="seg-b" data-v="kanban" onclick="setTaskView('kanban')">🗂️ 칸반</button>
+      <button class="seg-b" data-v="calendar" onclick="setTaskView('calendar')">📅 캘린더</button>
+    </span>
     <select id="fGoal"><option value="">전체 핵심목표</option></select>
     <select id="fTeam"><option value="">전체 담당팀</option></select>
     <select id="fStatus"><option value="">전체 상태</option><option value="over">지연</option><option value="prog">진행중</option><option value="plan">예정</option><option value="done">완료</option></select>
@@ -760,8 +796,12 @@ function fillFilters(){
   document.getElementById('resetProg').onclick=()=>{if(supa&&remoteReady){loadRemote();return;}if(confirm('진척 상태를 초기값(자동 산정)으로 되돌릴까요?')){overrides={};localStorage.removeItem(STORE_KEY);renderTasks();renderOverview();}};
   const rg=document.getElementById('rGoal');goals.forEach(g=>rg.add(new Option(`목표${g.id}`,g.id)));rg.onchange=renderGantt;
 }
-function renderTasks(){
-  const g=document.getElementById('fGoal').value,tm=document.getElementById('fTeam').value,st=document.getElementById('fStatus').value;
+let taskView='card';
+function setTaskView(v){taskView=v;const seg=document.getElementById('taskViewSeg');if(seg)seg.querySelectorAll('.seg-b').forEach(b=>b.classList.toggle('on',b.dataset.v===v));const grid=document.getElementById('taskGrid');if(grid)grid.className=v==='card'?'task-grid':(v==='kanban'?'task-kanwrap':'task-calwrap');renderTasks();}
+function taskFilters(){return {g:document.getElementById('fGoal').value,tm:document.getElementById('fTeam').value,st:document.getElementById('fStatus').value};}
+function renderTasks(){if(taskView==='kanban')return renderKanban();if(taskView==='calendar')return renderCalendarView();return renderCardView();}
+function renderCardView(){
+  const {g,tm,st}=taskFilters();
   let list=TASKS.filter(t=>(!g||t.goal==g)&&(!tm||t.team===tm));
   if(st) list=list.filter(t=>{const c=taskStatusSummary(t);return c[st]>0;});
   document.getElementById('taskCount').textContent=`${list.length} / ${TASKS.length} 과제`;
@@ -769,6 +809,38 @@ function renderTasks(){
     const p=taskProgress(t),c=taskStatusSummary(t);
     return `<div class="tcard g${t.goal}" onclick="openTask('${t.id}')"><div class="tno">${t.id} · 목표${t.goal}</div><div class="tt">${t.title}</div><div class="tmeta"><span class="badge b-team"><span class="bl">담당</span>${t.team}</span><span class="badge b-coop"><span class="bl">협업</span>${t.coop.length}곳</span></div><div class="tprog"><div class="pb"><div class="pf" style="width:${p}%;background:${progColor(p)}"></div></div><div class="pt">${p}%</div></div><div class="mstat">${Object.keys(c).map(k=>`<span><span class="dot ${k}"></span>${STAT_LABEL[k]} ${c[k]}</span>`).join('')}</div></div>`;
   }).join('')||'<div class="hint">조건에 맞는 과제가 없습니다.</div>';
+}
+/* ---- 칸반: 마일스톤을 상태 컬럼으로, 드래그해서 상태 변경(실시간 저장) ---- */
+let kanDrag=null;
+function kanStart(e,tid,i){kanDrag={tid,i:+i};try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',tid);}catch(_){}}
+function kanOver(e){e.preventDefault();e.currentTarget.classList.add('drop');}
+function kanLeave(e){e.currentTarget.classList.remove('drop');}
+function kanDrop(e,st){e.preventDefault();e.currentTarget.classList.remove('drop');if(!kanDrag)return;const d=kanDrag;kanDrag=null;setStatus(d.tid,d.i,st);renderTasks();renderOverview();}
+function renderKanban(){
+  const {g,tm}=taskFilters();
+  let list=TASKS.filter(t=>(!g||t.goal==g)&&(!tm||t.team===tm));
+  const cells=[];list.forEach(t=>t.miles.forEach((m,i)=>cells.push({tid:t.id,i,m,st:statusOf(t.id,i,m),goal:t.goal,title:t.title})));
+  document.getElementById('taskCount').textContent=`마일스톤 ${cells.length}개 · 드래그로 상태 변경`;
+  const cols=[['plan','예정'],['prog','진행중'],['done','완료'],['over','지연']];
+  document.getElementById('taskGrid').innerHTML=`<div class="kanban">`+cols.map(([k,label])=>{
+    const items=cells.filter(c=>c.st===k);
+    const cardsHtml=items.map(c=>`<div class="kan-card g${c.goal}" draggable="true" ondragstart="kanStart(event,'${c.tid}',${c.i})" onclick="openTask('${c.tid}')"><div class="kc-top">${c.tid} · ${escH(c.m.dstr||'-')}</div><div class="kc-lbl">${escH(c.m.label)}</div><div class="kc-team">${escH(c.title)}</div></div>`).join('')||'<div class="kan-empty">여기로 드래그</div>';
+    return `<div class="kan-col" ondragover="kanOver(event)" ondragleave="kanLeave(event)" ondrop="kanDrop(event,'${k}')"><div class="kan-head ${k}"><span class="dot ${k}"></span>${label}<span class="kan-cnt">${items.length}</span></div><div class="kan-body">${cardsHtml}</div></div>`;
+  }).join('')+`</div>`;
+}
+/* ---- 캘린더: 마일스톤을 월별 타일로 ---- */
+function renderCalendarView(){
+  const {g,tm}=taskFilters();
+  let list=TASKS.filter(t=>(!g||t.goal==g)&&(!tm||t.team===tm));
+  const byMonth={};let minK=null,maxK=null,total=0;
+  list.forEach(t=>t.miles.forEach((m,i)=>{if(!m.y)return;const k=m.y*12+(m.m-1);(byMonth[k]=byMonth[k]||[]).push({tid:t.id,i,m,st:statusOf(t.id,i,m),goal:t.goal});total++;if(minK==null||k<minK)minK=k;if(maxK==null||k>maxK)maxK=k;}));
+  document.getElementById('taskCount').textContent=`마일스톤 ${total}개`;
+  if(minK==null){document.getElementById('taskGrid').innerHTML='<div class="hint">표시할 마일스톤이 없습니다.</div>';return;}
+  let html='<div class="cal-grid">';
+  for(let k=minK;k<=maxK;k++){const y=Math.floor(k/12),mo=(k%12)+1;const items=(byMonth[k]||[]).slice().sort((a,b)=>a.tid<b.tid?-1:1);const now=new Date();const isNow=(y===now.getFullYear()&&mo===now.getMonth()+1);
+    html+=`<div class="cal-cell${isNow?' now':''}"><div class="cal-mh">${y}.${String(mo).padStart(2,'0')}${isNow?' <span class="cal-now">이번달</span>':''}<span class="cal-cnt">${items.length}</span></div>`+
+      items.map(c=>`<div class="cal-chip ${c.st}" onclick="openTask('${c.tid}')" title="${escH(c.m.label)}"><span class="dot ${c.st}"></span><b>${c.tid}</b> ${escH(c.m.label)}</div>`).join('')+`</div>`;}
+  html+='</div>';document.getElementById('taskGrid').innerHTML=html;
 }
 let modalTask=null;
 function openTask(tid){
