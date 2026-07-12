@@ -576,7 +576,6 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
       <button class="nz-vt on" data-v="gallery" onclick="setTaskView('gallery')"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2.5" width="5" height="5" rx="1"/><rect x="9" y="2.5" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="4.5" rx="1"/><rect x="9" y="9" width="5" height="4.5" rx="1"/></svg>갤러리</button>
       <button class="nz-vt" data-v="table" onclick="setTaskView('table')"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3" width="12" height="10" rx="1.2"/><path d="M2 6.5h12M2 9.8h12M6.2 3v10"/></svg>표</button>
       <button class="nz-vt" data-v="board" onclick="setTaskView('board')"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2.5" width="3.4" height="11" rx="1"/><rect x="6.3" y="2.5" width="3.4" height="8" rx="1"/><rect x="10.6" y="2.5" width="3.4" height="6" rx="1"/></svg>보드</button>
-      <button class="nz-vt" data-v="list" onclick="setTaskView('list')"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 4h9M5 8h9M5 12h9"/><circle cx="2.5" cy="4" r=".8" fill="currentColor" stroke="none"/><circle cx="2.5" cy="8" r=".8" fill="currentColor" stroke="none"/><circle cx="2.5" cy="12" r=".8" fill="currentColor" stroke="none"/></svg>리스트</button>
     </span>
     <select id="fGoal"><option value="">전체 핵심목표</option></select>
     <select id="fTeam"><option value="">전체 담당팀</option></select>
@@ -845,7 +844,7 @@ function setTaskView(v){taskView=v;const seg=document.getElementById('taskViewSe
 function taskFilters(){return {g:document.getElementById('fGoal').value,tm:document.getElementById('fTeam').value,st:document.getElementById('fStatus').value};}
 function taskList(){const {g,tm,st}=taskFilters();let list=TASKS.filter(t=>(!g||t.goal==g)&&(!tm||t.team===tm));if(st)list=list.filter(t=>{const c=taskStatusSummary(t);return c[st]>0;});return list;}
 function statChips(c){return `<span class="nz-stats">`+Object.keys(c).filter(k=>c[k]).map(k=>`<span class="nz-st"><span class="dot ${k}"></span>${c[k]}</span>`).join('')+`</span>`;}
-function renderTasks(){if(taskView==='board')return renderBoard();if(taskView==='table')return renderTable();if(taskView==='list')return renderList();return renderGallery();}
+function renderTasks(){if(taskView==='board')return renderBoard();if(taskView==='table')return renderTable();return renderGallery();}
 /* ---- 갤러리(카드) ---- */
 function renderGallery(){
   const list=taskList();document.getElementById('taskCount').textContent=`${list.length} / ${TASKS.length} 과제`;
@@ -1154,8 +1153,9 @@ document.addEventListener('keydown',e=>{
   const editing=!!(ae&&((ae.getAttribute&&ae.getAttribute('contenteditable')==='true')||ae.tagName==='INPUT'));
   const k=(e.key||'').toLowerCase();
   if(k==='z'&&!e.shiftKey){if(editing)return;e.preventDefault();undoAction();return;}          // 되돌리기
-  if(k==='c'){if(editing)return;if(selectedSchedId){e.preventDefault();copyRow();}return;}       // 행 복사
-  if(k==='v'){if(editing)return;if(schedClip){e.preventDefault();pasteRow();}return;}            // 행 붙여넣기
+  if(k==='c'){if(editing)return;e.preventDefault();if(selectedCells.length)copyCells();else if(selectedSchedId)copyRow();return;}   // 복사(셀/행)
+  if(k==='v'){if(editing)return;e.preventDefault();if(selectedCells.length)pasteCells();else pasteRow();return;}                  // 붙여넣기(셀/행)
+  if(k==='x'){if(editing)return;if(selectedCells.length){e.preventDefault();cutCells();}return;}                                  // 잘라내기(셀)
   if(k==='b'){e.preventDefault();fmtBold();return;}                                               // 굵게
   if(k==='i'){e.preventDefault();fmtItalic();return;}                                             // 기울임
   if(k==='u'){e.preventDefault();fmtUnderline();return;}                                          // 밑줄
@@ -1432,6 +1432,32 @@ async function deleteSelected(){if(!needSel())return;await deleteRow(selectedSch
 /* 복사/붙여넣기 */
 function copyRow(){if(!needSel())return;const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===selectedSchedId);if(!row)return;schedClip=JSON.parse(JSON.stringify(row));toast('행을 복사했습니다. 붙여넣기로 추가하세요.');}
 async function pasteRow(){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}if(!schedClip){alert('먼저 행을 복사하세요. (행 선택 → 복사)');return;}const rows=schedCache[currentSchedTask]||[];let sort;if(selectedSchedId){const i=rows.findIndex(r=>r.id===selectedSchedId);const sel=rows[i],next=rows[i+1];sort=((next?next.sort_order:sel.sort_order+20)+sel.sort_order)/2;}else sort=(rows.length?Math.max(...rows.map(r=>r.sort_order||0)):0)+10;const c=schedClip;const row={task_id:currentSchedTask,phase:c.phase,seq:c.seq,name:c.name||'복사된 계획',start_date:c.start_date,end_date:c.end_date,deliverable:c.deliverable,note:c.note,extra:c.extra||{},fmt:c.fmt||{},sort_order:sort,created_by:whoAmI(),updated_by:whoAmI()};try{const {data,error}=await supa.from('ax_schedules').insert(row).select();if(error)throw error;const nid=data&&data[0]&&data[0].id;selectedSchedId=nid;pushUndo({label:'붙여넣기',run:async()=>{await supa.from('ax_schedules').delete().eq('id',nid);if(selectedSchedId===nid)selectedSchedId=null;await reloadSched(currentSchedTask);}});await reloadSched(currentSchedTask);}catch(e){alert('붙여넣기 실패: '+e.message);}}
+/* 셀 단위 복사·붙여넣기·잘라내기 (시스템 클립보드 TSV, 엑셀 호환) */
+let cellClip=null;
+function cellReadVal(r,f){if(f&&f.indexOf('extra:')===0)return (r.extra&&r.extra[f.slice(6)])||'';return r[f]==null?'':String(r[f]);}
+function selRect(){if(!selectedCells.length)return null;const cols=fmtCols();const rows=schedViewRows.length?schedViewRows:(schedCache[currentSchedTask]||[]);const ri=selectedCells.map(c=>rows.findIndex(r=>r.id===c.rowId)).filter(x=>x>=0);const ci=selectedCells.map(c=>cols.indexOf(c.field)).filter(x=>x>=0);if(!ri.length||!ci.length)return null;return {r1:Math.min(...ri),r2:Math.max(...ri),c1:Math.min(...ci),c2:Math.max(...ci),rows,cols};}
+async function copyCells(){const R=selRect();if(!R)return;const {r1,r2,c1,c2,rows,cols}=R;const grid=[];for(let i=r1;i<=r2;i++){const line=[];for(let j=c1;j<=c2;j++){const rr=rows[i],f=cols[j];line.push(rr&&f?cellReadVal(rr,f):'');}grid.push(line);}cellClip={grid};try{await navigator.clipboard.writeText(grid.map(l=>l.join('\t')).join('\n'));}catch(_){}toast('셀 '+grid.length+'×'+grid[0].length+' 복사됨');}
+async function pasteCells(){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}const R=selRect();if(!R)return;const {r1,c1,rows,cols}=R;
+  let grid=null;try{const txt=await navigator.clipboard.readText();if(txt&&txt.length){grid=txt.replace(/\r/g,'').replace(/\n$/,'').split('\n').map(l=>l.split('\t'));}}catch(_){}
+  if((!grid||(grid.length===1&&grid[0].length===1&&grid[0][0]===''))&&cellClip)grid=cellClip.grid;
+  if(!grid||!grid.length)return;
+  const targets=[];for(let i=0;i<grid.length;i++)for(let j=0;j<grid[i].length;j++){const rr=rows[r1+i],f=cols[c1+j];if(rr&&f)targets.push({rowId:rr.id,field:f,value:grid[i][j]});}
+  await applyCellValues(targets,'붙여넣기');toast('붙여넣기 완료');}
+async function cutCells(){const R=selRect();if(!R)return;await copyCells();const {r1,r2,c1,c2,rows,cols}=R;const targets=[];for(let i=r1;i<=r2;i++)for(let j=c1;j<=c2;j++){const rr=rows[i],f=cols[j];if(rr&&f&&f!=='name')targets.push({rowId:rr.id,field:f,value:''});}await applyCellValues(targets,'잘라내기');}
+async function applyCellValues(targets,label){
+  if(!targets.length)return;const rows=schedCache[currentSchedTask]||[];const byRow={};targets.forEach(t=>{(byRow[t.rowId]=byRow[t.rowId]||[]).push(t);});const snaps=[];
+  try{for(const id of Object.keys(byRow)){const row=rows.find(r=>r.id===id);if(!row)continue;const patch={};let extra=Object.assign({},row.extra||{}),extraChg=false;const snap={id,extraOld:JSON.parse(JSON.stringify(row.extra||{})),fields:{}};
+      byRow[id].forEach(t=>{const f=t.field;let v=(t.value==null?'':String(t.value)).trim();
+        if(f.indexOf('extra:')===0){const cid=f.slice(6);if(v)extra[cid]=v;else delete extra[cid];extraChg=true;}
+        else if(f==='start_date'||f==='end_date'){snap.fields[f]=row[f];patch[f]=v?(parseDateInput(v)||v):null;}
+        else if(f==='name'){if(v){snap.fields[f]=row[f];patch[f]=v;}}
+        else{snap.fields[f]=row[f];patch[f]=v||null;}});
+      if(extraChg)patch.extra=extra;snaps.push(snap);
+      const {error}=await supa.from('ax_schedules').update(Object.assign({updated_by:whoAmI(),updated_at:new Date().toISOString()},patch)).eq('id',id);if(error)throw error;Object.assign(row,patch);}
+    pushUndo({label,run:async()=>{for(const s of snaps){const p={};for(const f in s.fields)p[f]=s.fields[f];p.extra=s.extraOld;await supa.from('ax_schedules').update(p).eq('id',s.id);}await reloadSched(currentSchedTask);}});
+    await reloadSched(currentSchedTask);
+  }catch(e){alert('적용 실패: '+e.message);}
+}
 /* 서식: 클릭 즉시 적용 — 선택한 '셀(들)'에만 (fmt jsonb, 필드별) */
 function fmtNeedCells(){if(!authUser){alert('구글 로그인 후 이용하세요.');return null;}if(!selectedCells.length){toast('먼저 표에서 서식을 넣을 셀을 클릭(또는 드래그)해 선택하세요.');return null;}editingCell=false;const rows=schedCache[currentSchedTask]||[];const out=[];selectedCells.forEach(sc=>{const row=rows.find(x=>x.id===sc.rowId);if(row)out.push({id:sc.rowId,field:sc.field,row});});return out.length?out:null;}
 async function applyFmtToCells(changesFn,label){
@@ -1550,7 +1576,7 @@ function cellMenu(e,id,field){e.preventDefault();e.stopPropagation();
   if(!inSel)setSelCells([{rowId:id,field:field}]);
   updateSelLabel();markSelectedCells();
   const isCustom=field.indexOf('extra:')===0;const multi=selectedCells.length>1;const hasMerge=selectionHasMerge();
-  const items=[{t:'⧉ 복사 (⌘/Ctrl+C)',f:()=>copyRow()},{t:'📋 붙여넣기 (⌘/Ctrl+V)',f:()=>pasteRow()}];
+  const items=[{t:'⧉ 복사 (⌘/Ctrl+C)',f:()=>{if(selectedCells.length)copyCells();else copyRow();}},{t:'📋 붙여넣기 (⌘/Ctrl+V)',f:()=>{if(selectedCells.length)pasteCells();else pasteRow();}},{t:'✂️ 잘라내기 (⌘/Ctrl+X)',f:()=>{if(selectedCells.length)cutCells();}}];
   if(multi||hasMerge){items.push({sep:1});if(multi)items.push({t:'🔗 셀 병합',f:()=>mergeCells()});if(hasMerge)items.push({t:'✂️ 병합 해제',f:()=>unmergeCells()});}
   items.push({sep:1},{t:'⬆ 위에 행 삽입',f:()=>insertRow('above')},{t:'⬇ 아래에 행 삽입',f:()=>insertRow('below')},{t:'🗑️ 행 삭제',f:()=>deleteRow(id)},{sep:1},{t:'➕ 왼쪽에 열 삽입',f:()=>insertColumn(field,'left')},{t:'➕ 오른쪽에 열 삽입',f:()=>insertColumn(field,'right')},{t:'🧹 열 데이터 삭제',f:()=>clearColumnData(field)},{t:'🙈 열 숨기기',f:()=>hideColumn(field)});
   if(isCustom)items.push({sep:1},{t:'🗑️ 이 열 삭제',f:()=>deleteColumn(field.slice(6))});
