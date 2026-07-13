@@ -1252,7 +1252,7 @@ function applyRow(r){const k=r.mkey;if(r.status)overrides[k]=r.status;else delet
 async function loadRemote(){if(!supa)return;try{const {data,error}=await supa.from('ax_milestone_state').select('*');if(error)throw error;overrides={};mileEdits={};(data||[]).forEach(applyRow);localStorage.setItem(STORE_KEY,JSON.stringify(overrides));localStorage.setItem('ax_mile_edits_v1',JSON.stringify(mileEdits));applyMileEdits();remoteReady=true;setLive('on');rerenderActive();}catch(e){remoteReady=false;setLive('off');}}
 async function pushState(k){if(!supa)return;const p=k.split('#');const ed=mileEdits[k];const row={mkey:k,task_id:p[0],mile_index:+p[1],status:overrides[k]||null,edited_date:ed?ed.dstr:null,edited_label:ed?ed.label:null,updated_by:whoAmI(),updated_at:new Date().toISOString()};try{const {error}=await supa.from('ax_milestone_state').upsert(row,{onConflict:'mkey'});if(error)throw error;}catch(e){setLive('off');}}
 function subscribeRemote(){if(!supa)return;supa.channel('ax_ms_ch').on('postgres_changes',{event:'*',schema:'public',table:'ax_milestone_state'},payload=>{const r=(payload.new&&payload.new.mkey)?payload.new:payload.old;if(!r)return;if(payload.eventType==='DELETE'){delete overrides[r.mkey];delete mileEdits[r.mkey];}else applyRow(r);localStorage.setItem(STORE_KEY,JSON.stringify(overrides));localStorage.setItem('ax_mile_edits_v1',JSON.stringify(mileEdits));applyMileEdits();rerenderActive();}).subscribe(st=>{if(st==='SUBSCRIBED')setLive('on');else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')setLive('off');});}
-function initSupa(){try{if(window.supabase&&SUPA_URL&&SUPA_KEY){supa=window.supabase.createClient(SUPA_URL,SUPA_KEY,{realtime:{params:{eventsPerSecond:5}}});}}catch(e){supa=null;}setUserBadge();if(supa){loadRemote();subscribeRemote();initAuth();subscribeSchedules();initPresence();}else{setLive('off');}}
+function initSupa(){try{if(window.supabase&&SUPA_URL&&SUPA_KEY){supa=window.supabase.createClient(SUPA_URL,SUPA_KEY,{realtime:{params:{eventsPerSecond:10}}});}}catch(e){supa=null;}setUserBadge();if(supa){loadRemote();subscribeRemote();initAuth();subscribeSchedules();initPresence();}else{setLive('off');}}
 
 /* ---------- 동시 접속자 표시 (Realtime Presence) ---------- */
 const CLIENT_ID=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():('c'+Math.random().toString(36).slice(2));
@@ -1261,8 +1261,20 @@ let myView='개요',myCell=null,presenceUsers=[];
 function colorFor(s){const c=['#0b4f9e','#00a3b4','#6a3fb5','#2e9e5b','#e8890c','#d64545','#1e6fc4','#c2185b','#00897b','#5e35b1','#f4511e','#3949ab','#00838f','#ad1457'];let h=0;s=s||'?';for(let i=0;i<s.length;i++)h=(h*131+s.charCodeAt(i))>>>0;return c[h%c.length];}
 function myPresence(){const nm=whoAmI();return {id:CLIENT_ID,name:nm,initial:(nm.trim()[0]||'?').toUpperCase(),color:colorFor(nm),login:!!authUser,view:myView,task:currentSchedTask||null,cell:myCell};}
 function locLabel(u){if(u.task){return `📝 ${u.task} 세부계획${u.cell?' 편집중':''}`;}return (u.view||'둘러보는 중');}
-function initPresence(){if(!supa)return;presenceChannel=supa.channel('ax_presence',{config:{presence:{key:CLIENT_ID}}});presenceChannel.on('presence',{event:'sync'},renderPresence).subscribe(async st=>{if(st==='SUBSCRIBED'){try{await presenceChannel.track(myPresence());}catch(e){}}});}
-function updatePresence(){if(presenceChannel){try{presenceChannel.track(myPresence());}catch(e){}}}
+function ensurePresence(){
+  if(!supa)return null;
+  const s=presenceChannel&&presenceChannel.state;
+  if(presenceChannel&&(s==='joined'||s==='joining'))return presenceChannel;
+  if(presenceChannel){try{supa.removeChannel(presenceChannel);}catch(e){}}
+  presenceChannel=supa.channel('ax_presence',{config:{presence:{key:CLIENT_ID}}});
+  presenceChannel.on('presence',{event:'sync'},renderPresence).subscribe(st=>{
+    if(st==='SUBSCRIBED'){try{presenceChannel.track(myPresence());}catch(e){}}
+    else if(st==='CLOSED'||st==='CHANNEL_ERROR'||st==='TIMED_OUT'){setTimeout(ensurePresence,2500);}
+  });
+  return presenceChannel;
+}
+function initPresence(){ensurePresence();if(!window.__presHb){window.__presHb=setInterval(()=>{const ch=ensurePresence();if(ch&&ch.state==='joined'){try{ch.track(myPresence());}catch(e){}}},15000);}}
+function updatePresence(){const ch=ensurePresence();if(ch&&ch.state==='joined'){try{ch.track(myPresence());}catch(e){}}}
 function renderPresence(){
   const el=document.getElementById('presence');if(!el)return;
   const state=presenceChannel?presenceChannel.presenceState():{};
