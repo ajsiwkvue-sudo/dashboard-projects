@@ -284,9 +284,9 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .pf-conn{display:flex;align-items:center;font-size:.9rem;color:var(--muted);flex-shrink:0;padding:0 1px}
 .pm-wrap{overflow-x:auto;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:4px;margin-bottom:20px}
 .pm{border-collapse:collapse;width:100%;min-width:0;table-layout:fixed;font-size:.76rem}
-.pm th,.pm td{border:1px solid var(--border);padding:6px 8px;vertical-align:top;text-align:left;word-break:break-word;overflow-wrap:anywhere;white-space:normal;overflow:hidden;max-width:0}
+.pm th,.pm td{border:1px solid var(--border);padding:8px 9px;vertical-align:top;text-align:left;word-break:break-word;overflow-wrap:anywhere;white-space:normal}
 .pm thead th{background:var(--bg)}
-.pm .layer-col{background:var(--bg);font-weight:800;white-space:normal;word-break:keep-all;width:96px;color:var(--primary)}
+.pm .layer-col{background:var(--bg);font-weight:800;white-space:normal;word-break:keep-all;width:104px;color:var(--primary);text-align:center;vertical-align:middle}
 .pm .ph-head{min-width:0}
 .pm .ph-name{font-weight:900;font-size:.82rem;line-height:1.25}
 .pm .ph-period{font-size:.7rem;color:var(--muted)}
@@ -1100,7 +1100,7 @@ function renderRoute(){
   document.getElementById('pmOverallPct').textContent=op.pct+'%';
   // 단계 흐름 스트립
   document.getElementById('phaseFlow').innerHTML=`<div class="phase-flow">`+stats.map((s,idx)=>{
-    const node=`<div class="pf-node ${idx===cur?'cur':''}"><div class="pf-t">${s.name}</div><div class="pf-p">${s.period}</div><div class="pf-bar"><div class="pf-bf" style="width:${s.prog}%;background:${s.prog>=100?'var(--success)':s.prog>0?'var(--warning)':'var(--gray)'}"></div></div><div class="pf-pct">${s.prog}%</div>${idx===cur?'<div class="pf-here">📍 YOU ARE HERE</div>':''}</div>`;
+    const node=`<div class="pf-node ${idx===cur?'cur':''}"><div class="pf-t">${s.name}</div><div class="pf-p">${s.period}</div><div class="pf-bar"><div class="pf-bf" style="width:${s.prog}%;background:${s.prog>=100?'var(--success)':s.prog>0?'var(--warning)':'var(--gray)'}"></div></div><div class="pf-pct">${s.prog}%</div>${idx===cur?'<div class="pf-here">현재 단계</div>':''}</div>`;
     const conn=idx<stats.length-1?`<div class="pf-conn">→</div>`:'';
     return node+conn;
   }).join('')+`</div>`;
@@ -1110,10 +1110,10 @@ function renderRoute(){
   let html=`<div class="pm-wrap"><table class="pm"><thead><tr><th class="layer-col">단계</th>`+
     stats.map((s,idx)=>`<th class="ph-head ${idx===cur?'current-col':''}"><div class="ph-name">${s.name}</div><div class="ph-period">${s.period}</div><div style="font-size:.82rem;font-weight:800;margin-top:5px;color:${s.prog>=100?'var(--success)':s.prog>0?'var(--warning)':'var(--muted)'}">진행률 ${s.prog}%</div></th>`).join('')+
     `</tr></thead><tbody>`;
-  html+=row('◈ 주요 목표',s=>ul(s.obj));
-  html+=row('📌 핵심 마일스톤',s=>s.miles.length?`<div class="mile-cell"><ul>`+s.miles.map(m=>`<li><span class="dot ${m.st}"></span>${m.dstr} ${m.label} <small style="color:var(--muted)">(${m.tid})</small></li>`).join('')+`</ul></div>`:'<span style="color:var(--muted)">—</span>');
-  html+=row('⚙️ 프로세스/활동',s=>ul(s.act));
-  html+=row('⚠️ 리스크 & 장벽',s=>ul(s.risk));
+  html+=row('주요 목표',s=>ul(s.obj));
+  html+=row('핵심 마일스톤',s=>s.miles.length?`<div class="mile-cell"><ul>`+s.miles.map(m=>`<li><span class="dot ${m.st}"></span>${m.dstr} ${m.label} <small style="color:var(--muted)">(${m.tid})</small></li>`).join('')+`</ul></div>`:'<span style="color:var(--muted)">—</span>');
+  html+=row('프로세스 · 활동',s=>ul(s.act));
+  html+=row('리스크 · 장벽',s=>ul(s.risk));
   html+=`</tbody></table></div>`;
   document.getElementById('phaseMatrix').innerHTML=html;
   renderGantt();
