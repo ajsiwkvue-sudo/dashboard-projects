@@ -714,6 +714,7 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
     </span>
     <select id="fGoal"><option value="">전체 핵심목표</option></select>
     <select id="fTeam"><option value="">전체 담당팀</option></select>
+    <select id="fOwner"><option value="">전체 담당자</option></select>
     <select id="fStatus"><option value="">전체 상태</option><option value="over">지연</option><option value="prog">진행중</option><option value="plan">예정</option><option value="done">완료</option></select>
     <button class="reset-btn" id="resetProg">진척 초기화</button>
     <span class="chip" id="taskCount"></span>
@@ -976,17 +977,20 @@ function drawMonthChart(){
 }
 
 /* ---------- 전략과제 ---------- */
+function taskOwnerNames(){const s=new Set();Object.values(OWNERS).forEach(o=>{[o.main,o.sub].forEach(v=>{if(v)String(v).split(',').forEach(n=>{n=n.trim();if(n)s.add(n);});});});return [...s].sort((a,b)=>a.localeCompare(b,'ko'));}
+function taskHasOwner(t,name){const o=OWNERS[t.id];if(!o)return false;const names=[];[o.main,o.sub].forEach(v=>{if(v)String(v).split(',').forEach(n=>names.push(n.trim()));});return names.indexOf(name)>=0;}
 function fillFilters(){
   const fg=document.getElementById('fGoal');goals.forEach(g=>fg.add(new Option(`목표${g.id}: ${g.name}`,g.id)));
   const ft=document.getElementById('fTeam');Object.keys(teams).forEach(t=>ft.add(new Option(t,t)));
-  ['fGoal','fTeam','fStatus'].forEach(id=>document.getElementById(id).onchange=renderTasks);
+  const fo=document.getElementById('fOwner');if(fo)taskOwnerNames().forEach(n=>fo.add(new Option(n,n)));
+  ['fGoal','fTeam','fOwner','fStatus'].forEach(id=>{const el=document.getElementById(id);if(el)el.onchange=renderTasks;});
   document.getElementById('resetProg').onclick=()=>{if(supa&&remoteReady){loadRemote();return;}if(confirm('진척 상태를 초기값(자동 산정)으로 되돌릴까요?')){overrides={};localStorage.removeItem(STORE_KEY);renderTasks();renderOverview();}};
   const rg=document.getElementById('rGoal');goals.forEach(g=>rg.add(new Option(`목표${g.id}`,g.id)));rg.onchange=renderGantt;
 }
 let taskView='gallery';
 function setTaskView(v){taskView=v;const seg=document.getElementById('taskViewSeg');if(seg)seg.querySelectorAll('.nz-vt').forEach(b=>b.classList.toggle('on',b.dataset.v===v));const grid=document.getElementById('taskGrid');if(grid)grid.className='nz-view';renderTasks();}
-function taskFilters(){return {g:document.getElementById('fGoal').value,tm:document.getElementById('fTeam').value,st:document.getElementById('fStatus').value};}
-function taskList(){const {g,tm,st}=taskFilters();let list=TASKS.filter(t=>(!g||t.goal==g)&&(!tm||t.team===tm));if(st)list=list.filter(t=>{const c=taskStatusSummary(t);return c[st]>0;});return list;}
+function taskFilters(){const ov=document.getElementById('fOwner');return {g:document.getElementById('fGoal').value,tm:document.getElementById('fTeam').value,ow:ov?ov.value:'',st:document.getElementById('fStatus').value};}
+function taskList(){const {g,tm,ow,st}=taskFilters();let list=TASKS.filter(t=>(!g||t.goal==g)&&(!tm||t.team===tm)&&(!ow||taskHasOwner(t,ow)));if(st)list=list.filter(t=>{const c=taskStatusSummary(t);return c[st]>0;});return list;}
 function statChips(c){return `<span class="nz-stats">`+Object.keys(c).filter(k=>c[k]).map(k=>`<span class="nz-st"><span class="dot ${k}"></span>${c[k]}</span>`).join('')+`</span>`;}
 function renderTasks(){const g=document.getElementById('taskGrid');if(g)g.className='nz-view';if(taskView==='board')return renderBoard();if(taskView==='table')return renderTable();return renderGallery();}
 /* ---- 갤러리(카드) ---- */
