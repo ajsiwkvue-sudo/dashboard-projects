@@ -525,6 +525,10 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .sw-table th.sw-selcol{background:rgba(61,90,152,.16)!important;box-shadow:inset 0 0 0 2px var(--primary)}
 .sw-table td.sw-selcol{box-shadow:inset 0 0 0 2px rgba(61,90,152,.45)}
 .sw-table td.sw-selcell{box-shadow:inset 0 0 0 2px var(--primary)!important;background:rgba(61,90,152,.06)}
+/* 고정열: 포커스/선택 시 배경 불투명(스크롤 셀 비침 방지) */
+.sw-table td.sw-frozen[contenteditable]:focus{background:#eef3fb}
+.sw-table td.sw-frozen.sw-selcell{background:#eef3fb!important}
+.sw-table tr.sw-selrow td.sw-frozen{background:#fbf2e7}
 .sw-table.dragging,.sw-table.dragging *{user-select:none!important;-webkit-user-select:none!important;cursor:cell!important}
 .sw-ribbon .rb-grp{display:inline-flex;align-items:center;gap:3px}
 .sw-ribbon .rb-ib{display:inline-flex;align-items:center;justify-content:center;gap:2px;min-width:32px;height:32px;padding:0 7px;background:var(--card);border:1px solid var(--border);border-radius:7px;font-family:var(--font);font-size:.9rem;font-weight:600;color:var(--text);cursor:pointer;position:relative;line-height:1}
