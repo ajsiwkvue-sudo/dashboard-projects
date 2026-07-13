@@ -902,7 +902,7 @@ function setTaskView(v){taskView=v;const seg=document.getElementById('taskViewSe
 function taskFilters(){return {g:document.getElementById('fGoal').value,tm:document.getElementById('fTeam').value,st:document.getElementById('fStatus').value};}
 function taskList(){const {g,tm,st}=taskFilters();let list=TASKS.filter(t=>(!g||t.goal==g)&&(!tm||t.team===tm));if(st)list=list.filter(t=>{const c=taskStatusSummary(t);return c[st]>0;});return list;}
 function statChips(c){return `<span class="nz-stats">`+Object.keys(c).filter(k=>c[k]).map(k=>`<span class="nz-st"><span class="dot ${k}"></span>${c[k]}</span>`).join('')+`</span>`;}
-function renderTasks(){if(taskView==='board')return renderBoard();if(taskView==='table')return renderTable();return renderGallery();}
+function renderTasks(){const g=document.getElementById('taskGrid');if(g)g.className='nz-view';if(taskView==='board')return renderBoard();if(taskView==='table')return renderTable();return renderGallery();}
 /* ---- 갤러리(카드) ---- */
 function renderGallery(){
   const list=taskList();document.getElementById('taskCount').textContent=`${list.length} / ${TASKS.length} 과제`;
