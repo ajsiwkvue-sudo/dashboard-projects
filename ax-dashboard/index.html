@@ -490,6 +490,8 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .sw-table td.sw-merged{vertical-align:middle}
 .sw-table .sw-frozen{position:sticky;background:var(--card);z-index:20}
 .sw-table thead .sw-frozen{z-index:30}
+/* 고정열: collapse+sticky로 배경이 테두리를 덮어 격자선이 사라지는 문제 → box-shadow로 재구성 */
+.sw-table td.sw-frozen{box-shadow:inset -1px 0 0 var(--border),inset 0 -1px 0 var(--border)}
 .sw-table td:not(.sw-frozen) .sw-dinput,.sw-table td:not(.sw-frozen) .sw-ninput,.sw-table td:not(.sw-frozen) .sw-sel{position:relative;z-index:0}
 .sw-table .col-filt{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin-left:4px;border-radius:4px;color:var(--muted);cursor:pointer;vertical-align:middle}
 .sw-table .col-filt:hover{background:rgba(61,90,152,.15);color:var(--primary)}
