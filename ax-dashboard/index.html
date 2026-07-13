@@ -1564,51 +1564,48 @@ function weekIndexOf(gm,ds){if(!ds)return null;const d=new Date(ds+'T00:00:00');
 /* ---- 열 모델 (숨김/커스텀 포함) ---- */
 function colHidden(f){return (schedCfg.hidden||[]).indexOf(f)>=0;}
 // 우측 영역(산출물·비고·커스텀 열)의 정규화된 필드 순서
+const WBS_DATA_FIELDS=['owner','priority','weight','start_date','end_date','actual_start','actual_end','calc_dur','calc_remain','calc_delay','progress','calc_status','predecessor','deliverable','done_criteria','note'];
+const WBS_DATA_DEF={
+  owner:{f:'owner',label:'담당자',cls:'sw-owner'},
+  priority:{f:'priority',label:'우선순위',cls:'sw-prio',sel:['','높음','보통','낮음']},
+  weight:{f:'weight',label:'가중치',cls:'sw-numc',num:1},
+  start_date:{f:'start_date',label:'계획시작',cls:'sw-dt',date:1},
+  end_date:{f:'end_date',label:'계획종료',cls:'sw-dt',date:1},
+  actual_start:{f:'actual_start',label:'실제시작',cls:'sw-dt',date:1},
+  actual_end:{f:'actual_end',label:'실제종료',cls:'sw-dt',date:1},
+  calc_dur:{f:'calc_dur',label:'기간',cls:'sw-calc',calc:'dur'},
+  calc_remain:{f:'calc_remain',label:'남은기간',cls:'sw-calc',calc:'remain'},
+  calc_delay:{f:'calc_delay',label:'지연일수',cls:'sw-calc',calc:'delay'},
+  progress:{f:'progress',label:'진행률%',cls:'sw-numc',num:1},
+  calc_status:{f:'calc_status',label:'상태',cls:'sw-calc',calc:'status'},
+  predecessor:{f:'predecessor',label:'선행작업',cls:'sw-pre'},
+  deliverable:{f:'deliverable',label:'산출물',cls:'sw-deliv'},
+  done_criteria:{f:'done_criteria',label:'완료기준',cls:'sw-done'},
+  note:{f:'note',label:'비고',cls:'sw-note'}
+};
 function rightOrderNorm(){
-  const customs=(schedCfg.cols||[]);
-  const all=['deliverable','note'].concat(customs.map(c=>'extra:'+c.id));
-  let order=(schedCfg.order&&schedCfg.order.length)?schedCfg.order.slice():all.slice();
-  order=order.filter(f=>all.indexOf(f)>=0);           // 사라진 열 제거
-  all.forEach(f=>{if(order.indexOf(f)<0)order.push(f);}); // 새 열 뒤에 보강
+  const customs=(schedCfg.cols||[]).map(c=>'extra:'+c.id);
+  const all=WBS_DATA_FIELDS.concat(customs);
+  // 구버전 order(데이터 필드 미포함)는 무시하고 기본 순서 사용
+  const stored=schedCfg.order;
+  let order=(stored&&stored.length&&stored.indexOf('owner')>=0)?stored.slice():all.slice();
+  order=order.filter(f=>all.indexOf(f)>=0);
+  all.forEach(f=>{if(order.indexOf(f)<0)order.push(f);});
   return order;
 }
 function rightMeta(f){
-  if(f==='deliverable')return {f:'deliverable',label:'세부 산출물',cls:'sw-deliv'};
-  if(f==='note')return {f:'note',label:'비고',cls:'sw-note'};
+  if(WBS_DATA_DEF[f])return WBS_DATA_DEF[f];
   const c=(schedCfg.cols||[]).find(x=>'extra:'+x.id===f);
   return {f,label:c?c.label:'추가열',cls:'sw-custom',custom:1,cid:c?c.id:f.slice(6)};
 }
 function colDefsAll(){
-  // 좌측 고정(WBS 식별)
   const left=[
-    {f:'wbs_id',label:'WBS',cls:'sw-wbs'},
     {f:'phase',label:'대과제',cls:'sw-phase'},
     {f:'seq',label:'세부과제',cls:'sw-seq'},
     {f:'name',label:'작업명',cls:'sw-name'}
   ];
-  // 데이터 컬럼(스크롤) — 간트 막대는 이 뒤에 위치
-  const data=[
-    {f:'owner',label:'담당자',cls:'sw-owner'},
-    {f:'priority',label:'우선순위',cls:'sw-prio',sel:['','높음','보통','낮음']},
-    {f:'weight',label:'가중치',cls:'sw-numc',num:1},
-    {f:'start_date',label:'계획시작',cls:'sw-dt',date:1},
-    {f:'end_date',label:'계획종료',cls:'sw-dt',date:1},
-    {f:'actual_start',label:'실제시작',cls:'sw-dt',date:1},
-    {f:'actual_end',label:'실제종료',cls:'sw-dt',date:1},
-    {f:'calc_dur',label:'기간',cls:'sw-calc',calc:'dur'},
-    {f:'calc_remain',label:'남은기간',cls:'sw-calc',calc:'remain'},
-    {f:'calc_delay',label:'지연일수',cls:'sw-calc',calc:'delay'},
-    {f:'progress',label:'진행률%',cls:'sw-numc',num:1},
-    {f:'calc_status',label:'상태',cls:'sw-calc',calc:'status'},
-    {f:'predecessor',label:'선행작업',cls:'sw-pre'},
-    {f:'deliverable',label:'산출물',cls:'sw-deliv'},
-    {f:'done_criteria',label:'완료기준',cls:'sw-done'},
-    {f:'note',label:'비고',cls:'sw-note'},
-    {f:'calc_updated',label:'최종수정',cls:'sw-calc',calc:'updated'},
-    {f:'calc_updater',label:'수정자',cls:'sw-calc',calc:'updater'}
-  ];
-  const customs=(schedCfg.cols||[]).map(c=>({f:'extra:'+c.id,label:c.label,cls:'sw-custom',custom:1,cid:c.id}));
-  return {left,right:data.concat(customs)};
+  const right=rightOrderNorm().map(rightMeta);
+  return {left,right};
 }
 function fmtCols(){const d=colDefsAll();return d.left.concat(d.right).map(c=>c.f).filter(f=>!colHidden(f));}
 function widthOf(f){const d={wbs_id:58,phase:120,seq:96,name:180,owner:88,priority:74,weight:60,start_date:86,end_date:86,actual_start:86,actual_end:86,calc_dur:56,calc_remain:78,calc_delay:72,progress:72,calc_status:68,predecessor:104,deliverable:150,done_criteria:140,note:104,calc_updated:118,calc_updater:76};return (schedCfg.widths&&schedCfg.widths[f])||d[f]||110;}
