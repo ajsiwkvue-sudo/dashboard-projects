@@ -1509,8 +1509,8 @@ let undoStack=[];                   // 되돌리기 스택
 function toast(msg){let t=document.getElementById('swToast');if(!t){t=document.createElement('div');t.id='swToast';t.className='sw-toast';document.body.appendChild(t);}t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1600);}
 function pushUndo(e){undoStack.push(e);if(undoStack.length>80)undoStack.shift();}
 async function undoAction(){const e=undoStack.pop();if(!e){toast('되돌릴 작업이 없습니다.');return;}try{await e.run();toast('되돌렸습니다'+(e.label?' · '+e.label:''));}catch(err){alert('되돌리기 실패: '+err.message);}}
-async function loadCfg(tid){if(!supa){schedCfg={cols:[],aligns:{},hidden:[],widths:{},merges:[]};return;}try{const {data}=await supa.from('ax_sched_cfg').select('*').eq('task_id',tid).maybeSingle();schedCfg=data?{cols:data.cols||[],aligns:data.aligns||{},hidden:data.hidden||[],widths:data.widths||{},merges:data.merges||[]}:{cols:[],aligns:{},hidden:[],widths:{},merges:[]};}catch(e){schedCfg={cols:[],aligns:{},hidden:[],widths:{},merges:[]};}}
-async function saveCfg(){if(!supa)return;try{const {error}=await supa.from('ax_sched_cfg').upsert({task_id:currentSchedTask,cols:schedCfg.cols,aligns:schedCfg.aligns,hidden:schedCfg.hidden||[],widths:schedCfg.widths||{},merges:schedCfg.merges||[],updated_by:whoAmI(),updated_at:new Date().toISOString()},{onConflict:'task_id'});if(error)throw error;}catch(e){alert('열 설정 저장 실패: '+e.message);}}
+async function loadCfg(tid){if(!supa){schedCfg={cols:[],aligns:{},hidden:[],widths:{},merges:[],order:[]};return;}try{const {data}=await supa.from('ax_sched_cfg').select('*').eq('task_id',tid).maybeSingle();schedCfg=data?{cols:data.cols||[],aligns:data.aligns||{},hidden:data.hidden||[],widths:data.widths||{},merges:data.merges||[],order:data.col_order||[]}:{cols:[],aligns:{},hidden:[],widths:{},merges:[],order:[]};}catch(e){schedCfg={cols:[],aligns:{},hidden:[],widths:{},merges:[],order:[]};}}
+async function saveCfg(){if(!supa)return;try{const {error}=await supa.from('ax_sched_cfg').upsert({task_id:currentSchedTask,cols:schedCfg.cols,aligns:schedCfg.aligns,hidden:schedCfg.hidden||[],widths:schedCfg.widths||{},merges:schedCfg.merges||[],col_order:schedCfg.order||[],updated_by:whoAmI(),updated_at:new Date().toISOString()},{onConflict:'task_id'});if(error)throw error;}catch(e){alert('열 설정 저장 실패: '+e.message);}}
 function weekCol(ds){if(!ds)return null;const d=new Date(ds);const m=d.getMonth()+1;if(m<7)return 0;if(m>12)return 29;return (m-7)*5+(Math.min(5,Math.ceil(d.getDate()/7))-1);}
 function fmtD(ds){if(!ds)return '';const d=new Date(ds);return `${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;}
 function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -1536,9 +1536,24 @@ function gridMonths(){
 function weekIndexOf(gm,ds){if(!ds)return null;const d=new Date(ds+'T00:00:00');if(isNaN(d))return null;const k=mKey(d.getFullYear(),d.getMonth()+1);const first=mKey(gm[0].y,gm[0].m),last=mKey(gm[gm.length-1].y,gm[gm.length-1].m);if(k<first)return 0;if(k>last)return gm.length*5-1;const mi=gm.findIndex(x=>mKey(x.y,x.m)===k);const w=Math.min(5,Math.max(1,Math.ceil(d.getDate()/7)))-1;return mi*5+w;}
 /* ---- 열 모델 (숨김/커스텀 포함) ---- */
 function colHidden(f){return (schedCfg.hidden||[]).indexOf(f)>=0;}
+// 우측 영역(산출물·비고·커스텀 열)의 정규화된 필드 순서
+function rightOrderNorm(){
+  const customs=(schedCfg.cols||[]);
+  const all=['deliverable','note'].concat(customs.map(c=>'extra:'+c.id));
+  let order=(schedCfg.order&&schedCfg.order.length)?schedCfg.order.slice():all.slice();
+  order=order.filter(f=>all.indexOf(f)>=0);           // 사라진 열 제거
+  all.forEach(f=>{if(order.indexOf(f)<0)order.push(f);}); // 새 열 뒤에 보강
+  return order;
+}
+function rightMeta(f){
+  if(f==='deliverable')return {f:'deliverable',label:'세부 산출물',cls:'sw-deliv'};
+  if(f==='note')return {f:'note',label:'비고',cls:'sw-note'};
+  const c=(schedCfg.cols||[]).find(x=>'extra:'+x.id===f);
+  return {f,label:c?c.label:'추가열',cls:'sw-custom',custom:1,cid:c?c.id:f.slice(6)};
+}
 function colDefsAll(){
   const left=[{f:'phase',label:'추진단계',cls:'sw-phase'},{f:'seq',label:'순번',cls:'sw-seq'},{f:'name',label:'세부 추진과제',cls:'sw-name'},{f:'start_date',label:'시작',cls:'sw-dt',date:1},{f:'end_date',label:'완료',cls:'sw-dt',date:1}];
-  const right=[{f:'deliverable',label:'세부 산출물',cls:'sw-deliv'},{f:'note',label:'비고',cls:'sw-note'}].concat((schedCfg.cols||[]).map(c=>({f:'extra:'+c.id,label:c.label,cls:'sw-custom',custom:1,cid:c.id})));
+  const right=rightOrderNorm().map(rightMeta);
   return {left,right};
 }
 function fmtCols(){const d=colDefsAll();return d.left.concat(d.right).map(c=>c.f).filter(f=>!colHidden(f));}
@@ -1772,7 +1787,17 @@ async function setColAlign(field,a){if(!authUser){alert('구글 로그인 후 �
 async function addColumn(){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}const label=(prompt('추가할 열 이름을 입력하세요.','새 열')||'').trim();if(!label)return;const id='c_'+Math.random().toString(36).slice(2,8);const old=JSON.parse(JSON.stringify(schedCfg.cols));schedCfg.cols=schedCfg.cols.concat([{id,label}]);pushUndo({label:'열 추가',run:async()=>{schedCfg.cols=old;await saveCfg();await reloadSched(currentSchedTask);}});await saveCfg();renderSchedule(currentSchedTask);}
 async function deleteColumn(id){if(!authUser)return;if(!confirm('이 열을 삭제할까요? 입력된 값도 함께 사라집니다.'))return;const old=JSON.parse(JSON.stringify(schedCfg.cols));schedCfg.cols=schedCfg.cols.filter(c=>c.id!==id);pushUndo({label:'열 삭제',run:async()=>{schedCfg.cols=old;await saveCfg();await reloadSched(currentSchedTask);}});await saveCfg();renderSchedule(currentSchedTask);}
 async function renameColumn(id,label){const col=(schedCfg.cols||[]).find(c=>c.id===id);if(!col||!label||col.label===label)return;col.label=label;await saveCfg();}
-async function insertColumn(anchorField,side){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}const label=(prompt('추가할 열 이름을 입력하세요.','새 열')||'').trim();if(!label)return;const id='c_'+Math.random().toString(36).slice(2,8);const old=JSON.parse(JSON.stringify(schedCfg.cols));let idx;if(anchorField.indexOf('extra:')===0){const ai=schedCfg.cols.findIndex(c=>c.id===anchorField.slice(6));idx=ai<0?schedCfg.cols.length:(side==='left'?ai:ai+1);}else{idx=side==='left'?0:schedCfg.cols.length;}const arr=schedCfg.cols.slice();arr.splice(idx,0,{id,label});schedCfg.cols=arr;pushUndo({label:'열 삽입',run:async()=>{schedCfg.cols=old;await saveCfg();await reloadSched(currentSchedTask);}});await saveCfg();renderSchedule(currentSchedTask);}
+async function insertColumn(anchorField,side){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}
+  const label=(prompt('추가할 열 이름을 입력하세요.','새 열')||'').trim();if(!label)return;
+  const id='c_'+Math.random().toString(36).slice(2,8);const newField='extra:'+id;
+  const oldCols=JSON.parse(JSON.stringify(schedCfg.cols||[]));const oldOrder=(schedCfg.order||[]).slice();
+  schedCfg.cols=(schedCfg.cols||[]).concat([{id,label}]);
+  let order=rightOrderNorm().filter(f=>f!==newField);   // 정규화 후 새 필드 제거
+  const ai=order.indexOf(anchorField);
+  const idx=ai>=0?(side==='left'?ai:ai+1):0;            // 좌측 고정열 기준이면 우측 영역 맨 앞
+  order.splice(idx,0,newField);schedCfg.order=order;
+  pushUndo({label:'열 삽입',run:async()=>{schedCfg.cols=oldCols;schedCfg.order=oldOrder;await saveCfg();await reloadSched(currentSchedTask);}});
+  await saveCfg();renderSchedule(currentSchedTask);}
 async function clearColumnData(field){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}if(field==='name'){toast('세부 추진과제(제목) 열은 비울 수 없어요.');return;}if(!confirm('이 열의 모든 값을 지울까요? (서식은 유지)'))return;const rows=(schedCache[currentSchedTask]||[]).slice();const snaps=[];for(const r of rows){if(field.indexOf('extra:')===0){const cid=field.slice(6);if(r.extra&&r.extra[cid]!=null&&r.extra[cid]!==''){snaps.push({id:r.id,extra:JSON.parse(JSON.stringify(r.extra||{}))});const ex=Object.assign({},r.extra);delete ex[cid];await updateSchedRaw(r.id,{extra:ex},null);}}else if(r[field]!=null&&r[field]!==''){snaps.push({id:r.id,field,val:r[field]});await updateSchedRaw(r.id,{[field]:null},null);}}if(snaps.length)pushUndo({label:'열 데이터 삭제',run:async()=>{for(const s of snaps){if(s.extra!==undefined)await updateSchedRaw(s.id,{extra:s.extra},null);else await updateSchedRaw(s.id,{[s.field]:s.val},null);}}});else toast('지울 값이 없습니다.');}
 async function hideColumn(field){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}const vis=fmtCols();if(vis.length<=1){toast('마지막 남은 열은 숨길 수 없어요.');return;}const old=(schedCfg.hidden||[]).slice();if(old.indexOf(field)<0)schedCfg.hidden=old.concat([field]);selectedCol=null;setSelCells([]);pushUndo({label:'열 숨기기',run:async()=>{schedCfg.hidden=old;await saveCfg();await reloadSched(currentSchedTask);}});await saveCfg();renderSchedule(currentSchedTask);}
 async function unhideAllCols(){if(!authUser)return;const old=(schedCfg.hidden||[]).slice();if(!old.length)return;schedCfg.hidden=[];pushUndo({label:'열 보이기',run:async()=>{schedCfg.hidden=old;await saveCfg();await reloadSched(currentSchedTask);}});await saveCfg();renderSchedule(currentSchedTask);}
