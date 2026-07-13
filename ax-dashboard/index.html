@@ -1648,7 +1648,8 @@ function renderSchedule(tid){
   const defs=colDefsAll();const leftD=defs.left.filter(c=>!colHidden(c.f)),rightD=defs.right.filter(c=>!colHidden(c.f));
   const WKW=16;
   const colgroup=`<colgroup><col style="width:36px">`+leftD.map(cd=>`<col data-col="${cd.f}" style="width:${widthOf(cd.f)}px">`).join('')+rightD.map(cd=>`<col data-col="${cd.f}" style="width:${widthOf(cd.f)}px">`).join('')+Array(wkCount).fill(`<col style="width:${WKW}px">`).join('')+`</colgroup>`;
-  const tableW=36+leftD.reduce((a,cd)=>a+widthOf(cd.f),0)+wkCount*WKW+rightD.reduce((a,cd)=>a+widthOf(cd.f),0);
+  const frozenW=36+leftD.reduce((a,cd)=>a+widthOf(cd.f),0);
+  const tableW=frozenW+wkCount*WKW+rightD.reduce((a,cd)=>a+widthOf(cd.f),0);
   const frozenLeft={};let _lo=36;leftD.forEach(cd=>{frozenLeft[cd.f]=_lo;_lo+=widthOf(cd.f);});
   const rsz=cd=>canEdit?`<span class="col-rsz" onmousedown="resizeStart(event,'${cd.f}')" title="너비 조절"></span>`:'';
   const filt=cd=>canEdit?`<span class="col-filt${(schedView.filters[cd.f]||schedView.sort===cd.f)?' on':''}" onclick="event.stopPropagation();openFilter(event,'${cd.f}')" title="정렬·필터"><svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor"><path d="M1.5 2.5h13L9.5 8.6V13l-3 1.6V8.6z"/></svg></span>`:'';
@@ -1715,7 +1716,7 @@ function renderSchedule(tid){
       <button class="sw-close" onclick="closeSchedule()">×</button>
     </div>
     ${ribbon}
-    <div class="sw-tablewrap"><table class="sw-table" style="width:${tableW}px">
+    <div class="sw-tablewrap" style="scroll-padding-left:${frozenW}px;scroll-padding-top:60px"><table class="sw-table" style="width:${tableW}px">
       ${colgroup}
       <thead>
         <tr><th rowspan="2" class="sw-rownum sw-frozen" style="left:0;z-index:40">#</th>${leftD.map(headTh).join('')}${rightD.map(headTh).join('')}${monthHead}</tr>
