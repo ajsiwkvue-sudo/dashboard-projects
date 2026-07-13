@@ -284,9 +284,9 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .pf-conn{display:flex;align-items:center;font-size:.9rem;color:var(--muted);flex-shrink:0;padding:0 1px}
 .pm-wrap{overflow-x:auto;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:4px;margin-bottom:20px}
 .pm{border-collapse:collapse;width:100%;min-width:0;table-layout:fixed;font-size:.76rem}
-.pm th,.pm td{border:1px solid var(--border);padding:6px 8px;vertical-align:top;text-align:left;word-break:keep-all}
+.pm th,.pm td{border:1px solid var(--border);padding:6px 8px;vertical-align:top;text-align:left;word-break:break-word;overflow-wrap:anywhere;white-space:normal;overflow:hidden;max-width:0}
 .pm thead th{background:var(--bg)}
-.pm .layer-col{background:var(--bg);font-weight:800;white-space:nowrap;width:92px;color:var(--primary)}
+.pm .layer-col{background:var(--bg);font-weight:800;white-space:normal;word-break:keep-all;width:96px;color:var(--primary)}
 .pm .ph-head{min-width:0}
 .pm .ph-name{font-weight:900;font-size:.82rem;line-height:1.25}
 .pm .ph-period{font-size:.7rem;color:var(--muted)}
