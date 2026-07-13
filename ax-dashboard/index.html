@@ -168,6 +168,13 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .nz-emoji{opacity:.8}
 /* 갤러리 */
 .nz-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.nz-gsection{margin-bottom:24px}
+.nz-ghead{display:flex;align-items:center;gap:9px;font-weight:800;font-size:.98rem;margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border)}
+.nz-ghead .gdot{width:14px;height:14px;border-radius:4px;flex-shrink:0}
+.nz-ghead .gcount{margin-left:auto;font-weight:700;font-size:.78rem;color:var(--muted)}
+.nz-ghead.g1{border-bottom-color:#42a5f5}.nz-ghead.g1 .gdot{background:linear-gradient(120deg,#1565c0,#42a5f5)}
+.nz-ghead.g2{border-bottom-color:#b388ff}.nz-ghead.g2 .gdot{background:linear-gradient(120deg,#6a3fb5,#b388ff)}
+.nz-ghead.g3{border-bottom-color:#81c784}.nz-ghead.g3 .gdot{background:linear-gradient(120deg,#2e9e5b,#81c784)}
 .nz-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;transition:.15s}
 .nz-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.12)}
 .nz-cover{height:56px}
@@ -852,6 +859,7 @@ function switchTab(name,el){
   if(name==='overview') renderOverview();
   if(name==='analytics') renderAnalytics();
   if(name==='route') renderRoute();
+  if(name==='tasks') renderTasks();
   try{localStorage.setItem('ax_tab',name);}catch(_){}
   myView=el?el.textContent.trim():name;updatePresence();
 }
@@ -898,9 +906,16 @@ function renderTasks(){if(taskView==='board')return renderBoard();if(taskView===
 /* ---- 갤러리(카드) ---- */
 function renderGallery(){
   const list=taskList();document.getElementById('taskCount').textContent=`${list.length} / ${TASKS.length} 과제`;
-  document.getElementById('taskGrid').innerHTML=list.length?`<div class="nz-gallery">`+list.map(t=>{const p=taskProgress(t),c=taskStatusSummary(t);
-    return `<div class="nz-card g${t.goal}" onclick="openTask('${t.id}')"><div class="nz-cover g${t.goal}"></div><div class="nz-cbody"><div class="nz-cno">${t.id} · 목표${t.goal}</div><div class="nz-ctitle">${escH(t.title)}</div><div class="nz-ctags"><span class="nz-tag">${escH(t.team)}</span><span class="nz-tag ghost">협업 ${t.coop.length}</span></div><div class="nz-prog"><div class="nz-bar"><i style="width:${p}%;background:${progColor(p)}"></i></div><span>${p}%</span></div>${statChips(c)}</div></div>`;
-  }).join('')+`</div>`:'<div class="hint">조건에 맞는 과제가 없습니다.</div>';
+  if(!list.length){document.getElementById('taskGrid').innerHTML='<div class="hint">조건에 맞는 과제가 없습니다.</div>';return;}
+  const card=t=>{const p=taskProgress(t),c=taskStatusSummary(t);
+    return `<div class="nz-card g${t.goal}" onclick="openTask('${t.id}')"><div class="nz-cover g${t.goal}"></div><div class="nz-cbody"><div class="nz-cno">${t.id} · 목표${t.goal}</div><div class="nz-ctitle">${escH(t.title)}</div><div class="nz-ctags"><span class="nz-tag">${escH(t.team)}</span><span class="nz-tag ghost">협업 ${t.coop.length}</span></div><div class="nz-prog"><div class="nz-bar"><i style="width:${p}%;background:${progColor(p)}"></i></div><span>${p}%</span></div>${statChips(c)}</div></div>`;};
+  let html='';
+  goals.forEach(g=>{
+    const gt=list.filter(t=>t.goal===g.id);
+    if(!gt.length)return;
+    html+=`<div class="nz-gsection"><div class="nz-ghead g${g.id}"><span class="gdot"></span>목표${g.id} · ${escH(g.name)}<span class="gcount">${gt.length}개 과제</span></div><div class="nz-gallery">`+gt.map(card).join('')+`</div></div>`;
+  });
+  document.getElementById('taskGrid').innerHTML=html;
 }
 /* ---- 표(테이블) ---- */
 function renderTable(){
