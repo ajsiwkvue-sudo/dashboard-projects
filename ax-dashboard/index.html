@@ -852,6 +852,7 @@ function switchTab(name,el){
   if(name==='overview') renderOverview();
   if(name==='analytics') renderAnalytics();
   if(name==='route') renderRoute();
+  try{localStorage.setItem('ax_tab',name);}catch(_){}
   myView=el?el.textContent.trim():name;updatePresence();
 }
 
@@ -1654,6 +1655,8 @@ function colMenu(e,field){e.preventDefault();selectSchedCol(field);const isCusto
 (function(){
   if(localStorage.getItem('ax_theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');document.getElementById('themeBtn').textContent='☀️';}
   buildTabs();fillFilters();renderTasks();initBench();renderBench();initChat();renderOverview();
+  // 새로고침해도 마지막으로 보던 탭 유지
+  try{const savedTab=localStorage.getItem('ax_tab');if(savedTab&&savedTab!=='overview'){const el=document.querySelector('.tab[data-t="'+savedTab+'"]');if(el)switchTab(savedTab,el);}}catch(_){}
   document.getElementById('mileCountTxt').textContent=overallProgress().tot;
   document.getElementById('userChip').onclick=changeUser;
   initSupa();
