@@ -1267,7 +1267,7 @@ function renderPresence(){
   const el=document.getElementById('presence');if(!el)return;
   const state=presenceChannel?presenceChannel.presenceState():{};
   const seen={},users=[];
-  Object.values(state).forEach(arr=>{const u=arr&&arr[0];if(u&&!seen[u.name]){seen[u.name]=1;users.push(u);}});
+  Object.values(state).forEach(arr=>{const u=arr&&arr[arr.length-1];if(u&&!seen[u.name]){seen[u.name]=1;users.push(u);}});
   presenceUsers=users;
   if(!users.length){el.innerHTML='';paintPresenceCells(users);return;}
   const MAX=6;const show=users.slice(0,MAX);
