@@ -1051,7 +1051,7 @@ function renderOverview(){
   let allStat={done:0,prog:0,plan:0,over:0};
   TASKS.forEach(t=>{const c=taskStatusSummary(t);for(const k in c)allStat[k]+=c[k];});
   const totLeaf=allStat.done+allStat.prog+allStat.plan+allStat.over;
-  const kpis=[{v:goals.length,l:"핵심목표",c:"",key:"goals"},{v:TASKS.length,l:"전략과제",c:"a",key:"tasks"},{v:op.wbsCount+'/'+TASKS.length,l:"WBS 작성",c:"p",key:"miles"},{v:allStat.done,l:"완료",c:"s",key:"done"},{v:allStat.prog,l:"진행중",c:"w",key:"prog"},{v:allStat.over,l:"지연",c:"d",key:"over"}];
+  const kpis=[{v:goals.length,l:"핵심목표",c:"",key:"goals"},{v:TASKS.length,l:"전략과제",c:"a",key:"tasks"},{v:totLeaf,l:"세부계획",c:"p",key:"miles"},{v:allStat.done,l:"완료",c:"s",key:"done"},{v:allStat.prog,l:"진행중",c:"w",key:"prog"},{v:allStat.over,l:"지연",c:"d",key:"over"}];
   document.getElementById('kpiGrid').innerHTML=kpis.map(k=>`<div class="kpi ${k.c}" onclick="openKpiList('${k.key}')" title="클릭하면 목록 보기"><div class="v">${k.v}</div><div class="l">${k.l}</div></div>`).join('');
   document.getElementById('ovFill').style.width=op.pct+'%';
   document.getElementById('ovPct').textContent=op.pct+'%';
@@ -1183,11 +1183,12 @@ function openKpiList(key){
     title='전략과제 12개';
     body=TASKS.map(t=>`<div class="kl-item click" onclick="openTask('${t.id}')"><span class="kl-main">${t.id} ${t.title}</span><span class="kl-sub">담당 ${t.team}</span><span class="kl-pct">${taskProgress(t)}%</span></div>`).join('');
   }else{
-    const fmap={miles:null,done:'done',prog:'prog',over:'over'};
-    const lab={miles:'세부 마일스톤 전체',done:'완료 마일스톤',prog:'진행중 마일스톤',over:'지연 마일스톤'};
-    const arr=milesByStatus(fmap[key]);
-    title=`${lab[key]} ${arr.length}개`;
-    body=arr.map(m=>`<div class="kl-item click" onclick="openTask('${m.tid}')"><span class="kl-main"><span class="dot ${m.st}"></span>${m.label}</span><span class="kl-sub">${m.dstr||'-'} · ${m.tid}</span><span class="ms ${m.st}">${STAT_LABEL[m.st]}</span></div>`).join('')||'<div class="hint">항목이 없습니다.</div>';
+    const all=[];TASKS.forEach(t=>{const rows=schedCache[t.id]||[];_wbsLeaves(rows).forEach(r=>all.push({r,tid:t.id,title:t.title}));});
+    const stKey={done:'완료',prog:'진행중',over:'지연'};
+    const filt=(key==='miles')?all:all.filter(x=>wbsStatus(x.r)===stKey[key]);
+    const lab={miles:'세부계획(WBS) 전체',done:'완료 세부과제',prog:'진행중 세부과제',over:'지연 세부과제'};
+    title=`${lab[key]} ${filt.length}개`;
+    body=filt.map(x=>{const s=wbsStatus(x.r);const sk=statusKey(s);return `<div class="kl-item click" onclick="openSchedule('${x.tid}')"><span class="kl-main"><span class="dot ${sk}"></span>${escH(x.r.seq)} ${escH(x.r.name)}</span><span class="kl-sub">${x.tid} · ${escH(x.title)}</span><span class="ms ${sk}">${s}</span></div>`;}).join('')||'<div class="hint">세부계획 항목이 없습니다.</div>';
   }
   document.getElementById('modal').innerHTML=`<div class="mh"><div class="mt">${title}</div><button class="close" onclick="closeModal()">×</button></div><div class="hint" style="margin:2px 0 10px">항목을 클릭하면 해당 전략과제 상세로 이동합니다.</div><div class="kl-list">${body}</div>`;
   document.getElementById('overlay').classList.add('open');refreshBodyLock();
