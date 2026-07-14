@@ -468,6 +468,18 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .sw-table td.sw-c.sw-today{box-shadow:inset 2px 0 0 #c0492f}
 .sw-table th.sw-wh.sw-today{box-shadow:inset 2px 0 0 #c0492f;color:#c0492f;font-weight:900}
 .sw-ribbon .rb-ib.rb-on{background:var(--primary);color:#fff;border-color:var(--primary)}
+.wc-list{display:flex;flex-direction:column;gap:2px;max-height:300px;overflow:auto}
+.wc-row{display:flex;align-items:center;gap:8px;padding:5px 4px;border-radius:6px;font-size:.82rem}
+.wc-row.click{cursor:pointer}.wc-row.click:hover{background:var(--bg)}
+.wc-row.wc-empty{color:var(--muted)}
+.wc-id{flex:0 0 30px;font-weight:800;color:var(--primary);font-size:.76rem}
+.wc-tt{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wc-bar{flex:0 0 90px;height:8px;background:var(--bg);border-radius:5px;overflow:hidden}
+.wc-bf{height:100%;background:var(--primary);border-radius:5px}
+.wc-pct{flex:0 0 38px;text-align:right;font-weight:800}
+.wc-spi{flex:0 0 34px;text-align:right;font-weight:700;font-size:.76rem}
+.wc-tag{flex:0 0 auto;font-size:.72rem;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:1px 8px;color:var(--muted)}
+.wc-foot{margin-top:8px;font-size:.72rem;color:var(--muted)}
 .sw-ribbon .rb-ib.rb-add{font-weight:700;color:var(--primary)}
 .sw-ribbon .rb-ib.rb-add:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
 [data-theme="dark"] .sw-calccell{background:rgba(255,255,255,.04)}
@@ -748,17 +760,21 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
   </div>
   <div class="kpi-grid" id="kpiGrid"></div>
   <div class="card" style="margin-bottom:16px">
-    <h3>📊 전체 사업 진척률</h3>
+    <h3>📊 전체 사업 진척률 <span style="font-weight:400;font-size:.78rem;color:var(--muted)">(세부계획 WBS 롤업 기준 · 작성된 과제만 반영)</span></h3>
     <div class="gauge"><div class="bar"><div class="fill" id="ovFill"></div></div><div class="pct" id="ovPct">0%</div></div>
     <div class="mstat" id="ovLegend"></div>
   </div>
   <div class="grid2">
-    <div class="card"><h3>핵심목표별 진척도</h3><div class="chart-box"><canvas id="goalChart"></canvas></div></div>
-    <div class="card"><h3>월별 마일스톤 추이 <span style="font-weight:400;font-size:.78rem;color:var(--muted)">(2026 착수연도 · 이후 2027~2028 확산 단계로 이어짐)</span></h3><div class="chart-box"><canvas id="monthChart"></canvas></div></div>
+    <div class="card"><h3>핵심목표별 진척도 <span style="font-weight:400;font-size:.78rem;color:var(--muted)">(WBS 세부계획 롤업)</span></h3><div class="chart-box"><canvas id="goalChart"></canvas></div></div>
+    <div class="card"><h3>📋 세부계획(WBS) 진척 현황 <span style="font-weight:400;font-size:.78rem;color:var(--muted)">(전략과제별 · 클릭 → 세부계획)</span></h3><div id="wbsCover"></div></div>
   </div>
   <div class="card">
     <h3>🎯 비전 체계도 <span class="tip" data-tip="병원 AX를 이끄는 3대 핵심목표(거버넌스·프로세스·문화)와 12개 전략과제의 달성률을 보여줍니다. 막대가 길수록 많이 진행된 과제예요.">?</span> <span style="font-weight:400;font-size:.82rem;color:var(--muted)">거버넌스·프로세스·문화 · 3대 핵심목표 · 12개 전략과제</span></h3>
     <div class="vision" id="visionMap"></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3 style="color:var(--muted)">📅 월별 마일스톤 추이 <span style="font-weight:400;font-size:.78rem;color:var(--muted)">(참고용 · 마일스톤 기준 · 진척율은 위 WBS 세부계획으로 산정)</span></h3>
+    <div class="chart-box"><canvas id="monthChart"></canvas></div>
   </div>
 </div></section>
 
@@ -973,8 +989,12 @@ function autoStatus(m){
 }
 function statusOf(tid,i,m){const k=mkey(tid,i);return overrides[k]||autoStatus(m);}
 function setStatus(tid,i,st){const k=mkey(tid,i);overrides[k]=st;localStorage.setItem(STORE_KEY,JSON.stringify(overrides));pushState(k);}
-function taskProgress(t){let done=0;t.miles.forEach((m,i)=>{if(statusOf(t.id,i,m)==='done')done++;});return Math.round(done/t.miles.length*100);}
-function taskStatusSummary(t){const c={done:0,prog:0,plan:0,over:0};t.miles.forEach((m,i)=>{c[statusOf(t.id,i,m)]++;});return c;}
+// ── 진척율: WBS 세부계획(가중 롤업) 기반. 세부계획 없으면 0%(미작성) ──
+function _wbsLeaves(rows){const seqs=rows.map(r=>_seqParts(r.seq).join('.'));return rows.filter((r,i)=>{const s=seqs[i];if(!s)return true;return !seqs.some((o,j)=>j!==i&&o&&o.indexOf(s+'.')===0);});}
+function taskHasWbs(t){return ((schedCache[t.id]||[]).length>0);}
+function taskProgress(t){const rows=schedCache[t.id]||[];if(!rows.length)return 0;const leaves=_wbsLeaves(rows);let sw=0,swp=0,n=0,sp=0;leaves.forEach(r=>{const w=+r.weight||0;const pr=Math.max(0,Math.min(100,+r.progress||0));if(w>0){sw+=w;swp+=w*pr;}n++;sp+=pr;});return sw>0?Math.round(swp/sw):(n?Math.round(sp/n):0);}
+function taskPlanned(t){const rows=schedCache[t.id]||[];if(!rows.length)return 0;const leaves=_wbsLeaves(rows);let sw=0,swp=0,n=0,sp=0;leaves.forEach(r=>{const w=+r.weight||0;const pl=plannedPct(r);if(w>0){sw+=w;swp+=w*pl;}n++;sp+=pl;});return sw>0?Math.round(swp/sw):(n?Math.round(sp/n):0);}
+function taskStatusSummary(t){const c={done:0,prog:0,plan:0,over:0};const rows=schedCache[t.id]||[];if(!rows.length)return c;_wbsLeaves(rows).forEach(r=>{const s=wbsStatus(r);c[s==='완료'?'done':s==='진행중'?'prog':s==='지연'?'over':'plan']++;});return c;}
 function progColor(p){return p>=1?'#6b7a8c':'#c2ccd6';}
 const STAT_LABEL={done:'완료',prog:'진행중',plan:'예정',over:'지연'};
 const STAT_COLOR={done:'#2e8b57',prog:'#d98324',plan:'#8a94a6',over:'#c0492f'};
@@ -1011,23 +1031,35 @@ function switchTab(name,el){
 }
 
 /* ---------- 개요 ---------- */
-function overallProgress(){let tot=0,done=0;TASKS.forEach(t=>t.miles.forEach((m,i)=>{tot++;if(statusOf(t.id,i,m)==='done')done++;}));return {pct:Math.round(done/tot*100),tot,done};}
+function overallProgress(){const ps=TASKS.map(t=>taskProgress(t));const pct=Math.round(ps.reduce((a,b)=>a+b,0)/(ps.length||1));const wbsCount=TASKS.filter(taskHasWbs).length;return {pct,tot:TASKS.length,done:TASKS.filter(t=>taskProgress(t)>=100).length,wbsCount};}
 function ddayText(){const end=new Date(2026,11,31);const diff=Math.ceil((end-TODAY)/(1000*3600*24));return diff>0?`D-${diff} · 사업종료 2026.12`:`사업기간 종료`;}
 function renderOverview(){
   const op=overallProgress();
   let allStat={done:0,prog:0,plan:0,over:0};
   TASKS.forEach(t=>{const c=taskStatusSummary(t);for(const k in c)allStat[k]+=c[k];});
-  const kpis=[{v:goals.length,l:"핵심목표",c:"",key:"goals"},{v:TASKS.length,l:"전략과제",c:"a",key:"tasks"},{v:op.tot,l:"세부 마일스톤",c:"p",key:"miles"},{v:op.done,l:"완료",c:"s",key:"done"},{v:allStat.prog,l:"진행중",c:"w",key:"prog"},{v:allStat.over,l:"지연",c:"d",key:"over"}];
+  const totLeaf=allStat.done+allStat.prog+allStat.plan+allStat.over;
+  const kpis=[{v:goals.length,l:"핵심목표",c:"",key:"goals"},{v:TASKS.length,l:"전략과제",c:"a",key:"tasks"},{v:op.wbsCount+'/'+TASKS.length,l:"WBS 작성",c:"p",key:"miles"},{v:allStat.done,l:"완료",c:"s",key:"done"},{v:allStat.prog,l:"진행중",c:"w",key:"prog"},{v:allStat.over,l:"지연",c:"d",key:"over"}];
   document.getElementById('kpiGrid').innerHTML=kpis.map(k=>`<div class="kpi ${k.c}" onclick="openKpiList('${k.key}')" title="클릭하면 목록 보기"><div class="v">${k.v}</div><div class="l">${k.l}</div></div>`).join('');
   document.getElementById('ovFill').style.width=op.pct+'%';
   document.getElementById('ovPct').textContent=op.pct+'%';
-  document.getElementById('ovLegend').innerHTML=Object.keys(allStat).map(k=>`<span><span class="dot ${k}"></span>${STAT_LABEL[k]} ${allStat[k]}</span>`).join(' &nbsp; ');
+  document.getElementById('ovLegend').innerHTML=Object.keys(allStat).map(k=>`<span><span class="dot ${k}"></span>${STAT_LABEL[k]} ${allStat[k]}</span>`).join(' &nbsp; ')+` &nbsp; <span style="color:var(--muted)">· 세부과제(WBS) ${totLeaf}개 · 세부계획 작성 ${op.wbsCount}/${TASKS.length}과제</span>`;
+  renderWbsCover();
   document.getElementById('visionMap').innerHTML=goals.map(g=>{const gt=TASKS.filter(t=>t.goal===g.id);return `<div class="vcol v${g.id}"><div class="axis">${g.axis} 축 · 핵심목표 ${g.id}</div><div class="goal">${g.name}</div>${gt.map(t=>{const p=taskProgress(t);const nx=nextMile(t);return `<div class="mini" title="담당: ${t.team}${nx?' · 다음 할 일: '+nx:''}"><span class="mt2">${t.id} ${t.title}</span><div class="mrow"><div class="mbar"><div class="mbf" style="width:${p}%"></div></div><span class="mpct">${p}%</span></div></div>`;}).join('')}</div>`;}).join('');
   drawGoalChart();drawMonthChart();
 }
 function drawGoalChart(){
   const data=goals.map(g=>{const gt=TASKS.filter(t=>t.goal===g.id);return Math.round(gt.reduce((s,t)=>s+taskProgress(t),0)/gt.length);});
   mkChart('goalChart','bar',{labels:goals.map(g=>[`목표${g.id}`,g.axis]),datasets:[{label:'진척률(%)',data,backgroundColor:['#3d5a98','#0e8c86','#c1791d'],borderRadius:6}]},{scales:{x:{title:{display:true,text:'핵심목표 (거버넌스·프로세스·문화)'}},y:{beginAtZero:true,max:100,title:{display:true,text:'진척률(%)'},ticks:{callback:v=>v+'%'}}},plugins:{legend:{display:false}}});
+}
+function renderWbsCover(){
+  const el=document.getElementById('wbsCover');if(!el)return;
+  const rows=TASKS.map(t=>{
+    const has=taskHasWbs(t);
+    if(!has)return `<div class="wc-row wc-empty"><span class="wc-id">${t.id}</span><span class="wc-tt" title="${t.title}">${t.title}</span><span class="wc-tag">세부계획 미작성</span></div>`;
+    const p=taskProgress(t),pl=taskPlanned(t),diff=p-pl;const dc=diff<0?'#c0492f':(diff>0?'#2e8b57':'var(--muted)');
+    return `<div class="wc-row click" onclick="openSchedule('${t.id}')" title="세부계획 열기"><span class="wc-id">${t.id}</span><span class="wc-tt" title="${t.title}">${t.title}</span><div class="wc-bar"><div class="wc-bf" style="width:${p}%"></div></div><span class="wc-pct">${p}%</span><span class="wc-spi" style="color:${dc}" title="계획 ${pl}% 대비 차이">${diff>0?'+':''}${diff}</span></div>`;
+  }).join('');
+  el.innerHTML=`<div class="wc-list">${rows}</div><div class="wc-foot">막대=실제 진척(WBS 롤업) · 우측 숫자=계획 대비 차이(＋앞섬/－지연)</div>`;
 }
 function drawMonthChart(){
   const months=['26.06','26.07','26.08','26.09','26.10','26.11','26.12'];const cnt=months.map(()=>0);
@@ -1476,7 +1508,7 @@ function subscribeOps(){ if(!supa)return; supa.channel('ax_ops_ch')
   .on('postgres_changes',{event:'*',schema:'public',table:'ax_meetings'},()=>{ if(!opsFocused)loadOps(); })
   .on('postgres_changes',{event:'*',schema:'public',table:'ax_actions'},()=>{ if(!opsFocused)loadOps(); })
   .subscribe(); }
-function initSupa(){try{if(window.supabase&&SUPA_URL&&SUPA_KEY){supa=window.supabase.createClient(SUPA_URL,SUPA_KEY,{realtime:{params:{eventsPerSecond:10}}});}}catch(e){supa=null;}setUserBadge();if(supa){loadRemote();subscribeRemote();initAuth();subscribeSchedules();subscribeOps();initPresence();}else{setLive('off');}}
+function initSupa(){try{if(window.supabase&&SUPA_URL&&SUPA_KEY){supa=window.supabase.createClient(SUPA_URL,SUPA_KEY,{realtime:{params:{eventsPerSecond:10}}});}}catch(e){supa=null;}setUserBadge();if(supa){loadRemote();subscribeRemote();initAuth();subscribeSchedules();subscribeOps();initPresence();loadAllSchedules();}else{setLive('off');}}
 
 /* ---------- 동시 접속자 표시 (Realtime Presence) ---------- */
 const CLIENT_ID=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():('c'+Math.random().toString(36).slice(2));
@@ -1583,7 +1615,10 @@ function fmtD(ds){if(!ds)return '';const d=new Date(ds);return `${String(d.getMo
 function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function rowStyle(r){let s='';if(r.fill_color)s+=`background:${r.fill_color};`;if(r.text_color)s+=`color:${r.text_color};`;if(r.bold)s+='font-weight:800;';return s?`style="${s}"`:'';}
 async function reloadSched(tid){if(!supa||!tid)return;try{const {data,error}=await supa.from('ax_schedules').select('*').eq('task_id',tid).order('sort_order');if(error)throw error;schedCache[tid]=data||[];}catch(e){schedCache[tid]=schedCache[tid]||[];}await loadCfg(tid);if(currentSchedTask===tid&&!editingCell)renderSchedule(tid);}
-function subscribeSchedules(){if(!supa)return;supa.channel('ax_sch_ch').on('postgres_changes',{event:'*',schema:'public',table:'ax_schedules'},payload=>{const r=(payload.new&&payload.new.task_id)?payload.new:payload.old;if(r&&r.task_id===currentSchedTask)reloadSched(r.task_id);}).on('postgres_changes',{event:'*',schema:'public',table:'ax_sched_cfg'},payload=>{const r=(payload.new&&payload.new.task_id)?payload.new:payload.old;if(r&&r.task_id===currentSchedTask&&!editingCell)reloadSched(r.task_id);}).subscribe();}
+// 모든 전략과제의 WBS 세부계획을 한 번에 로드 → 개요/카드/분석 진척율 계산에 사용
+async function loadAllSchedules(){if(!supa)return;try{const {data,error}=await supa.from('ax_schedules').select('*').order('sort_order');if(error)throw error;const g={};(data||[]).forEach(r=>{(g[r.task_id]=g[r.task_id]||[]).push(r);});const seen={};(data||[]).forEach(r=>{seen[r.task_id]=1;});Object.keys(g).forEach(tid=>{if(tid===currentSchedTask&&editingCell)return;schedCache[tid]=g[tid];});rerenderActive();}catch(e){}}
+let _schedBumpT=null;function _bumpAllSched(){clearTimeout(_schedBumpT);_schedBumpT=setTimeout(loadAllSchedules,400);}
+function subscribeSchedules(){if(!supa)return;supa.channel('ax_sch_ch').on('postgres_changes',{event:'*',schema:'public',table:'ax_schedules'},payload=>{const r=(payload.new&&payload.new.task_id)?payload.new:payload.old;if(r&&r.task_id===currentSchedTask)reloadSched(r.task_id);_bumpAllSched();}).on('postgres_changes',{event:'*',schema:'public',table:'ax_sched_cfg'},payload=>{const r=(payload.new&&payload.new.task_id)?payload.new:payload.old;if(r&&r.task_id===currentSchedTask&&!editingCell)reloadSched(r.task_id);}).subscribe();}
 function openSchedule(tid){currentSchedTask=tid;selectedSchedId=null;selectedCol=null;setSelCells([]);myCell=null;schedInitScroll=true;schedView={sort:null,dir:'asc',filters:{}};document.getElementById('swOverlay').classList.add('open');refreshBodyLock();renderSchedule(tid);reloadSched(tid);updatePresence();}
 function closeSchedule(){currentSchedTask=null;selectedSchedId=null;selectedCol=null;setSelCells([]);editingCell=false;myCell=null;document.getElementById('swOverlay').classList.remove('open');refreshBodyLock();updatePresence();}
 function defAlign(f){return f==='seq'?'center':'left';}
@@ -1639,8 +1674,8 @@ function rightMeta(f){
 function colDefsAll(){
   const left=[
     {f:'phase',label:'대과제',cls:'sw-phase'},
-    {f:'seq',label:'세부과제',cls:'sw-seq'},
-    {f:'name',label:'작업명',cls:'sw-name'}
+    {f:'seq',label:'번호',cls:'sw-seq'},
+    {f:'name',label:'세부과제',cls:'sw-name'}
   ];
   const right=rightOrderNorm().map(rightMeta);
   return {left,right};
@@ -1785,8 +1820,7 @@ function renderSchedule(tid){
       <span class="rb-div"></span>
       <span class="rb-grp">
         <button class="rb-ib rb-add" onclick="addWbsNode(1)" title="새 대과제 추가(표 끝/선택 대과제 다음)">＋대과제</button>
-        <button class="rb-ib rb-add" onclick="addWbsNode(2)" title="선택한 대과제 안에 중과제 추가">＋중과제</button>
-        <button class="rb-ib rb-add" onclick="addWbsNode(3)" title="선택한 중과제 안에 소과제 추가">＋소과제</button>
+        <button class="rb-ib rb-add" onclick="addWbsNode(2)" title="선택한 대과제 안에 세부과제 추가">＋세부과제</button>
         <span class="rb-div"></span>
         <button class="rb-ib" onclick="toggleAllGroups()" title="대과제 그룹 전체 접기/펼치기">⊟ 접기/펼치기</button>
         <button class="rb-ib" onclick="exportScheduleXlsx()" title="현재 표를 엑셀(CSV)로 저장">📥 엑셀</button>
@@ -1914,16 +1948,16 @@ async function addWbsNode(level){
   if(level===1){
     lbl='대과제';
     const majors=all.map(r=>_seqParts(r.seq)[0]).filter(x=>x);const nextMajor=(majors.length?Math.max(...majors):0)+1;
-    phase='새 대과제 '+nextMajor;seq=nextMajor+'.1';nm='새 중과제';
+    phase='새 대과제 '+nextMajor;seq=nextMajor+'.1';nm='새 세부과제';
     if(sel){const selP=pmap[sel.id];let li=-1;all.forEach((r,i)=>{if(pmap[r.id]===selP)li=i;});afterId=li>=0?all[li].id:(all.length?all[all.length-1].id:null);}
     else afterId=all.length?all[all.length-1].id:null;
   } else if(level===2){
-    lbl='중과제';
+    lbl='세부과제';
     if(!sel){alert('먼저 대과제(또는 그 안의 행)를 선택하세요.');return;}
     const selP=pmap[sel.id];const major=_seqParts(sel.seq)[0]||1;
     const minors=all.filter(r=>{const q=_seqParts(r.seq);return q[0]===major&&q.length>=2;}).map(r=>_seqParts(r.seq)[1]);
     const nextMinor=(minors.length?Math.max(...minors):0)+1;
-    phase='';seq=major+'.'+nextMinor;nm='새 중과제';
+    phase='';seq=major+'.'+nextMinor;nm='새 세부과제';
     let li=-1;all.forEach((r,i)=>{if(pmap[r.id]===selP)li=i;});afterId=li>=0?all[li].id:sel.id;
   } else {
     lbl='소과제';
@@ -2097,7 +2131,7 @@ function filterApply(field){const boxes=[...document.querySelectorAll('#swFilter
 function openMenu(e,items){closeMenu();const m=document.createElement('div');m.className='sw-ctxmenu';m.id='swCtxMenu';m.innerHTML=items.map((it,i)=>it.sep?'<div class="cm-sep"></div>':`<div class="cm-item" data-i="${i}">${it.t}</div>`).join('');document.body.appendChild(m);const vw=window.innerWidth,vh=window.innerHeight;m.style.left=Math.max(6,Math.min(e.clientX,vw-190))+'px';m.style.top=Math.max(6,Math.min(e.clientY,vh-10-m.offsetHeight))+'px';m.querySelectorAll('.cm-item').forEach(el=>el.onclick=()=>{const it=items[+el.dataset.i];closeMenu();if(it&&it.f)it.f();});setTimeout(()=>document.addEventListener('mousedown',menuOutside),0);}
 function menuOutside(e){const m=document.getElementById('swCtxMenu');if(m&&!m.contains(e.target))closeMenu();}
 function closeMenu(){const m=document.getElementById('swCtxMenu');if(m)m.remove();document.removeEventListener('mousedown',menuOutside);}
-function rowMenu(e,id){e.preventDefault();selectedSchedId=id;selectedCol=null;setSelCells([]);renderSchedule(currentSchedTask);openMenu(e,[{t:'➕ 대과제 추가',f:()=>addWbsNode(1)},{t:'➕ 중과제 추가 (선택 대과제 하위)',f:()=>addWbsNode(2)},{t:'➕ 소과제 추가 (선택 중과제 하위)',f:()=>addWbsNode(3)},{sep:1},{t:'⬆ 위에 행 삽입',f:()=>insertRow('above')},{t:'⬇ 아래에 행 삽입',f:()=>insertRow('below')},{sep:1},{t:'⧉ 행 복사',f:()=>copyRow()},{t:'📋 붙여넣기',f:()=>pasteRow()},{sep:1},{t:'🗑️ 행 삭제',f:()=>deleteRow(id)}]);}
+function rowMenu(e,id){e.preventDefault();selectedSchedId=id;selectedCol=null;setSelCells([]);renderSchedule(currentSchedTask);openMenu(e,[{t:'➕ 대과제 추가',f:()=>addWbsNode(1)},{t:'➕ 세부과제 추가 (선택 대과제 하위)',f:()=>addWbsNode(2)},{sep:1},{t:'⬆ 위에 행 삽입',f:()=>insertRow('above')},{t:'⬇ 아래에 행 삽입',f:()=>insertRow('below')},{sep:1},{t:'⧉ 행 복사',f:()=>copyRow()},{t:'📋 붙여넣기',f:()=>pasteRow()},{sep:1},{t:'🗑️ 행 삭제',f:()=>deleteRow(id)}]);}
 /* 셀 우클릭(=맥 트랙패드 두 손가락) — 구글시트식 통합 메뉴 */
 function cellMenu(e,id,field){e.preventDefault();e.stopPropagation();
   const inSel=selectedCells.some(c=>c.rowId===id&&c.field===field);
