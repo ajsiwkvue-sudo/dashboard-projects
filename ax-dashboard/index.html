@@ -442,6 +442,10 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .sw-close{background:none;border:none;font-size:1.6rem;cursor:pointer;color:var(--muted);line-height:1}
 /* WBS */
 .sw-calccell{background:#f4f7fa;color:var(--muted);text-align:center;font-size:.73rem}
+/* EVM 프레임: 대과제(phase) 열 색 구분(노랑), 세부과제 강조 */
+.sw-table td.sw-phase{background:#fef7d6;font-weight:700;color:var(--text)}
+[data-theme="dark"] .sw-table td.sw-phase{background:rgba(220,185,50,.13)}
+.sw-table td.sw-seq{font-weight:700}
 [data-theme="dark"] .sw-calccell{background:rgba(255,255,255,.04)}
 .wbs-stat{display:inline-block;padding:1px 7px;border-radius:10px;font-size:.68rem;font-weight:800;white-space:nowrap}
 .wbs-stat.s-done{background:rgba(46,139,87,.16);color:#2e8b57}
@@ -1566,24 +1570,22 @@ function weekIndexOf(gm,ds){if(!ds)return null;const d=new Date(ds+'T00:00:00');
 /* ---- 열 모델 (숨김/커스텀 포함) ---- */
 function colHidden(f){return (schedCfg.hidden||[]).indexOf(f)>=0;}
 // 우측 영역(산출물·비고·커스텀 열)의 정규화된 필드 순서
-const WBS_DATA_FIELDS=['owner','priority','weight','start_date','end_date','actual_start','actual_end','calc_dur','calc_remain','calc_delay','progress','calc_status','predecessor','deliverable','done_criteria','note'];
+/* EVM 공정표 프레임 컬럼 순서 */
+const WBS_DATA_FIELDS=['weight','calc_dur','start_date','end_date','calc_planned','progress','calc_diff','actual_start','actual_end','calc_actualdays','owner','predecessor','deliverable'];
 const WBS_DATA_DEF={
-  owner:{f:'owner',label:'담당자',cls:'sw-owner'},
-  priority:{f:'priority',label:'우선순위',cls:'sw-prio',sel:['','높음','보통','낮음']},
-  weight:{f:'weight',label:'가중치',cls:'sw-numc',num:1},
-  start_date:{f:'start_date',label:'계획시작',cls:'sw-dt',date:1},
-  end_date:{f:'end_date',label:'계획종료',cls:'sw-dt',date:1},
+  weight:{f:'weight',label:'Weight',cls:'sw-numc',num:1},
+  calc_dur:{f:'calc_dur',label:'작업일수',cls:'sw-calc',calc:'dur'},
+  start_date:{f:'start_date',label:'시작일자',cls:'sw-dt',date:1},
+  end_date:{f:'end_date',label:'완료일자',cls:'sw-dt',date:1},
+  calc_planned:{f:'calc_planned',label:'계획완료율',cls:'sw-calc',calc:'planned'},
+  progress:{f:'progress',label:'실제완료율',cls:'sw-numc',num:1},
+  calc_diff:{f:'calc_diff',label:'차이',cls:'sw-calc',calc:'diff'},
   actual_start:{f:'actual_start',label:'실제시작',cls:'sw-dt',date:1},
   actual_end:{f:'actual_end',label:'실제종료',cls:'sw-dt',date:1},
-  calc_dur:{f:'calc_dur',label:'기간',cls:'sw-calc',calc:'dur'},
-  calc_remain:{f:'calc_remain',label:'남은기간',cls:'sw-calc',calc:'remain'},
-  calc_delay:{f:'calc_delay',label:'지연일수',cls:'sw-calc',calc:'delay'},
-  progress:{f:'progress',label:'진행률%',cls:'sw-numc',num:1},
-  calc_status:{f:'calc_status',label:'상태',cls:'sw-calc',calc:'status'},
+  calc_actualdays:{f:'calc_actualdays',label:'실적일수',cls:'sw-calc',calc:'actualdays'},
+  owner:{f:'owner',label:'담당자',cls:'sw-owner'},
   predecessor:{f:'predecessor',label:'선행작업',cls:'sw-pre'},
-  deliverable:{f:'deliverable',label:'산출물',cls:'sw-deliv'},
-  done_criteria:{f:'done_criteria',label:'완료기준',cls:'sw-done'},
-  note:{f:'note',label:'비고',cls:'sw-note'}
+  deliverable:{f:'deliverable',label:'산출물',cls:'sw-deliv'}
 };
 function rightOrderNorm(){
   const customs=(schedCfg.cols||[]).map(c=>'extra:'+c.id);
@@ -1610,7 +1612,7 @@ function colDefsAll(){
   return {left,right};
 }
 function fmtCols(){const d=colDefsAll();return d.left.concat(d.right).map(c=>c.f).filter(f=>!colHidden(f));}
-function widthOf(f){const d={wbs_id:58,phase:120,seq:96,name:180,owner:88,priority:74,weight:60,start_date:86,end_date:86,actual_start:86,actual_end:86,calc_dur:56,calc_remain:78,calc_delay:72,progress:72,calc_status:68,predecessor:104,deliverable:150,done_criteria:140,note:104,calc_updated:118,calc_updater:76};return (schedCfg.widths&&schedCfg.widths[f])||d[f]||110;}
+function widthOf(f){const d={phase:120,seq:84,name:180,weight:62,calc_dur:66,start_date:96,end_date:96,calc_planned:76,progress:80,calc_diff:62,actual_start:88,actual_end:88,calc_actualdays:70,owner:88,predecessor:96,deliverable:150};return (schedCfg.widths&&schedCfg.widths[f])||d[f]||100;}
 /* ===== WBS 자동수식·롤업 ===== */
 function _dparse(ds){if(!ds)return null;const d=new Date(ds+'T00:00:00');return isNaN(d)?null:d;}
 function _today0(){const d=new Date();d.setHours(0,0,0,0);return d;}
@@ -1623,6 +1625,9 @@ function wbsCalc(r,kind){const t=_today0();const ps=_dparse(r.start_date),pe=_dp
   if(kind==='remain'){if(!pe)return '';if(pr>=100)return '완료';const d=_days(t,pe);return d>=0?d+'일':'초과';}
   if(kind==='delay'){if(!pe||pr>=100)return '';const d=_days(pe,t);return d>0?d+'일':'';}
   if(kind==='status')return wbsStatus(r);
+  if(kind==='planned')return (ps&&pe)?String(plannedPct(r)):'';
+  if(kind==='diff'){if(!ps||!pe)return '';const d=pr-plannedPct(r);return (d>0?'+':'')+d;}
+  if(kind==='actualdays'){const as=_dparse(r.actual_start),ae=_dparse(r.actual_end);return (as&&ae)?(_days(as,ae)+1)+'일':'';}
   if(kind==='updated')return _fmtDT(r.updated_at);
   if(kind==='updater')return r.updated_by||'';
   return '';}
@@ -1660,7 +1665,11 @@ function renderSchedule(tid){
   const mm=computeMergeMaps(viewRows);
   const bodyTd=(r,cd)=>{const key=r.id+'|'+cd.f;if(mm.covered.has(key))return '';const spn=mm.span[key];const spanAttr=spn?`${spn.rs>1?`rowspan="${spn.rs}"`:''} ${spn.cs>1?`colspan="${spn.cs}"`:''}`:'';const fr=frozenLeft[cd.f]!=null;const extra=fr?`left:${frozenLeft[cd.f]}px;`:'';const cls=`${cd.cls}${csel(cd.f)}${fr?' sw-frozen':''}${spn?' sw-merged':''}`;
     const cAttrK=(f,blur)=>canEdit?`data-id="${r.id}" data-field="${f}" onmousedown="cellDown(event,'${r.id}','${f}')" oncontextmenu="cellMenu(event,'${r.id}','${f}')" onfocus="cellFocus('${r.id}','${f}')" onblur="${blur}(this)" onkeydown="cellKey(event,this)"`:'';
-    if(cd.calc){const v=wbsCalc(r,cd.calc);const inner=cd.calc==='status'?`<span class="wbs-stat s-${statusKey(v)}">${v||'-'}</span>`:escH(v);return `<td ${spanAttr} class="${cls} sw-calccell" style="${extra}">${inner}</td>`;}
+    if(cd.calc){const v=wbsCalc(r,cd.calc);let inner,cstyle=extra;
+      if(cd.calc==='status')inner=`<span class="wbs-stat s-${statusKey(v)}">${v||'-'}</span>`;
+      else if(cd.calc==='diff'){const neg=v&&v[0]==='-';const pos=v&&v[0]==='+';cstyle+=neg?'color:#c0492f;font-weight:800;':(pos?'color:#2e8b57;font-weight:700;':'');inner=escH(v);}
+      else inner=escH(v);
+      return `<td ${spanAttr} class="${cls} sw-calccell" style="${cstyle}">${inner}</td>`;}
     if(cd.sel)return `<td ${spanAttr} class="${cls} sw-cellclick" ${canEdit?`onclick="prioMenu(event,'${r.id}')" title="클릭하여 선택"`:''} style="${cellStyleInner(r,cd.f)}${extra}">${r[cd.f]?escH(r[cd.f]):'<span class="sw-ph">-</span>'}</td>`;
     if(cd.num)return `<td ${spanAttr} class="${cls}" ${ce} ${cAttrK(cd.f,'numBlurCE')} style="${cellStyleInner(r,cd.f)}${extra}">${r[cd.f]!=null?escH(r[cd.f]):''}</td>`;
     if(cd.date)return `<td ${spanAttr} class="${cls} sw-datece" ${ce} ${cAttrK(cd.f,'dateBlurCE')} style="${cellStyleInner(r,cd.f)}${extra}" title="숫자로 입력 — 예 0715·20260715">${canEdit?escH(r[cd.f]||''):fmtD(r[cd.f])}</td>`;
@@ -1759,7 +1768,7 @@ function resizeStart(e,field){e.preventDefault();e.stopPropagation();const th=e.
 document.addEventListener('mousemove',e=>{if(!resizing)return;const w=Math.max(40,Math.min(600,resizing.startW+(e.clientX-resizing.startX)));resizing.w=w;const col=document.querySelector(`.sw-table col[data-col="${resizing.field}"]`);if(col)col.style.width=w+'px';if(resizing.table)resizing.table.style.width=(resizing.tableW+(w-resizing.startW))+'px';});
 document.addEventListener('mouseup',()=>{if(!resizing)return;const f=resizing.field,w=resizing.w;document.body.style.cursor='';document.body.style.userSelect='';resizing=null;saveColWidth(f,w);});
 async function saveColWidth(field,w){if(!authUser)return;schedCfg.widths=schedCfg.widths||{};const old=Object.assign({},schedCfg.widths);if(schedCfg.widths[field]===w)return;schedCfg.widths=Object.assign({},schedCfg.widths);schedCfg.widths[field]=w;pushUndo({label:'열 너비',run:async()=>{schedCfg.widths=old;await saveCfg();await reloadSched(currentSchedTask);}});await saveCfg();}
-function fieldLabel(f){const lbls={wbs_id:'WBS',phase:'대과제',seq:'세부과제',name:'작업명',owner:'담당자',priority:'우선순위',weight:'가중치',start_date:'계획시작',end_date:'계획종료',actual_start:'실제시작',actual_end:'실제종료',calc_dur:'기간',calc_remain:'남은기간',calc_delay:'지연일수',progress:'진행률',calc_status:'상태',predecessor:'선행작업',deliverable:'산출물',done_criteria:'완료기준',note:'비고',calc_updated:'최종수정',calc_updater:'수정자'};if(f&&f.indexOf('extra:')===0){const c=(schedCfg.cols||[]).find(x=>x.id===f.slice(6));return c?c.label:'추가열';}return lbls[f]||f;}
+function fieldLabel(f){const lbls={phase:'대과제',seq:'세부과제',name:'작업명',weight:'Weight',calc_dur:'작업일수',start_date:'시작일자',end_date:'완료일자',calc_planned:'계획완료율',progress:'실제완료율',calc_diff:'차이',actual_start:'실제시작',actual_end:'실제종료',calc_actualdays:'실적일수',owner:'담당자',predecessor:'선행작업',deliverable:'산출물'};if(f&&f.indexOf('extra:')===0){const c=(schedCfg.cols||[]).find(x=>x.id===f.slice(6));return c?c.label:'추가열';}return lbls[f]||f;}
 function updateSelLabel(){const el=document.getElementById('swSel');if(!el)return;let txt='선택: 없음',has=false;const rows=schedCache[currentSchedTask]||[];if(selectedCells.length>1){has=true;txt='선택: '+selectedCells.length+'개 셀';}else if(selectedCells.length===1){const sc=selectedCells[0];const i=rows.findIndex(r=>r.id===sc.rowId);if(i>=0){has=true;txt='선택 셀: '+(i+1)+'행 · '+fieldLabel(sc.field);}}else if(selectedCol){has=true;txt='선택: 열 · '+fieldLabel(selectedCol);}else if(selectedSchedId){const i=rows.findIndex(r=>r.id===selectedSchedId);if(i>=0){has=true;const r=rows[i];txt='선택: '+(i+1)+'행 전체'+(r&&r.name?' · '+r.name:'');}}el.textContent=txt;el.classList.toggle('has',has);}
 function selectSchedRow(id){selectedSchedId=(selectedSchedId===id?null:id);selectedCol=null;setSelCells([]);renderSchedule(currentSchedTask);}
 function clearColHi(){document.querySelectorAll('.sw-table .sw-selcol').forEach(el=>el.classList.remove('sw-selcol'));}
