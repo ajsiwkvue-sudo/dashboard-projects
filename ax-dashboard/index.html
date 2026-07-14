@@ -1746,8 +1746,8 @@ async function reloadSched(tid){if(!supa||!tid)return;try{const {data,error}=awa
 async function loadAllSchedules(){if(!supa)return;try{const {data,error}=await supa.from('ax_schedules').select('*').order('sort_order');if(error)throw error;const g={};(data||[]).forEach(r=>{(g[r.task_id]=g[r.task_id]||[]).push(r);});const seen={};(data||[]).forEach(r=>{seen[r.task_id]=1;});Object.keys(g).forEach(tid=>{if(tid===currentSchedTask&&editingCell)return;schedCache[tid]=g[tid];});try{renderOverview();}catch(_){}try{renderTasks();}catch(_){}rerenderActive();}catch(e){}}
 let _schedBumpT=null;function _bumpAllSched(){clearTimeout(_schedBumpT);_schedBumpT=setTimeout(loadAllSchedules,400);}
 function subscribeSchedules(){if(!supa)return;supa.channel('ax_sch_ch').on('postgres_changes',{event:'*',schema:'public',table:'ax_schedules'},payload=>{const r=(payload.new&&payload.new.task_id)?payload.new:payload.old;if(r&&r.task_id===currentSchedTask)reloadSched(r.task_id);_bumpAllSched();}).on('postgres_changes',{event:'*',schema:'public',table:'ax_sched_cfg'},payload=>{const r=(payload.new&&payload.new.task_id)?payload.new:payload.old;if(r&&r.task_id===currentSchedTask&&!editingCell)reloadSched(r.task_id);}).subscribe();}
-function openSchedule(tid){currentSchedTask=tid;selectedSchedId=null;selectedCol=null;setSelCells([]);myCell=null;schedInitScroll=true;schedView={sort:null,dir:'asc',filters:{}};document.getElementById('swOverlay').classList.add('open');refreshBodyLock();renderSchedule(tid);reloadSched(tid);updatePresence();}
-function closeSchedule(){currentSchedTask=null;selectedSchedId=null;selectedCol=null;setSelCells([]);editingCell=false;myCell=null;document.getElementById('swOverlay').classList.remove('open');refreshBodyLock();updatePresence();}
+function openSchedule(tid){currentSchedTask=tid;selectedSchedId=null;selectedCol=null;setSelCells([]);myCell=null;schedInitScroll=true;schedView={sort:null,dir:'asc',filters:{}};document.getElementById('swOverlay').classList.add('open');refreshBodyLock();renderSchedule(tid);reloadSched(tid);updatePresence();try{localStorage.setItem('ax_opensched',tid);}catch(_){}}
+function closeSchedule(){currentSchedTask=null;selectedSchedId=null;selectedCol=null;setSelCells([]);editingCell=false;myCell=null;document.getElementById('swOverlay').classList.remove('open');refreshBodyLock();updatePresence();try{localStorage.removeItem('ax_opensched');}catch(_){}}
 function defAlign(f){return f==='seq'?'center':'left';}
 function cellFmt(r,f){return (r&&r.fmt&&r.fmt[f])||{};}   // 셀 단위 서식 {b,i,u,tc,fc,fs,al}
 function cellAlign(r,f){const c=cellFmt(r,f);return c.al||(schedCfg.aligns&&schedCfg.aligns[f])||defAlign(f);}
@@ -2057,63 +2057,44 @@ async function cellBlur(el){editingCell=false;myCell=null;updatePresence();markS
   const cur=row[f]==null?'':String(row[f]);if(val===cur){return;}if(f==='name'&&!val){el.innerText=cur;return;}await updateSchedField(id,f,val||null);}
 /* 저수준: 한 건 업데이트 + 되돌리기 등록 */
 async function updateSchedRaw(id,patch,undoEntry){if(!supa)return;const p=Object.assign({updated_by:whoAmI(),updated_at:new Date().toISOString()},patch);try{const {error}=await supa.from('ax_schedules').update(p).eq('id',id);if(error)throw error;const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===id);if(row)Object.assign(row,patch);if(undoEntry)pushUndo(undoEntry);await reloadSched(currentSchedTask);}catch(e){alert('저장 실패: '+e.message);}}
-  function updateRowComputedCells(r, tr) {
+function updateRowComputedCells(r, tr){
   if(!tr) return;
   const defs = colDefsAll();
   const leftD = defs.left.filter(c => !colHidden(c.f));
   const rightD = defs.right.filter(c => !colHidden(c.f));
   const allD = leftD.concat(rightD);
-
   allD.forEach((cd, cIdx) => {
     const td = tr.children[cIdx + 1];
     if(!td) return;
-    if(cd.calc) {
+    if(cd.calc){
       const v = wbsCalc(r, cd.calc);
-      if(cd.calc === 'status') {
-        td.innerHTML = `<span class="wbs-stat s-${statusKey(v)}">${v||'-'}</span>`;
-      } else if(cd.calc === 'diff') {
-        const neg = v && v[0] === '-';
-        const pos = v && v[0] === '+';
-        td.textContent = v;
-        td.style.color = neg ? '#c0492f' : (pos ? '#2e8b57' : '');
-        td.style.fontWeight = (neg || pos) ? '800' : '';
-      } else {
-        td.textContent = v;
-      }
+      if(cd.calc === 'status'){ td.innerHTML = `<span class="wbs-stat s-${statusKey(v)}">${v||'-'}</span>`; }
+      else if(cd.calc === 'diff'){ const neg=v&&v[0]==='-'; const pos=v&&v[0]==='+'; td.textContent=v; td.style.color=neg?'#c0492f':(pos?'#2e8b57':''); td.style.fontWeight=(neg||pos)?'800':''; }
+      else { td.textContent = v; }
     }
   });
-
   const gm = gridMonths();
   const sc = weekIndexOf(gm, r.start_date), ec = weekIndexOf(gm, r.end_date);
   const wkCount = gm.length * 5;
   const startWkCellIdx = 1 + allD.length;
-  for(let i=0; i<wkCount; i++) {
+  for(let i=0;i<wkCount;i++){
     const td = tr.children[startWkCellIdx + i];
     if(!td) break;
-    const on = (sc != null && ec != null && i >= Math.min(sc, ec) && i <= Math.max(sc, ec));
-    if(on) td.classList.add('on');
-    else td.classList.remove('on');
+    const on = (sc!=null && ec!=null && i>=Math.min(sc,ec) && i<=Math.max(sc,ec));
+    if(on) td.classList.add('on'); else td.classList.remove('on');
   }
 }
-  function updateOptimisticRollup(tid) {
+function updateOptimisticRollup(tid){
   if(currentSchedTask !== tid) return;
   const rows = schedCache[tid] || [];
   const viewRows = applyView(rows);
-
   const _pmap={}; let _lp='';
   rows.forEach(r=>{const p=(r.phase||'').trim();if(p)_lp=p;_pmap[r.id]=_lp||'(대과제 미지정)';});
   const _phaseOf=r=>_pmap[r.id]||((r.phase||'').trim())||'(대과제 미지정)';
-
   const _grp=[],_gi={};
-  viewRows.forEach(r=>{
-    const p=_phaseOf(r);
-    if(_gi[p]==null){_gi[p]=_grp.length;_grp.push({phase:p,rows:[]});}
-    _grp[_gi[p]].rows.push(r);
-  });
-
+  viewRows.forEach(r=>{const p=_phaseOf(r);if(_gi[p]==null){_gi[p]=_grp.length;_grp.push({phase:p,rows:[]});}_grp[_gi[p]].rows.push(r);});
   const grpRows = document.querySelectorAll('.sw-table tr.wbs-grp');
   if(!grpRows.length) return;
-
   const defs=colDefsAll();
   const leftD=defs.left.filter(c=>!colHidden(c.f));
   const rightD=defs.right.filter(c=>!colHidden(c.f));
@@ -2121,69 +2102,48 @@ async function updateSchedRaw(id,patch,undoEntry){if(!supa)return;const p=Object
   const gm = gridMonths();
   const wkCount = gm.length * 5;
   const startWkCellIdx = 1 + allD.length;
-
   _grp.forEach((g, idx) => {
     const gr = phaseRollup(g.rows);
     const tr = grpRows[idx];
     if(!tr) return;
-
     allD.forEach((cd, cIdx) => {
       const td = tr.children[cIdx + 1];
       if(!td) return;
-      
-      if(cd.f === 'phase') {
-        const cntEl = td.querySelector('.wbs-gcnt');
-        if(cntEl) cntEl.textContent = gr.count;
-      }
+      if(cd.f === 'phase'){ const cntEl = td.querySelector('.wbs-gcnt'); if(cntEl) cntEl.textContent = gr.count; }
       else if(cd.f === 'weight') td.textContent = gr.weight || '';
       else if(cd.f === 'calc_dur') td.textContent = gr.dur ? gr.dur + '일' : '';
       else if(cd.f === 'start_date') td.textContent = gr.start ? fmtD(gr.start) : '';
       else if(cd.f === 'end_date') td.textContent = gr.end ? fmtD(gr.end) : '';
       else if(cd.f === 'calc_planned') td.textContent = gr.planned + '%';
       else if(cd.f === 'progress') td.textContent = gr.prog + '%';
-      else if(cd.f === 'calc_diff') {
-        const d = gr.diff;
-        td.textContent = (d > 0 ? '+' : '') + d;
-        if(d < 0) td.classList.add('wbs-gneg');
-        else td.classList.remove('wbs-gneg');
-      }
+      else if(cd.f === 'calc_diff'){ const d=gr.diff; td.textContent=(d>0?'+':'')+d; if(d<0) td.classList.add('wbs-gneg'); else td.classList.remove('wbs-gneg'); }
     });
-
     const gs = weekIndexOf(gm, gr.start), ge = weekIndexOf(gm, gr.end);
-    for(let i=0; i<wkCount; i++) {
+    for(let i=0;i<wkCount;i++){
       const td = tr.children[startWkCellIdx + i];
       if(!td) break;
-      const on = (gs != null && ge != null && i >= Math.min(gs, ge) && i <= Math.max(gs, ge));
-      if(on) td.classList.add('on');
-      else td.classList.remove('on');
+      const on = (gs!=null && ge!=null && i>=Math.min(gs,ge) && i<=Math.max(gs,ge));
+      if(on) td.classList.add('on'); else td.classList.remove('on');
     }
   });
-
   const roll = wbsRollup(rows);
-  const topPct = document.querySelector('.wbs-sum-pct');
-  if(topPct) topPct.textContent = roll.prog + '%';
-  const topBar = document.querySelector('.wbs-sum-bar i');
-  if(topBar) topBar.style.width = roll.prog + '%';
-  const topBarB = document.querySelector('.wbs-sum-bar b');
-  if(topBarB) topBarB.style.left = Math.min(100, roll.planned) + '%';
-  const topMeta = document.querySelector('.wbs-sum-meta');
-  if(topMeta) topMeta.textContent = `계획 ${roll.planned}% · SPI ${roll.spi} · 가중치합 ${roll.wsum}${roll.weighted?'':' (가중치 미입력 → 단순평균)'}`;
+  const topPct = document.querySelector('.wbs-sum-pct'); if(topPct) topPct.textContent = roll.prog + '%';
+  const topBar = document.querySelector('.wbs-sum-bar i'); if(topBar) topBar.style.width = roll.prog + '%';
+  const topBarB = document.querySelector('.wbs-sum-bar b'); if(topBarB) topBarB.style.left = Math.min(100, roll.planned) + '%';
+  const topMeta = document.querySelector('.wbs-sum-meta'); if(topMeta) topMeta.textContent = `계획 ${roll.planned}% · SPI ${roll.spi} · 가중치합 ${roll.wsum}${roll.weighted?'':' (가중치 미입력 → 단순평균)'}`;
 }
 async function updateSchedField(id,f,value,skipUndo){
   const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===id);
   const old=row?(row[f]==null?null:row[f]):null;
-  
-  // [추가됨] DB 통신 전 로컬 데이터를 먼저 바꾸고 화면의 대과제·진척율을 갱신
-  if(row) {
+  if(row){
     row[f] = value;
     const tr = document.querySelector(`.sw-table tr td[data-id="${id}"]`);
     if(tr) updateRowComputedCells(row, tr.closest('tr'));
     updateOptimisticRollup(currentSchedTask);
   }
-
   const patch={};patch[f]=value;
   await updateSchedRaw(id,patch,skipUndo?null:{label:'셀 편집',run:async()=>{
-    if(row) {
+    if(row){
       row[f] = old;
       const tr = document.querySelector(`.sw-table tr td[data-id="${id}"]`);
       if(tr) updateRowComputedCells(row, tr.closest('tr'));
@@ -2192,20 +2152,16 @@ async function updateSchedField(id,f,value,skipUndo){
     await updateSchedRaw(id,{[f]:old},true);
   }});
 }
-
 async function updateExtraField(id,colId,value,skipUndo){
   const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===id);
   if(!row)return;
   const old=(row.extra&&row.extra[colId])||null;
   const extra=Object.assign({},row.extra||{});
   if(value)extra[colId]=value;else delete extra[colId];
-
-  // [추가됨] 즉각 화면 반영
   row.extra = extra;
   const tr = document.querySelector(`.sw-table tr td[data-id="${id}"]`);
   if(tr) updateRowComputedCells(row, tr.closest('tr'));
   updateOptimisticRollup(currentSchedTask);
-
   await updateSchedRaw(id,{extra},skipUndo?null:{label:'셀 편집',run:async()=>updateExtraField(id,colId,old,true)});
 }
 /* 날짜: 숫자패드 입력 → 파싱 */
@@ -2303,28 +2259,15 @@ async function pasteCells(){if(!authUser){alert('구글 로그인 후 이용하�
 async function cutCells(){const R=selRect();if(!R)return;await copyCells();const {r1,r2,c1,c2,rows,cols}=R;const targets=[];for(let i=r1;i<=r2;i++)for(let j=c1;j<=c2;j++){const rr=rows[i],f=cols[j];if(rr&&f&&f!=='name')targets.push({rowId:rr.id,field:f,value:''});}await applyCellValues(targets,'잘라내기');}
 async function applyCellValues(targets,label){
   if(!targets.length)return;const rows=schedCache[currentSchedTask]||[];const byRow={};targets.forEach(t=>{(byRow[t.rowId]=byRow[t.rowId]||[]).push(t);});const snaps=[];
-  try{
-    for(const id of Object.keys(byRow)){
-      const row=rows.find(r=>r.id===id);if(!row)continue;
-      const patch={};let extra=Object.assign({},row.extra||{}),extraChg=false;const snap={id,extraOld:JSON.parse(JSON.stringify(row.extra||{})),fields:{}};
+  try{for(const id of Object.keys(byRow)){const row=rows.find(r=>r.id===id);if(!row)continue;const patch={};let extra=Object.assign({},row.extra||{}),extraChg=false;const snap={id,extraOld:JSON.parse(JSON.stringify(row.extra||{})),fields:{}};
       byRow[id].forEach(t=>{const f=t.field;let v=(t.value==null?'':String(t.value)).trim();
         if(f.indexOf('extra:')===0){const cid=f.slice(6);if(v)extra[cid]=v;else delete extra[cid];extraChg=true;}
         else if(f==='start_date'||f==='end_date'){snap.fields[f]=row[f];patch[f]=v?(parseDateInput(v)||v):null;}
         else if(f==='name'){if(v){snap.fields[f]=row[f];patch[f]=v;}}
         else if(f==='weight'||f==='progress'){snap.fields[f]=row[f];let nv=(v===''?0:parseFloat(v));if(isNaN(nv))nv=0;patch[f]=(f==='progress')?Math.max(0,Math.min(100,Math.round(nv))):Math.max(0,nv);}
-        else{snap.fields[f]=row[f];patch[f]=v||null;}
-      });
+        else{snap.fields[f]=row[f];patch[f]=v||null;}});
       if(extraChg)patch.extra=extra;snaps.push(snap);
-      
-      // [추가됨] 즉각 화면 반영
-      Object.assign(row, patch);
-      const tr = document.querySelector(`.sw-table tr td[data-id="${id}"]`);
-      if(tr) updateRowComputedCells(row, tr.closest('tr'));
-
-      const {error}=await supa.from('ax_schedules').update(Object.assign({updated_by:whoAmI(),updated_at:new Date().toISOString()},patch)).eq('id',id);
-      if(error)throw error;
-    }
-    updateOptimisticRollup(currentSchedTask);
+      const {error}=await supa.from('ax_schedules').update(Object.assign({updated_by:whoAmI(),updated_at:new Date().toISOString()},patch)).eq('id',id);if(error)throw error;Object.assign(row,patch);}
     pushUndo({label,run:async()=>{for(const s of snaps){const p={};for(const f in s.fields)p[f]=s.fields[f];p.extra=s.extraOld;await supa.from('ax_schedules').update(p).eq('id',s.id);}await reloadSched(currentSchedTask);}});
     await reloadSched(currentSchedTask);
   }catch(e){alert('적용 실패: '+e.message);}
@@ -2489,6 +2432,8 @@ function colMenu(e,field){e.preventDefault();selectSchedCol(field);const isCusto
   document.getElementById('mileCountTxt').textContent=overallProgress().tot;
   document.getElementById('userChip').onclick=changeUser;
   initSupa();
+  // 새로고침해도 열려 있던 세부계획(WBS) 다시 열기
+  try{const os=localStorage.getItem('ax_opensched');if(os&&TASKS.some(t=>t.id===os))openSchedule(os);}catch(_){}
   if('serviceWorker' in navigator && location.protocol.indexOf('http')===0){navigator.serviceWorker.register('sw.js').catch(()=>{});}
   // help card toggle (기억)
   const hb=document.getElementById('helpBody'),ht=document.getElementById('helpToggle');
