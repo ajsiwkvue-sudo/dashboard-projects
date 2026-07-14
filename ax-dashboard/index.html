@@ -1953,7 +1953,6 @@ function renderSchedule(tid){
         <button class="rb-ib rb-add" onclick="importWbsClick()" title="WBS 엑셀(xlsx) 파일을 올려 자동 입력">⬆ 가져오기</button>
         <button class="rb-ib" onclick="exportScheduleXlsx()" title="현재 표를 엑셀(CSV)로 저장">📥 엑셀</button>
       </span>
-      ${(schedCfg.hidden&&schedCfg.hidden.length)?`<span class="rb-div"></span><button class="rb-ib" onclick="unhideAllCols()" title="숨긴 열 모두 보이기">🙈 숨긴 열 ${schedCfg.hidden.length}개 보이기</button>`:''}
       ${(schedView.sort||Object.keys(schedView.filters).length||schedView.delayedOnly)?`<span class="rb-div"></span><button class="rb-ib" onclick="clearView()" title="정렬·필터 초기화">⧉ 필터·정렬 해제</button>`:''}
       <span class="rb-div"></span>
       <span class="rb-sel" id="swSel">선택: 없음</span>
@@ -2348,8 +2347,8 @@ async function clearColumnData(field){if(!authUser){alert('구글 로그인 후 
 async function removeColumn(field){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}
   if(field&&field.indexOf('extra:')===0){return deleteColumn(field.slice(6));}   // 커스텀 열: 완전 삭제
   const vis=fmtCols();if(vis.length<=1){toast('마지막 남은 열은 삭제할 수 없어요.');return;}
-  if(!confirm('이 열을 표에서 삭제(제거)할까요?\n입력된 데이터는 보존되며, 리본의 “숨긴 열 보이기” 또는 되돌리기(⌘/Ctrl+Z)로 복구할 수 있어요.'))return;
-  hideColumn(field);   // 기본 열: 표에서 제거(숨김·복구 가능)
+  if(!confirm('이 열을 표에서 삭제할까요?\n입력된 데이터는 보존되며, 되돌리기(⌘/Ctrl+Z) 또는 열 우클릭 메뉴 “삭제한 열 되살리기”로 복구할 수 있어요.'))return;
+  hideColumn(field);   // 기본 열: 표에서 제거(데이터 보존·복구 가능)
 }
 async function hideColumn(field){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}const vis=fmtCols();if(vis.length<=1){toast('마지막 남은 열은 숨길 수 없어요.');return;}const old=(schedCfg.hidden||[]).slice();if(old.indexOf(field)<0)schedCfg.hidden=old.concat([field]);selectedCol=null;setSelCells([]);pushUndo({label:'열 숨기기',run:async()=>{schedCfg.hidden=old;await saveCfg();await reloadSched(currentSchedTask);}});await saveCfg();renderSchedule(currentSchedTask);}
 async function unhideAllCols(){if(!authUser)return;const old=(schedCfg.hidden||[]).slice();if(!old.length)return;schedCfg.hidden=[];pushUndo({label:'열 보이기',run:async()=>{schedCfg.hidden=old;await saveCfg();await reloadSched(currentSchedTask);}});await saveCfg();renderSchedule(currentSchedTask);}
@@ -2420,7 +2419,8 @@ function colMenu(e,field){e.preventDefault();selectSchedCol(field);const isCusto
   {sep:1},
   {t:'🧹 열 데이터 삭제',f:()=>clearColumnData(field)},
   {sep:1},
-  {t:'🗑️ 이 열 삭제',f:()=>removeColumn(field)}
+  {t:'🗑️ 이 열 삭제',f:()=>removeColumn(field)},
+  ...((schedCfg.hidden&&schedCfg.hidden.length)?[{sep:1},{t:'삭제한 열 되살리기 ('+schedCfg.hidden.length+'개)',f:()=>unhideAllCols()}]:[])
 ]);}
 
 /* init */
