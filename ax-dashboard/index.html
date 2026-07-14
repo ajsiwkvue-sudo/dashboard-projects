@@ -459,6 +459,8 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .sw-table td.sw-treecell[data-lvl="3"]::before{content:"└ ";color:var(--muted);font-weight:400}
 .sw-table td.sw-treecell[data-lvl="2"]{font-weight:600}
 .sw-table td.sw-treecell[data-lvl="3"]{font-weight:400;color:var(--muted)}
+.sw-table td.sw-rownum .mid-tog{cursor:pointer;color:var(--muted);font-size:.62rem;margin-right:2px;user-select:none;vertical-align:middle}
+.sw-table td.sw-rownum .mid-tog:hover{color:var(--primary)}
 .sw-table td.sw-seq{font-weight:700}
 /* 오늘 날짜선 · 지연만 토글 */
 .sw-table td.sw-c.sw-today{box-shadow:inset 2px 0 0 #c0492f}
@@ -1557,6 +1559,8 @@ function gotoToday(){const wrap=document.querySelector('.sw-tablewrap');const el
 // ── 대과제 계층: 접기/펼치기 + 상위 자동집계 ──
 let collapsedPhases=new Set((()=>{try{return JSON.parse(localStorage.getItem('ax_wbs_collapsed')||'[]');}catch(_){return[];}})());
 function toggleGroup(ev,enc){if(ev){ev.stopPropagation();}const phase=decodeURIComponent(enc);const key=currentSchedTask+'|'+phase;if(collapsedPhases.has(key))collapsedPhases.delete(key);else collapsedPhases.add(key);try{localStorage.setItem('ax_wbs_collapsed',JSON.stringify([...collapsedPhases]));}catch(_){}renderSchedule(currentSchedTask);}
+let collapsedMids=new Set((()=>{try{return JSON.parse(localStorage.getItem('ax_wbs_midcollapsed')||'[]');}catch(_){return[];}})());
+function toggleMid(enc){const mk=decodeURIComponent(enc);const key=currentSchedTask+'|'+mk;if(collapsedMids.has(key))collapsedMids.delete(key);else collapsedMids.add(key);try{localStorage.setItem('ax_wbs_midcollapsed',JSON.stringify([...collapsedMids]));}catch(_){}renderSchedule(currentSchedTask);}
 function toggleAllGroups(){const rows=schedCache[currentSchedTask]||[];const phases=[...new Set(rows.map(r=>(r.phase||'').trim()||'(대과제 미지정)'))];const anyOpen=phases.some(p=>!collapsedPhases.has(currentSchedTask+'|'+p));phases.forEach(p=>{const k=currentSchedTask+'|'+p;if(anyOpen)collapsedPhases.add(k);else collapsedPhases.delete(k);});try{localStorage.setItem('ax_wbs_collapsed',JSON.stringify([...collapsedPhases]));}catch(_){}renderSchedule(currentSchedTask);}
 function phaseRollup(rows){let sw=0,swp=0,swpl=0,n=0,sp=0,spl=0,minS=null,maxE=null;rows.forEach(r=>{const w=+r.weight||0;const pr=Math.max(0,Math.min(100,+r.progress||0));const pl=plannedPct(r);if(w>0){sw+=w;swp+=w*pr;swpl+=w*pl;}n++;sp+=pr;spl+=pl;const s=_dparse(r.start_date),e=_dparse(r.end_date);if(s&&(!minS||s<minS))minS=s;if(e&&(!maxE||e>maxE))maxE=e;});const prog=sw>0?Math.round(swp/sw):(n?Math.round(sp/n):0);const planned=sw>0?Math.round(swpl/sw):(n?Math.round(spl/n):0);const iso=d=>d?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`:'';return {weight:Math.round(sw*100)/100,prog,planned,diff:prog-planned,start:iso(minS),end:iso(maxE),dur:(minS&&maxE)?_bizDays(minS,maxE):0,count:rows.length};}
 function exportScheduleXlsx(){const t=TASKS.find(x=>x.id===currentSchedTask);if(!t)return;const defs=colDefsAll();const cols=defs.left.concat(defs.right).filter(c=>!colHidden(c.f));const rows=(schedViewRows&&schedViewRows.length)?schedViewRows:(schedCache[currentSchedTask]||[]);const esc=s=>{s=(s==null?'':String(s));return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};const lines=[['#'].concat(cols.map(c=>c.label)).map(esc).join(',')];rows.forEach((r,i)=>{const line=[i+1].concat(cols.map(c=>(c.f&&c.f.indexOf('calc_')===0)?wbsCalc(r,c.f.slice(5)):cellReadVal(r,c.f)));lines.push(line.map(esc).join(','));});const csv='﻿'+lines.join('\r\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(t.id+'_'+t.title).replace(/[\\/:*?"<>|]/g,'_')+'_WBS.csv';a.click();URL.revokeObjectURL(a.href);toast('엑셀(CSV)로 저장했어요. Excel에서 열려요.');}
@@ -1708,13 +1712,13 @@ function renderSchedule(tid){
     if(cd.f==='name'){const lv=seqLevel(r);const ind=`padding-left:${8+(lv-2)*20}px;`;return `<td ${spanAttr} class="${cls} sw-treecell" data-lvl="${lv}" ${ce} ${cAttr(r,cd.f)} style="${cellStyleInner(r,cd.f)}${extra}${ind}">${val}</td>`;}
     return `<td ${spanAttr} class="${cls}" ${ce} ${cAttr(r,cd.f)} style="${cellStyleInner(r,cd.f)}${extra}">${val}</td>`;
   };
-  const realRow=(r,no)=>{
+  const realRow=(r,no,caret)=>{
     const sc=weekIndexOf(gm,r.start_date),ec=weekIndexOf(gm,r.end_date);
     let cells='';
     for(let i=0;i<wkCount;i++){const on=(sc!=null&&ec!=null&&i>=Math.min(sc,ec)&&i<=Math.max(sc,ec));cells+=`<td class="sw-c${on?' on':''}${i===todayIdx?' sw-today':''}" ${on?`style="background:${gcol}"`:''}></td>`;}
     const sel=(!selectedCells.length&&!selectedCol&&selectedSchedId===r.id)?' sw-selrow':'';
     return `<tr class="${sel}">`+
-      `<td class="sw-rownum sw-frozen" style="left:0" ${canEdit?`onclick="selectSchedRow('${r.id}')" oncontextmenu="rowMenu(event,'${r.id}')"`:''} title="클릭: 행 선택 · 우클릭: 삽입/삭제/복사">${no}</td>`+
+      `<td class="sw-rownum sw-frozen" style="left:0" ${canEdit?`onclick="selectSchedRow('${r.id}')" oncontextmenu="rowMenu(event,'${r.id}')"`:''} title="클릭: 행 선택 · 우클릭: 삽입/삭제/복사">${caret||''}${no}</td>`+
       leftD.map(cd=>bodyTd(r,cd)).join('')+rightD.map(cd=>bodyTd(r,cd)).join('')+cells+`</tr>`;
   };
   // 대과제 그룹 + 상위 자동집계 행 + 접기/펼치기
@@ -1724,6 +1728,8 @@ function renderSchedule(tid){
   const _phaseOf=r=>_pmap[r.id]||((r.phase||'').trim())||'(대과제 미지정)';
   const _grp=[],_gi={};
   viewRows.forEach(r=>{const p=_phaseOf(r);if(_gi[p]==null){_gi[p]=_grp.length;_grp.push({phase:p,rows:[]});}_grp[_gi[p]].rows.push(r);});
+  // 소과제(3단)를 가진 중과제 키 집합 → 중과제 접기 토글 표시용
+  const _midKids=new Set();viewRows.forEach(r=>{if(seqLevel(r)===3)_midKids.add(_seqParts(r.seq).slice(0,2).join('.'));});
   const _gv=(g,gr,f)=>{
     if(f==='phase'){const col=collapsedPhases.has(currentSchedTask+'|'+g.phase);return `<span class="wbs-gtog" onclick="toggleGroup(event,'${encodeURIComponent(g.phase)}')">${col?'▶':'▼'}</span>${escH(g.phase)} <span class="wbs-gcnt">${gr.count}</span>`;}
     if(f==='weight')return gr.weight||'';
@@ -1743,7 +1749,13 @@ function renderSchedule(tid){
     const gs=weekIndexOf(gm,gr.start),ge=weekIndexOf(gm,gr.end);
     for(let i=0;i<wkCount;i++){const on=(gs!=null&&ge!=null&&i>=Math.min(gs,ge)&&i<=Math.max(gs,ge));gc+=`<td class="sw-c wbs-gbar${on?' on':''}${i===todayIdx?' sw-today':''}"></td>`;}
     body+=`<tr class="wbs-grp">${gc}</tr>`;
-    if(!col)g.rows.forEach(r=>{_no++;body+=realRow(r,_no);});
+    if(!col)g.rows.forEach(r=>{
+      const lv=seqLevel(r),parts=_seqParts(r.seq);
+      if(lv===3){const mk=parts.slice(0,2).join('.');if(collapsedMids.has(currentSchedTask+'|'+mk))return;}
+      _no++;let caret='';
+      if(lv===2){const mk=parts.slice(0,2).join('.');if(_midKids.has(mk)){const mc=collapsedMids.has(currentSchedTask+'|'+mk);caret=`<span class="mid-tog" onclick="event.stopPropagation();toggleMid('${encodeURIComponent(mk)}')">${mc?'▶':'▼'}</span>`;}}
+      body+=realRow(r,_no,caret);
+    });
   });
   const totalCols=1+leftD.length+wkCount+rightD.length;
   if(!viewRows.length)body=`<tr><td colspan="${totalCols}" style="text-align:center;color:var(--muted);padding:24px">${rows.length?'필터 조건에 맞는 항목이 없습니다. (필터·정렬 해제 버튼으로 초기화)':'아직 등록된 세부계획이 없습니다.'+(canEdit?' 왼쪽 행번호(#)를 우클릭 → “행 삽입”으로 시작하세요.':'')}</td></tr>`;
