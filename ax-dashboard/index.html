@@ -1969,6 +1969,30 @@ function renderSchedule(tid){
     </table></div>`;
   updateSelLabel();markSelectedCells();paintPresenceCells(presenceUsers);fixStickyHeader();
   const _nw=document.querySelector('.sw-tablewrap');if(_nw){if(schedInitScroll){schedInitScroll=false;_nw.scrollLeft=0;_nw.scrollTop=0;}else{_nw.scrollLeft=_psl;_nw.scrollTop=_pst;}}
+  if(_pendingFocus){const pf=_pendingFocus;_pendingFocus=null;const t=document.querySelector(`.sw-table td[data-id="${pf.rowId}"][data-field="${pf.field}"]`);if(t){t.focus();_placeCaretEnd(t);}}
+}
+// ── 세부계획 셀 키보드 이동(엑셀식): 방향키·Tab·Enter ──
+let _pendingFocus=null;
+function _placeCaretEnd(el){try{el.focus();const r=document.createRange();r.selectNodeContents(el);r.collapse(false);const s=getSelection();s.removeAllRanges();s.addRange(r);}catch(_){}}
+function _caretAtEdge(el,which){const s=getSelection();if(!s||!s.rangeCount)return true;const r=s.getRangeAt(0);if(!el.contains(r.startContainer))return true;const len=(el.innerText||'').length;return which==='start'?(r.startOffset===0):(r.startOffset>=len);}
+function _swMoveCell(el,dr,dc){
+  const table=el.closest('.sw-table');if(!table)return;
+  const trs=[...table.querySelectorAll('tbody tr')].filter(tr=>tr.querySelector('td[data-id][data-field]'));
+  const tr=el.closest('tr');const ri=trs.indexOf(tr);if(ri<0)return;
+  let target=null;
+  if(dr!==0){
+    const nr=trs[ri+dr];if(!nr)return;const field=el.dataset.field;
+    target=nr.querySelector(`td[data-field="${field}"][data-id]`);
+    if(!target){const cs=[...nr.querySelectorAll('td[data-id][data-field]')];const ci=[...tr.querySelectorAll('td[data-id][data-field]')].indexOf(el);target=cs[Math.min(Math.max(ci,0),cs.length-1)];}
+  }else if(dc!==0){
+    const cells=[...tr.querySelectorAll('td[data-id][data-field]')];const ci=cells.indexOf(el);
+    target=cells[ci+dc];
+    if(!target){const nr=trs[ri+(dc>0?1:-1)];if(nr){const cs=[...nr.querySelectorAll('td[data-id][data-field]')];target=dc>0?cs[0]:cs[cs.length-1];}}
+  }
+  if(!target)return false;
+  _pendingFocus={rowId:target.dataset.id,field:target.dataset.field};
+  setTimeout(()=>{if(_pendingFocus&&_pendingFocus.rowId===target.dataset.id)_pendingFocus=null;},1500);
+  target.focus();_placeCaretEnd(target);return true;
 }
 function fixStickyHeader(){const thead=document.querySelector('.sw-table thead');if(!thead||!thead.rows[0])return;const h=thead.rows[0].offsetHeight;thead.querySelectorAll('tr:nth-child(2) th').forEach(th=>th.style.top=h+'px');}
 function markSelectedCells(){document.querySelectorAll('.sw-table td.sw-selcell').forEach(td=>td.classList.remove('sw-selcell'));(selectedCells||[]).forEach(sc=>{const td=document.querySelector(`.sw-table td[data-id="${sc.rowId}"][data-field="${sc.field}"]`);if(td)td.classList.add('sw-selcell');});}
@@ -2005,7 +2029,16 @@ function selectSchedRow(id){selectedSchedId=(selectedSchedId===id?null:id);selec
 function clearColHi(){document.querySelectorAll('.sw-table .sw-selcol').forEach(el=>el.classList.remove('sw-selcol'));}
 function cellFocus(id,field){if(justDragged)return;selectedSchedId=id;selectedCol=null;clearColHi();setSelCells(field?[{rowId:id,field:field}]:[]);editingCell=true;myCell=field?{rowId:id,field:field}:null;updatePresence();updateSelLabel();markSelectedCells();}
 function dateFocus(id,field){if(justDragged)return;selectedSchedId=id;selectedCol=null;clearColHi();setSelCells([{rowId:id,field:field}]);editingCell=true;myCell={rowId:id,field:field};updatePresence();updateSelLabel();markSelectedCells();}
-function cellKey(e,el){if((e.key==='Enter'||e.keyCode===13)&&!e.isComposing){e.preventDefault();el.blur();}if(e.key==='Escape'){e.preventDefault();e.stopPropagation();el.blur();}}
+function cellKey(e,el){
+  if(e.isComposing||e.keyCode===229)return;   // 한글 조합 중엔 이동 금지
+  if((e.key==='Enter'||e.keyCode===13)){e.preventDefault();if(!_swMoveCell(el,e.shiftKey?-1:1,0))el.blur();return;}
+  if(e.key==='Escape'){e.preventDefault();e.stopPropagation();el.blur();return;}
+  if(e.key==='Tab'){e.preventDefault();_swMoveCell(el,0,e.shiftKey?-1:1);return;}
+  if(e.key==='ArrowUp'){e.preventDefault();_swMoveCell(el,-1,0);return;}
+  if(e.key==='ArrowDown'){e.preventDefault();_swMoveCell(el,1,0);return;}
+  if(e.key==='ArrowLeft'&&_caretAtEdge(el,'start')){e.preventDefault();_swMoveCell(el,0,-1);return;}
+  if(e.key==='ArrowRight'&&_caretAtEdge(el,'end')){e.preventDefault();_swMoveCell(el,0,1);return;}
+}
 function pastePlain(e){e.preventDefault();const cd=e.clipboardData||window.clipboardData;const txt=cd?cd.getData('text/plain'):'';try{document.execCommand('insertText',false,txt.replace(/[\r\n\t]+/g,' '));}catch(_){const sel=window.getSelection&&window.getSelection();if(sel&&sel.rangeCount){const r=sel.getRangeAt(0);r.deleteContents();r.insertNode(document.createTextNode(txt));}}}
 async function cellBlur(el){editingCell=false;myCell=null;updatePresence();markSelectedCells();const id=el.dataset.id,f=el.dataset.field;const val=el.innerText.trim();const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===id);if(!row){return;}
   if(f.indexOf('extra:')===0){const colId=f.slice(6);const cur=(row.extra&&row.extra[colId])||'';if(val===cur)return;await updateExtraField(id,colId,val||null);return;}
