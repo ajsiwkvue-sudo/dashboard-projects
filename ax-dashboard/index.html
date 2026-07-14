@@ -1710,8 +1710,12 @@ function renderSchedule(tid){
       leftD.map(cd=>bodyTd(r,cd)).join('')+rightD.map(cd=>bodyTd(r,cd)).join('')+cells+`</tr>`;
   };
   // 대과제 그룹 + 상위 자동집계 행 + 접기/펼치기
+  // phase가 블록 첫 행에만 있으므로 원본 순서 기준 아래로 채워(carry-down) 대과제를 확정
+  const _srcRows=schedCache[currentSchedTask]||[];const _pmap={};let _lp='';
+  _srcRows.forEach(r=>{const p=(r.phase||'').trim();if(p)_lp=p;_pmap[r.id]=_lp||'(대과제 미지정)';});
+  const _phaseOf=r=>_pmap[r.id]||((r.phase||'').trim())||'(대과제 미지정)';
   const _grp=[],_gi={};
-  viewRows.forEach(r=>{const p=(r.phase||'').trim()||'(대과제 미지정)';if(_gi[p]==null){_gi[p]=_grp.length;_grp.push({phase:p,rows:[]});}_grp[_gi[p]].rows.push(r);});
+  viewRows.forEach(r=>{const p=_phaseOf(r);if(_gi[p]==null){_gi[p]=_grp.length;_grp.push({phase:p,rows:[]});}_grp[_gi[p]].rows.push(r);});
   const _gv=(g,gr,f)=>{
     if(f==='phase'){const col=collapsedPhases.has(currentSchedTask+'|'+g.phase);return `<span class="wbs-gtog" onclick="toggleGroup(event,'${encodeURIComponent(g.phase)}')">${col?'▶':'▼'}</span>${escH(g.phase)} <span class="wbs-gcnt">${gr.count}</span>`;}
     if(f==='weight')return gr.weight||'';
