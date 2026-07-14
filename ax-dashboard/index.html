@@ -445,6 +445,8 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .sw-legend.open .lg-body{display:block}
 .sw-legend .lg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:5px 20px;font-size:.74rem;color:var(--text)}
 .sw-legend .lg-grid b{color:var(--primary);margin-right:4px}
+.sw-legend .lg-sec{font-weight:800;color:var(--text);font-size:.73rem;margin:9px 0 4px;padding-bottom:2px;border-bottom:1px dashed var(--border)}
+.sw-legend .lg-body>.lg-sec:first-child{margin-top:0}
 .sw-legend .lg-f{color:var(--muted);font-family:ui-monospace,SFMono-Regular,monospace}
 .sw-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px 20px;border-bottom:3px solid var(--primary);position:sticky;top:0;background:var(--card);z-index:5}
 .sw-title{font-size:1.15rem;font-weight:900;line-height:1.35}
@@ -1984,17 +1986,26 @@ function renderSchedule(tid){
     ${ribbon}
     <div class="sw-legend${swLegendOpen?' open':''}" id="swLegend">
       <button class="lg-toggle" onclick="toggleLegend()" title="각 지표의 뜻과 산출식">ⓘ 지표 설명 <span class="lg-caret">▾</span></button>
-      <div class="lg-body"><div class="lg-grid">
-        <div><b>Weight</b>세부과제 상대 비중 · 대과제 = 자식 <span class="lg-f">합</span></div>
-        <div><b>작업일수</b><span class="lg-f">시작~완료 영업일(주말 제외)</span> · 대과제 = 전체 기간</div>
-        <div><b>계획완료율</b>오늘 기준 진척 <span class="lg-f">=(시작~오늘)÷(시작~완료)</span></div>
-        <div><b>실제완료율</b>실제 입력한 진척(%)</div>
-        <div><b>차이</b><span class="lg-f">실제완료율 − 계획완료율</span> (＋초과 / −지연)</div>
-        <div><b>실적일수</b>실제시작~실제종료 영업일</div>
-        <div><b>선행작업</b>이 과제 앞에 끝나야 하는 과제 번호</div>
-        <div><b>과제 진척율</b>(상단) <span class="lg-f">Σ(실제완료율×Weight)÷ΣWeight</span> (가중평균)</div>
-        <div><b>대과제 행</b>자식 집계 — <span class="lg-f">Weight=자식 합, 기간=최소시작~최대완료, 계획완료율·실제완료율=Σ(자식값×Weight)÷ΣWeight, 차이=실제−계획</span></div>
-      </div></div>
+      <div class="lg-body">
+        <div class="lg-sec">세부과제 (각 행)</div>
+        <div class="lg-grid">
+          <div><b>Weight</b>이 과제의 중요도(비중). 클수록 진척율에 더 반영</div>
+          <div><b>작업일수</b>시작~완료까지 일하는 날 수(주말 제외)</div>
+          <div><b>계획완료율</b>오늘까지 계획대로면 몇 %여야 하는지</div>
+          <div><b>실제완료율</b>지금 실제로 몇 % 했는지</div>
+          <div><b>차이</b><span class="lg-f">실제완료율 − 계획완료율</span> (＋초과 / −지연)</div>
+          <div><b>실적일수</b>실제 시작~실제 종료까지 일한 날 수</div>
+          <div><b>선행작업</b>이 과제 전에 끝나야 하는 과제 번호</div>
+        </div>
+        <div class="lg-sec">대과제 (세부과제들을 묶은 합계 행)</div>
+        <div class="lg-grid">
+          <div><b>Weight</b>세부과제 Weight를 모두 더한 값</div>
+          <div><b>작업일수</b>가장 이른 시작 ~ 가장 늦은 완료까지 기간</div>
+          <div><b>계획완료율</b>세부과제 계획완료율의 평균 <span class="lg-f">(중요도 큰 과제를 더 반영한 평균)</span></div>
+          <div><b>실제완료율</b>세부과제 실제완료율의 평균 <span class="lg-f">(중요도 큰 과제를 더 반영한 평균)</span></div>
+          <div><b>차이</b><span class="lg-f">실제완료율 − 계획완료율</span></div>
+        </div>
+      </div>
     </div>
     <div class="sw-tablewrap" style="scroll-padding-left:${frozenW}px;scroll-padding-top:60px"><table class="sw-table" style="width:${tableW}px">
       ${colgroup}
