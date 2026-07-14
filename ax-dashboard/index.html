@@ -480,6 +480,19 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .wc-spi{flex:0 0 34px;text-align:right;font-weight:700;font-size:.76rem}
 .wc-tag{flex:0 0 auto;font-size:.72rem;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:1px 8px;color:var(--muted)}
 .wc-foot{margin-top:8px;font-size:.72rem;color:var(--muted)}
+.wbsimp-back{position:fixed;inset:0;background:rgba(18,38,58,.45);z-index:9000;display:flex;align-items:center;justify-content:center}
+.wbsimp{background:var(--card);border-radius:14px;width:min(680px,92vw);max-height:86vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
+.wbsimp-h{padding:16px 20px;font-weight:800;font-size:1.05rem;border-bottom:1px solid var(--border)}
+.wbsimp-sum{padding:12px 20px;font-size:.86rem;color:var(--text);background:var(--bg)}
+.wbsimp-tbl{overflow:auto;padding:0 20px;flex:1}
+.wbsimp-tbl table{width:100%;border-collapse:collapse;font-size:.8rem}
+.wbsimp-tbl th{position:sticky;top:0;background:var(--card);text-align:center;padding:7px 6px;border-bottom:2px solid var(--border);font-weight:700}
+.wbsimp-tbl td{text-align:center;padding:5px 6px;border-bottom:1px solid var(--border)}
+.wbsimp-ft{padding:14px 20px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--border)}
+.wbsimp-cancel,.wbsimp-ok{padding:9px 20px;border-radius:8px;font-family:var(--font);font-weight:700;font-size:.88rem;cursor:pointer;border:1px solid var(--border)}
+.wbsimp-cancel{background:var(--card);color:var(--text)}
+.wbsimp-ok{background:var(--primary);color:#fff;border-color:var(--primary)}
+.wbsimp-ok:disabled{opacity:.6;cursor:default}
 .sw-ribbon .rb-ib.rb-add{font-weight:700;color:var(--primary)}
 .sw-ribbon .rb-ib.rb-add:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
 [data-theme="dark"] .sw-calccell{background:rgba(255,255,255,.04)}
@@ -1620,6 +1633,86 @@ let collapsedMids=new Set((()=>{try{return JSON.parse(localStorage.getItem('ax_w
 function toggleMid(enc){const mk=decodeURIComponent(enc);const key=currentSchedTask+'|'+mk;if(collapsedMids.has(key))collapsedMids.delete(key);else collapsedMids.add(key);try{localStorage.setItem('ax_wbs_midcollapsed',JSON.stringify([...collapsedMids]));}catch(_){}renderSchedule(currentSchedTask);}
 function toggleAllGroups(){const rows=schedCache[currentSchedTask]||[];const phases=[...new Set(rows.map(r=>(r.phase||'').trim()||'(대과제 미지정)'))];const anyOpen=phases.some(p=>!collapsedPhases.has(currentSchedTask+'|'+p));phases.forEach(p=>{const k=currentSchedTask+'|'+p;if(anyOpen)collapsedPhases.add(k);else collapsedPhases.delete(k);});try{localStorage.setItem('ax_wbs_collapsed',JSON.stringify([...collapsedPhases]));}catch(_){}renderSchedule(currentSchedTask);}
 function phaseRollup(rows){let sw=0,swp=0,swpl=0,n=0,sp=0,spl=0,minS=null,maxE=null;rows.forEach(r=>{const w=+r.weight||0;const pr=Math.max(0,Math.min(100,+r.progress||0));const pl=plannedPct(r);if(w>0){sw+=w;swp+=w*pr;swpl+=w*pl;}n++;sp+=pr;spl+=pl;const s=_dparse(r.start_date),e=_dparse(r.end_date);if(s&&(!minS||s<minS))minS=s;if(e&&(!maxE||e>maxE))maxE=e;});const prog=sw>0?Math.round(swp/sw):(n?Math.round(sp/n):0);const planned=sw>0?Math.round(swpl/sw):(n?Math.round(spl/n):0);const iso=d=>d?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`:'';return {weight:Math.round(sw*100)/100,prog,planned,diff:prog-planned,start:iso(minS),end:iso(maxE),dur:(minS&&maxE)?_bizDays(minS,maxE):0,count:rows.length};}
+// ── WBS 엑셀 가져오기(임포트): 대과제/세부과제 2단, 소과제 드롭 ──
+let _wbsImportRows=null;
+function _loadSheetJS(){return new Promise((res,rej)=>{if(window.XLSX)return res();const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=()=>res();s.onerror=()=>rej(new Error('엑셀 파서 로드 실패'));document.head.appendChild(s);});}
+function _impParts(v){const s=String(v==null?'':v).trim().replace(/[^0-9.]/g,'').replace(/\.+$/,'');if(!s)return[];const a=s.split('.').map(x=>parseInt(x,10)).filter(x=>!isNaN(x));return a;}
+function _impDate(v){if(v==null||v==='')return null;if(v instanceof Date&&!isNaN(v))return `${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,'0')}-${String(v.getDate()).padStart(2,'0')}`;if(typeof v==='number'){const d=new Date(Math.round((v-25569)*86400000));return isNaN(d)?null:`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;}const m=String(v).match(/(\d{4})[.\-\/]\s*(\d{1,2})[.\-\/]\s*(\d{1,2})/);if(m)return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;const d=new Date(v);return isNaN(d)?null:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function _impNum(v){if(v==null||v==='')return null;const n=parseFloat(String(v).replace(/[^0-9.\-]/g,''));return isNaN(n)?null:n;}
+function _parseWbsSheet(rows2d){
+  // 헤더행: '시작일자' 셀이 있는 행
+  let hdr=-1;for(let i=0;i<rows2d.length;i++){if(rows2d[i].some(c=>String(c||'').replace(/\s/g,'')==='시작일자')){hdr=i;break;}}
+  if(hdr<0)return null;
+  const norm=s=>String(s||'').replace(/\s/g,'');
+  const col={};rows2d[hdr].forEach((c,idx)=>{const v=norm(c);['시작일자','완료일자','실제완료율','진척률','진행률','가중치','Weight','담당자','산출물','선행작업','비고'].forEach(k=>{if(v===norm(k)&&col[k]==null)col[k]=idx;});});
+  const gW=r=>{const c=(col['가중치']!=null?col['가중치']:col['Weight']);return c!=null?_impNum(r[c]):null;};
+  const gProg=r=>{const c=(col['실제완료율']!=null?col['실제완료율']:(col['진척률']!=null?col['진척률']:col['진행률']));return c!=null?_impNum(r[c]):null;};
+  const leaves=[];let curPhase=null,curPhaseW=null;
+  for(let i=hdr+1;i<rows2d.length;i++){
+    const r=rows2d[i];if(!r)continue;const p=_impParts(r[0]);if(!p.length)continue;
+    let name=null;for(let c=1;c<6;c++){if(r[c]!=null&&String(r[c]).trim()){name=String(r[c]).trim();break;}}
+    if(!name)continue;
+    if(p.length===1){curPhase=`${p[0]}. ${name}`;curPhaseW=gW(r);}
+    else if(p.length===2){
+      const w=gW(r);let gw=0;if(w!=null&&curPhaseW!=null)gw=Math.round(curPhaseW*w*100000)/100000;else if(w!=null)gw=w;
+      const ow=(col['담당자']!=null&&r[col['담당자']])?String(r[col['담당자']]).trim():null;
+      const del=(col['산출물']!=null&&r[col['산출물']])?String(r[col['산출물']]).trim():null;
+      leaves.push({phase:curPhase,seq:`${p[0]}.${p[1]}`,name,start:_impDate(r[col['시작일자']]),end:_impDate(r[col['완료일자']]),progress:Math.max(0,Math.min(100,Math.round(gProg(r)||0))),weight:gw,owner:ow,deliverable:del});
+    }
+    // 3단(소과제) 이상은 드롭
+  }
+  return leaves;
+}
+function importWbsClick(){
+  if(!authUser){alert('구글 로그인 후 이용하세요.');return;}
+  let inp=document.getElementById('wbsImportInput');
+  if(!inp){inp=document.createElement('input');inp.type='file';inp.id='wbsImportInput';inp.accept='.xlsx,.xls,.csv';inp.style.display='none';inp.onchange=_onWbsFile;document.body.appendChild(inp);}
+  inp.value='';inp.click();
+}
+async function _onWbsFile(e){
+  const file=e.target.files&&e.target.files[0];if(!file)return;
+  try{
+    await _loadSheetJS();
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{cellDates:true});
+    let leaves=null;
+    for(const sn of wb.SheetNames){const rows2d=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:null});const parsed=_parseWbsSheet(rows2d);if(parsed&&parsed.length){leaves=parsed;break;}}
+    if(!leaves||!leaves.length){alert('WBS 데이터를 찾지 못했어요.\n‘시작일자’ 헤더가 있는 시트와, A열에 1 / 1.1 형태의 번호가 필요해요.');return;}
+    _wbsImportRows=leaves;_showWbsImportPreview(leaves);
+  }catch(err){alert('가져오기 실패: '+err.message);}
+}
+function _showWbsImportPreview(leaves){
+  const t=TASKS.find(x=>x.id===currentSchedTask);
+  const phases=[...new Set(leaves.map(l=>l.phase))];
+  const wsum=Math.round(leaves.reduce((s,l)=>s+(l.weight||0),0)*1000)/1000;
+  const existing=(schedCache[currentSchedTask]||[]).length;
+  const rowsHtml=leaves.map(l=>`<tr><td>${escH(l.seq)}</td><td style="text-align:left">${escH(l.name)}</td><td>${l.start||'-'}</td><td>${l.end||'-'}</td><td>${l.weight||0}</td><td>${l.progress}%</td></tr>`).join('');
+  const html=`<div class="wbsimp-back" id="wbsImpBack"><div class="wbsimp">
+    <div class="wbsimp-h">⬆ WBS 가져오기 — ${escH(t?t.title:currentSchedTask)}</div>
+    <div class="wbsimp-sum">대과제 <b>${phases.length}</b> · 세부과제 <b>${leaves.length}</b> · 가중치 합 <b>${wsum}</b>${existing?` · <span style="color:#c0492f">기존 ${existing}행은 교체됩니다</span>`:''}</div>
+    <div class="wbsimp-tbl"><table><thead><tr><th>번호</th><th>세부과제</th><th>시작</th><th>완료</th><th>가중치</th><th>실제</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>
+    <div class="wbsimp-ft"><button class="wbsimp-cancel" onclick="_closeWbsImport()">취소</button><button class="wbsimp-ok" onclick="_applyWbsImport()">${existing?'교체 입력':'입력'}</button></div>
+  </div></div>`;
+  const d=document.createElement('div');d.id='wbsImpWrap';d.innerHTML=html;document.body.appendChild(d);
+}
+function _closeWbsImport(){const w=document.getElementById('wbsImpWrap');if(w)w.remove();}
+async function _applyWbsImport(){
+  if(!_wbsImportRows||!_wbsImportRows.length){_closeWbsImport();return;}
+  if(!supa||!authUser){alert('구글 로그인 후 이용하세요.');return;}
+  const tid=currentSchedTask;const leaves=_wbsImportRows;
+  const oldRows=(schedCache[tid]||[]).map(r=>{const o=Object.assign({},r);delete o.created_at;delete o.updated_at;return o;});
+  let so=0,lastPhase=null;
+  const ins=leaves.map(l=>{so+=10;const ph=(l.phase!==lastPhase)?l.phase:'';lastPhase=l.phase;return {task_id:tid,phase:ph||'',seq:l.seq,name:l.name,start_date:l.start,end_date:l.end,progress:l.progress||0,weight:l.weight||0,owner:l.owner||null,deliverable:l.deliverable||null,extra:{},fmt:{},sort_order:so,created_by:whoAmI(),updated_by:whoAmI()};});
+  try{
+    const btn=document.querySelector('.wbsimp-ok');if(btn){btn.disabled=true;btn.textContent='입력 중…';}
+    const {error:delErr}=await supa.from('ax_schedules').delete().eq('task_id',tid);if(delErr)throw delErr;
+    const {error:insErr}=await supa.from('ax_schedules').insert(ins);if(insErr)throw insErr;
+    pushUndo({label:'WBS 가져오기',run:async()=>{await supa.from('ax_schedules').delete().eq('task_id',tid);if(oldRows.length)await supa.from('ax_schedules').insert(oldRows);await reloadSched(tid);await loadAllSchedules();}});
+    _closeWbsImport();_wbsImportRows=null;
+    await reloadSched(tid);await loadAllSchedules();
+    toast(`가져오기 완료 — 세부과제 ${leaves.length}건 입력. (Ctrl+Z로 되돌리기)`);
+  }catch(err){alert('입력 실패: '+err.message);const btn=document.querySelector('.wbsimp-ok');if(btn){btn.disabled=false;btn.textContent='교체 입력';}}
+}
 function exportScheduleXlsx(){const t=TASKS.find(x=>x.id===currentSchedTask);if(!t)return;const defs=colDefsAll();const cols=defs.left.concat(defs.right).filter(c=>!colHidden(c.f));const rows=(schedViewRows&&schedViewRows.length)?schedViewRows:(schedCache[currentSchedTask]||[]);const esc=s=>{s=(s==null?'':String(s));return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};const lines=[['#'].concat(cols.map(c=>c.label)).map(esc).join(',')];rows.forEach((r,i)=>{const line=[i+1].concat(cols.map(c=>(c.f&&c.f.indexOf('calc_')===0)?wbsCalc(r,c.f.slice(5)):cellReadVal(r,c.f)));lines.push(line.map(esc).join(','));});const csv='﻿'+lines.join('\r\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(t.id+'_'+t.title).replace(/[\\/:*?"<>|]/g,'_')+'_WBS.csv';a.click();URL.revokeObjectURL(a.href);toast('엑셀(CSV)로 저장했어요. Excel에서 열려요.');}
 function clearView(){schedView={sort:null,dir:'asc',filters:{}};renderSchedule(currentSchedTask);}
 function setSelCells(arr){selectedCells=arr||[];selectedCell=selectedCells.length?selectedCells[0]:null;}
@@ -1844,6 +1937,7 @@ function renderSchedule(tid){
         <button class="rb-ib rb-add" onclick="addWbsNode(2)" title="선택한 대과제 안에 세부과제 추가">＋세부과제</button>
         <span class="rb-div"></span>
         <button class="rb-ib" onclick="toggleAllGroups()" title="대과제 그룹 전체 접기/펼치기">⊟ 접기/펼치기</button>
+        <button class="rb-ib rb-add" onclick="importWbsClick()" title="WBS 엑셀(xlsx) 파일을 올려 자동 입력">⬆ 가져오기</button>
         <button class="rb-ib" onclick="exportScheduleXlsx()" title="현재 표를 엑셀(CSV)로 저장">📥 엑셀</button>
       </span>
       ${(schedCfg.hidden&&schedCfg.hidden.length)?`<span class="rb-div"></span><button class="rb-ib" onclick="unhideAllCols()" title="숨긴 열 모두 보이기">🙈 숨긴 열 ${schedCfg.hidden.length}개 보이기</button>`:''}
