@@ -1867,7 +1867,7 @@ function fmtClearColor(kind){closePalette();applyFmtToCells(()=>kind==='text'?{t
 async function fmtAlign(a){if(selectedCol){await setColAlign(selectedCol,a);return;}applyFmtToCells(()=>({al:a}),'정렬');}
 function selectSchedCol(field){selectedCol=(selectedCol===field?null:field);setSelCells([]);renderSchedule(currentSchedTask);}
 function renameColPrompt(id){if(!authUser)return;const col=(schedCfg.cols||[]).find(c=>c.id===id);if(!col)return;const label=(prompt('열 이름을 입력하세요.',col.label)||'').trim();if(!label||label===col.label)return;renameColumn(id,label).then(()=>renderSchedule(currentSchedTask));}
-function deleteSelCol(){if(!selectedCol){toast('삭제할 열을 먼저 선택하세요. (머리글 클릭)');return;}if(selectedCol.indexOf('extra:')!==0){toast('기본 열은 삭제할 수 없어요. 추가한 열만 삭제됩니다.');return;}const c=selectedCol.slice(6);selectedCol=null;deleteColumn(c);}
+function deleteSelCol(){if(!selectedCol){toast('삭제할 열을 먼저 선택하세요. (머리글 클릭)');return;}const f=selectedCol;selectedCol=null;removeColumn(f);}
 /* 열: 추가/삭제/정렬/이름변경 */
 async function setColAlign(field,a){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}const old=Object.assign({},schedCfg.aligns);schedCfg.aligns=Object.assign({},schedCfg.aligns);schedCfg.aligns[field]=a;pushUndo({label:'열 정렬',run:async()=>{schedCfg.aligns=old;await saveCfg();await reloadSched(currentSchedTask);}});await saveCfg();renderSchedule(currentSchedTask);}
 async function addColumn(){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}const label=(prompt('추가할 열 이름을 입력하세요.','새 열')||'').trim();if(!label)return;const id='c_'+Math.random().toString(36).slice(2,8);const old=JSON.parse(JSON.stringify(schedCfg.cols));schedCfg.cols=schedCfg.cols.concat([{id,label}]);pushUndo({label:'열 추가',run:async()=>{schedCfg.cols=old;await saveCfg();await reloadSched(currentSchedTask);}});await saveCfg();renderSchedule(currentSchedTask);}
@@ -1885,6 +1885,12 @@ async function insertColumn(anchorField,side){if(!authUser){alert('구글 로그
   pushUndo({label:'열 삽입',run:async()=>{schedCfg.cols=oldCols;schedCfg.order=oldOrder;await saveCfg();await reloadSched(currentSchedTask);}});
   await saveCfg();renderSchedule(currentSchedTask);}
 async function clearColumnData(field){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}if(field==='name'){toast('세부 추진과제(제목) 열은 비울 수 없어요.');return;}if(!confirm('이 열의 모든 값을 지울까요? (서식은 유지)'))return;const rows=(schedCache[currentSchedTask]||[]).slice();const snaps=[];for(const r of rows){if(field.indexOf('extra:')===0){const cid=field.slice(6);if(r.extra&&r.extra[cid]!=null&&r.extra[cid]!==''){snaps.push({id:r.id,extra:JSON.parse(JSON.stringify(r.extra||{}))});const ex=Object.assign({},r.extra);delete ex[cid];await updateSchedRaw(r.id,{extra:ex},null);}}else if(r[field]!=null&&r[field]!==''){snaps.push({id:r.id,field,val:r[field]});await updateSchedRaw(r.id,{[field]:null},null);}}if(snaps.length)pushUndo({label:'열 데이터 삭제',run:async()=>{for(const s of snaps){if(s.extra!==undefined)await updateSchedRaw(s.id,{extra:s.extra},null);else await updateSchedRaw(s.id,{[s.field]:s.val},null);}}});else toast('지울 값이 없습니다.');}
+async function removeColumn(field){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}
+  if(field&&field.indexOf('extra:')===0){return deleteColumn(field.slice(6));}   // 커스텀 열: 완전 삭제
+  const vis=fmtCols();if(vis.length<=1){toast('마지막 남은 열은 삭제할 수 없어요.');return;}
+  if(!confirm('이 열을 표에서 삭제(제거)할까요?\n입력된 데이터는 보존되며, 리본의 “숨긴 열 보이기” 또는 되돌리기(⌘/Ctrl+Z)로 복구할 수 있어요.'))return;
+  hideColumn(field);   // 기본 열: 표에서 제거(숨김·복구 가능)
+}
 async function hideColumn(field){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}const vis=fmtCols();if(vis.length<=1){toast('마지막 남은 열은 숨길 수 없어요.');return;}const old=(schedCfg.hidden||[]).slice();if(old.indexOf(field)<0)schedCfg.hidden=old.concat([field]);selectedCol=null;setSelCells([]);pushUndo({label:'열 숨기기',run:async()=>{schedCfg.hidden=old;await saveCfg();await reloadSched(currentSchedTask);}});await saveCfg();renderSchedule(currentSchedTask);}
 async function unhideAllCols(){if(!authUser)return;const old=(schedCfg.hidden||[]).slice();if(!old.length)return;schedCfg.hidden=[];pushUndo({label:'열 보이기',run:async()=>{schedCfg.hidden=old;await saveCfg();await reloadSched(currentSchedTask);}});await saveCfg();renderSchedule(currentSchedTask);}
 /* ---- 셀 병합 ---- */
@@ -1942,8 +1948,7 @@ function cellMenu(e,id,field){e.preventDefault();e.stopPropagation();
   const isCustom=field.indexOf('extra:')===0;const multi=selectedCells.length>1;const hasMerge=selectionHasMerge();
   const items=[{t:'⧉ 복사 (⌘/Ctrl+C)',f:()=>{if(selectedCells.length)copyCells();else copyRow();}},{t:'📋 붙여넣기 (⌘/Ctrl+V)',f:()=>{if(selectedCells.length)pasteCells();else pasteRow();}},{t:'✂️ 잘라내기 (⌘/Ctrl+X)',f:()=>{if(selectedCells.length)cutCells();}}];
   if(multi||hasMerge){items.push({sep:1});if(multi)items.push({t:'🔗 셀 병합',f:()=>mergeCells()});if(hasMerge)items.push({t:'✂️ 병합 해제',f:()=>unmergeCells()});}
-  items.push({sep:1},{t:'⬆ 위에 행 삽입',f:()=>insertRow('above')},{t:'⬇ 아래에 행 삽입',f:()=>insertRow('below')},{t:'🗑️ 행 삭제',f:()=>deleteRow(id)},{sep:1},{t:'➕ 왼쪽에 열 삽입',f:()=>insertColumn(field,'left')},{t:'➕ 오른쪽에 열 삽입',f:()=>insertColumn(field,'right')},{t:'🧹 열 데이터 삭제',f:()=>clearColumnData(field)},{t:'🙈 열 숨기기',f:()=>hideColumn(field)});
-  if(isCustom)items.push({sep:1},{t:'🗑️ 이 열 삭제',f:()=>deleteColumn(field.slice(6))});
+  items.push({sep:1},{t:'⬆ 위에 행 삽입',f:()=>insertRow('above')},{t:'⬇ 아래에 행 삽입',f:()=>insertRow('below')},{t:'🗑️ 행 삭제',f:()=>deleteRow(id)},{sep:1},{t:'➕ 왼쪽에 열 삽입',f:()=>insertColumn(field,'left')},{t:'➕ 오른쪽에 열 삽입',f:()=>insertColumn(field,'right')},{t:'🧹 열 데이터 삭제',f:()=>clearColumnData(field)},{sep:1},{t:'🗑️ 이 열 삭제',f:()=>removeColumn(field)});
   openMenu(e,items);}
 function colMenu(e,field){e.preventDefault();selectSchedCol(field);const isCustom=field.indexOf('extra:')===0;openMenu(e,[
   {t:'◧ 왼쪽 정렬',f:()=>setColAlign(field,'left')},
@@ -1954,8 +1959,9 @@ function colMenu(e,field){e.preventDefault();selectSchedCol(field);const isCusto
   {t:'➕ 오른쪽에 열 삽입',f:()=>insertColumn(field,'right')},
   {sep:1},
   {t:'🧹 열 데이터 삭제',f:()=>clearColumnData(field)},
-  {t:'🙈 열 숨기기',f:()=>hideColumn(field)}
-].concat(isCustom?[{sep:1},{t:'🗑️ 이 열 삭제',f:()=>deleteColumn(field.slice(6))}]:[]));}
+  {sep:1},
+  {t:'🗑️ 이 열 삭제',f:()=>removeColumn(field)}
+]);}
 
 /* init */
 (function(){
