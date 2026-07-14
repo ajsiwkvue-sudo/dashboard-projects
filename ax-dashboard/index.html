@@ -1086,7 +1086,7 @@ function renderWbsCover(){
     const p=taskProgress(t),pl=taskPlanned(t),diff=p-pl;const dc=diff<0?'#c0492f':(diff>0?'#2e8b57':'var(--muted)');
     return `<div class="wc-row click" onclick="openSchedule('${t.id}')" title="세부계획 열기"><span class="wc-id">${t.id}</span><span class="wc-tt" title="${t.title}">${t.title}</span><div class="wc-bar"><div class="wc-bf" style="width:${p}%"></div></div><span class="wc-pct">${p}%</span><span class="wc-spi" style="color:${dc}" title="계획 ${pl}% 대비 차이">${diff>0?'+':''}${diff}</span></div>`;
   }).join('');
-  el.innerHTML=`<div class="wc-list">${rows}</div><div class="wc-foot">막대=실제 진척(WBS 롤업) · 우측 숫자=계획 대비 차이(＋앞섬/－지연)</div>`;
+  el.innerHTML=`<div class="wc-list">${rows}</div><div class="wc-foot">막대=실제 진척(WBS 롤업) · 우측 숫자=계획 대비 차이(＋초과/－지연)</div>`;
 }
 function drawMonthChart(){
   const months=['26.06','26.07','26.08','26.09','26.10','26.11','26.12'];const cnt=months.map(()=>0);
@@ -1976,8 +1976,8 @@ function renderSchedule(tid){
       <div><div class="sw-title">${t.id}. ${t.title} <span style="font-size:.72rem;font-weight:700;color:var(--muted)">· WBS 세부실행계획</span></div><div class="sw-sub">담당 ${o.main||'-'}${o.sub?' · 부담당 '+o.sub:''} · 세부계획 ${viewRows.length!==rows.length?viewRows.length+'/'+rows.length:rows.length}건${authUser?' · 로그인: '+(authUser.name||authUser.email):''}</div></div>
       <div class="wbs-sum">
         <div class="wbs-sum-top"><span class="wbs-sum-lbl">과제 진척율 (가중평균)</span><span class="wbs-sum-pct" style="color:${gcol}">${roll.prog}%</span></div>
-        <div class="wbs-sum-bar"><i style="width:${roll.prog}%;background:${gcol}"></i><b style="left:${Math.min(100,roll.planned)}%" title="계획공정률">▾</b></div>
-        <div class="wbs-sum-meta">계획 ${roll.planned}% · SPI ${roll.spi} · 가중치합 ${roll.wsum}${roll.weighted?'':' (가중치 미입력 → 단순평균)'}</div>
+        <div class="wbs-sum-bar"><i style="width:${roll.prog}%;background:${gcol}"></i></div>
+        <div class="wbs-sum-meta">계획 ${roll.planned}% · 가중치합 ${roll.wsum}${roll.weighted?'':' (가중치 미입력 → 단순평균)'}</div>
       </div>
       <button class="sw-close" onclick="closeSchedule()">×</button>
     </div>
@@ -1989,11 +1989,11 @@ function renderSchedule(tid){
         <div><b>작업일수</b><span class="lg-f">시작~완료 영업일(주말 제외)</span> · 대과제 = 전체 기간</div>
         <div><b>계획완료율</b>오늘 기준 진척 <span class="lg-f">=(시작~오늘)÷(시작~완료)</span></div>
         <div><b>실제완료율</b>실제 입력한 진척(%)</div>
-        <div><b>차이</b><span class="lg-f">실제완료율 − 계획완료율</span> (＋앞섬 / −지연)</div>
+        <div><b>차이</b><span class="lg-f">실제완료율 − 계획완료율</span> (＋초과 / −지연)</div>
         <div><b>실적일수</b>실제시작~실제종료 영업일</div>
         <div><b>선행작업</b>이 과제 앞에 끝나야 하는 과제 번호</div>
-        <div><b>과제 진척율</b>(상단) <span class="lg-f">Σ(실제완료율×Weight)÷ΣWeight</span> · SPI = 실제÷계획</div>
-        <div><b>대과제 행</b>자식 집계 — Weight·기간 = 합/기간, 완료율 = 가중평균</div>
+        <div><b>과제 진척율</b>(상단) <span class="lg-f">Σ(실제완료율×Weight)÷ΣWeight</span> (가중평균)</div>
+        <div><b>대과제 행</b>자식 집계 — <span class="lg-f">Weight=자식 합, 기간=최소시작~최대완료, 계획완료율·실제완료율=Σ(자식값×Weight)÷ΣWeight, 차이=실제−계획</span></div>
       </div></div>
     </div>
     <div class="sw-tablewrap" style="scroll-padding-left:${frozenW}px;scroll-padding-top:60px"><table class="sw-table" style="width:${tableW}px">
@@ -2154,8 +2154,7 @@ function updateOptimisticRollup(tid){
   const roll = wbsRollup(rows);
   const topPct = document.querySelector('.wbs-sum-pct'); if(topPct) topPct.textContent = roll.prog + '%';
   const topBar = document.querySelector('.wbs-sum-bar i'); if(topBar) topBar.style.width = roll.prog + '%';
-  const topBarB = document.querySelector('.wbs-sum-bar b'); if(topBarB) topBarB.style.left = Math.min(100, roll.planned) + '%';
-  const topMeta = document.querySelector('.wbs-sum-meta'); if(topMeta) topMeta.textContent = `계획 ${roll.planned}% · SPI ${roll.spi} · 가중치합 ${roll.wsum}${roll.weighted?'':' (가중치 미입력 → 단순평균)'}`;
+  const topMeta = document.querySelector('.wbs-sum-meta'); if(topMeta) topMeta.textContent = `계획 ${roll.planned}% · 가중치합 ${roll.wsum}${roll.weighted?'':' (가중치 미입력 → 단순평균)'}`;
 }
 async function updateSchedField(id,f,value,skipUndo){
   const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===id);
