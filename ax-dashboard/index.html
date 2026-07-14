@@ -435,7 +435,17 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .sw-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1200;justify-content:center;align-items:flex-start;padding:16px;overflow-y:auto}
 .sw-overlay.open{display:flex}
 .sw-modal{background:var(--card);border-radius:14px;width:100%;max-width:1500px;max-height:94vh;overflow:hidden;margin:auto;box-shadow:0 12px 40px rgba(0,0,0,.3);display:flex;flex-direction:column}
-.sw-modal>.sw-head,.sw-modal>.sw-ribbon,.sw-modal>.sw-login{flex:0 0 auto}
+.sw-modal>.sw-head,.sw-modal>.sw-ribbon,.sw-modal>.sw-login,.sw-modal>.sw-legend{flex:0 0 auto}
+.sw-legend{border-bottom:1px solid var(--border);background:#fbfcfe}
+[data-theme="dark"] .sw-legend{background:rgba(255,255,255,.03)}
+.sw-legend .lg-toggle{display:inline-flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;font-family:var(--font);font-size:.76rem;font-weight:700;color:var(--primary);padding:6px 16px}
+.sw-legend .lg-caret{transition:transform .15s;font-size:.7rem}
+.sw-legend.open .lg-caret{transform:rotate(180deg)}
+.sw-legend .lg-body{display:none;padding:0 16px 10px}
+.sw-legend.open .lg-body{display:block}
+.sw-legend .lg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:5px 20px;font-size:.74rem;color:var(--text)}
+.sw-legend .lg-grid b{color:var(--primary);margin-right:4px}
+.sw-legend .lg-f{color:var(--muted);font-family:ui-monospace,SFMono-Regular,monospace}
 .sw-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px 20px;border-bottom:3px solid var(--primary);position:sticky;top:0;background:var(--card);z-index:5}
 .sw-title{font-size:1.15rem;font-weight:900;line-height:1.35}
 .sw-sub{font-size:.8rem;color:var(--muted);margin-top:4px}
@@ -1633,6 +1643,8 @@ function toggleDelayedOnly(){schedView.delayedOnly=!schedView.delayedOnly;render
 function gotoToday(){const wrap=document.querySelector('.sw-tablewrap');const el=wrap&&wrap.querySelector('.sw-today');if(el&&wrap){wrap.scrollLeft=Math.max(0,el.offsetLeft-wrap.clientWidth*0.5);}else toast('오늘이 표시 기간(6개월) 밖이에요.');}
 // ── 대과제 계층: 접기/펼치기 + 상위 자동집계 ──
 let collapsedPhases=new Set((()=>{try{return JSON.parse(localStorage.getItem('ax_wbs_collapsed')||'[]');}catch(_){return[];}})());
+let swLegendOpen=(()=>{try{return localStorage.getItem('ax_legend')==='1';}catch(_){return false;}})();
+function toggleLegend(){const el=document.getElementById('swLegend');if(!el)return;swLegendOpen=!el.classList.contains('open');el.classList.toggle('open',swLegendOpen);try{localStorage.setItem('ax_legend',swLegendOpen?'1':'0');}catch(_){}}
 async function renamePhase(enc,newText){
   if(!authUser)return;
   const oldPhase=decodeURIComponent(enc);const nn=(newText||'').replace(/\s+/g,' ').trim();
@@ -1970,6 +1982,20 @@ function renderSchedule(tid){
       <button class="sw-close" onclick="closeSchedule()">×</button>
     </div>
     ${ribbon}
+    <div class="sw-legend${swLegendOpen?' open':''}" id="swLegend">
+      <button class="lg-toggle" onclick="toggleLegend()" title="각 지표의 뜻과 산출식">ⓘ 지표 설명 <span class="lg-caret">▾</span></button>
+      <div class="lg-body"><div class="lg-grid">
+        <div><b>Weight</b>세부과제 상대 비중 · 대과제 = 자식 <span class="lg-f">합</span></div>
+        <div><b>작업일수</b><span class="lg-f">시작~완료 영업일(주말 제외)</span> · 대과제 = 전체 기간</div>
+        <div><b>계획완료율</b>오늘 기준 진척 <span class="lg-f">=(시작~오늘)÷(시작~완료)</span></div>
+        <div><b>실제완료율</b>실제 입력한 진척(%)</div>
+        <div><b>차이</b><span class="lg-f">실제완료율 − 계획완료율</span> (＋앞섬 / −지연)</div>
+        <div><b>실적일수</b>실제시작~실제종료 영업일</div>
+        <div><b>선행작업</b>이 과제 앞에 끝나야 하는 과제 번호</div>
+        <div><b>과제 진척율</b>(상단) <span class="lg-f">Σ(실제완료율×Weight)÷ΣWeight</span> · SPI = 실제÷계획</div>
+        <div><b>대과제 행</b>자식 집계 — Weight·기간 = 합/기간, 완료율 = 가중평균</div>
+      </div></div>
+    </div>
     <div class="sw-tablewrap" style="scroll-padding-left:${frozenW}px;scroll-padding-top:60px"><table class="sw-table" style="width:${tableW}px">
       ${colgroup}
       <thead>
