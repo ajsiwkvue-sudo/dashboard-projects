@@ -468,6 +468,8 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .sw-table td.sw-c.sw-today{box-shadow:inset 2px 0 0 #c0492f}
 .sw-table th.sw-wh.sw-today{box-shadow:inset 2px 0 0 #c0492f;color:#c0492f;font-weight:900}
 .sw-ribbon .rb-ib.rb-on{background:var(--primary);color:#fff;border-color:var(--primary)}
+.sw-ribbon .rb-ib.rb-add{font-weight:700;color:var(--primary)}
+.sw-ribbon .rb-ib.rb-add:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
 [data-theme="dark"] .sw-calccell{background:rgba(255,255,255,.04)}
 .wbs-stat{display:inline-block;padding:1px 7px;border-radius:10px;font-size:.68rem;font-weight:800;white-space:nowrap}
 .wbs-stat.s-done{background:rgba(46,139,87,.16);color:#2e8b57}
@@ -1782,6 +1784,10 @@ function renderSchedule(tid){
       </span>
       <span class="rb-div"></span>
       <span class="rb-grp">
+        <button class="rb-ib rb-add" onclick="addWbsNode(1)" title="새 대과제 추가(표 끝/선택 대과제 다음)">＋대과제</button>
+        <button class="rb-ib rb-add" onclick="addWbsNode(2)" title="선택한 대과제 안에 중과제 추가">＋중과제</button>
+        <button class="rb-ib rb-add" onclick="addWbsNode(3)" title="선택한 중과제 안에 소과제 추가">＋소과제</button>
+        <span class="rb-div"></span>
         <button class="rb-ib" onclick="toggleAllGroups()" title="대과제 그룹 전체 접기/펼치기">⊟ 접기/펼치기</button>
         <button class="rb-ib" onclick="exportScheduleXlsx()" title="현재 표를 엑셀(CSV)로 저장">📥 엑셀</button>
       </span>
@@ -1898,6 +1904,42 @@ async function insertRow(pos,level){if(!authUser){alert('구글 로그인 후 �
   const all=schedCache[currentSchedTask]||[];const sel=selectedSchedId?all.find(r=>r.id===selectedSchedId):null;let seq='';let nm='새 세부계획';
   if(level){seq=_autoSeq(sel,level,all);nm=(level===3?'새 소과제':'새 중과제');}
   const row={task_id:currentSchedTask,phase:'',seq:seq,name:nm,start_date:null,end_date:null,deliverable:null,note:null,extra:{},fmt:{},sort_order:sort,created_by:whoAmI(),updated_by:whoAmI()};try{const {data,error}=await supa.from('ax_schedules').insert(row).select();if(error)throw error;const nid=data&&data[0]&&data[0].id;selectedSchedId=nid;pushUndo({label:'행 삽입',run:async()=>{await supa.from('ax_schedules').delete().eq('id',nid);if(selectedSchedId===nid)selectedSchedId=null;await reloadSched(currentSchedTask);}});await reloadSched(currentSchedTask);}catch(e){alert('추가 실패: '+e.message);}}
+// ── 계층 노드 추가: +대과제/+중과제/+소과제 (부모 스코프 삽입 + 자동 번호) ──
+async function addWbsNode(level){
+  if(!authUser){alert('구글 로그인 후 이용하세요.');return;}
+  const all=(schedCache[currentSchedTask]||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const pmap={};let lp='';all.forEach(r=>{const p=(r.phase||'').trim();if(p)lp=p;pmap[r.id]=lp;});
+  const sel=selectedSchedId?all.find(r=>r.id===selectedSchedId):null;
+  let phase='',seq='',nm='',afterId=null,lbl='';
+  if(level===1){
+    lbl='대과제';
+    const majors=all.map(r=>_seqParts(r.seq)[0]).filter(x=>x);const nextMajor=(majors.length?Math.max(...majors):0)+1;
+    phase='새 대과제 '+nextMajor;seq=nextMajor+'.1';nm='새 중과제';
+    if(sel){const selP=pmap[sel.id];let li=-1;all.forEach((r,i)=>{if(pmap[r.id]===selP)li=i;});afterId=li>=0?all[li].id:(all.length?all[all.length-1].id:null);}
+    else afterId=all.length?all[all.length-1].id:null;
+  } else if(level===2){
+    lbl='중과제';
+    if(!sel){alert('먼저 대과제(또는 그 안의 행)를 선택하세요.');return;}
+    const selP=pmap[sel.id];const major=_seqParts(sel.seq)[0]||1;
+    const minors=all.filter(r=>{const q=_seqParts(r.seq);return q[0]===major&&q.length>=2;}).map(r=>_seqParts(r.seq)[1]);
+    const nextMinor=(minors.length?Math.max(...minors):0)+1;
+    phase='';seq=major+'.'+nextMinor;nm='새 중과제';
+    let li=-1;all.forEach((r,i)=>{if(pmap[r.id]===selP)li=i;});afterId=li>=0?all[li].id:sel.id;
+  } else {
+    lbl='소과제';
+    if(!sel){alert('먼저 중과제(또는 그 안의 행)를 선택하세요.');return;}
+    const p=_seqParts(sel.seq);const major=p[0]||1,minor=p[1]||1;
+    const subs=all.filter(r=>{const q=_seqParts(r.seq);return q[0]===major&&q[1]===minor&&q.length>=3;}).map(r=>_seqParts(r.seq)[2]);
+    const nextSub=(subs.length?Math.max(...subs):0)+1;
+    phase='';seq=major+'.'+minor+'.'+nextSub;nm='새 소과제';
+    let li=-1;all.forEach((r,i)=>{const q=_seqParts(r.seq);if(q[0]===major&&q[1]===minor)li=i;});afterId=li>=0?all[li].id:sel.id;
+  }
+  let sort;
+  if(afterId){const ai=all.findIndex(r=>r.id===afterId);const after=all[ai],next=all[ai+1];sort=((next?next.sort_order:after.sort_order+20)+after.sort_order)/2;}
+  else sort=(all.length?Math.max(...all.map(r=>r.sort_order||0)):0)+10;
+  const row={task_id:currentSchedTask,phase,seq,name:nm,start_date:null,end_date:null,deliverable:null,note:null,extra:{},fmt:{},sort_order:sort,created_by:whoAmI(),updated_by:whoAmI()};
+  try{const {data,error}=await supa.from('ax_schedules').insert(row).select();if(error)throw error;const nid=data&&data[0]&&data[0].id;selectedSchedId=nid;pushUndo({label:lbl+' 추가',run:async()=>{await supa.from('ax_schedules').delete().eq('id',nid);if(selectedSchedId===nid)selectedSchedId=null;await reloadSched(currentSchedTask);}});await reloadSched(currentSchedTask);toast(lbl+'를 추가했어요'+(seq?' ('+seq+')':'')+'.');}catch(e){alert('추가 실패: '+e.message);}
+}
 async function deleteRow(id){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===id);if(!row)return;if(!confirm('선택한 행을 삭제할까요?'))return;const snap=Object.assign({},row);try{const {error}=await supa.from('ax_schedules').delete().eq('id',id);if(error)throw error;if(selectedSchedId===id)selectedSchedId=null;pushUndo({label:'행 삭제',run:async()=>{const ins=Object.assign({},snap);delete ins.created_at;delete ins.updated_at;await supa.from('ax_schedules').insert(ins);selectedSchedId=snap.id;await reloadSched(currentSchedTask);}});await reloadSched(currentSchedTask);}catch(e){alert('삭제 실패: '+e.message);}}
 async function deleteSelected(){if(!needSel())return;await deleteRow(selectedSchedId);}
 /* 복사/붙여넣기 */
@@ -2055,7 +2097,7 @@ function filterApply(field){const boxes=[...document.querySelectorAll('#swFilter
 function openMenu(e,items){closeMenu();const m=document.createElement('div');m.className='sw-ctxmenu';m.id='swCtxMenu';m.innerHTML=items.map((it,i)=>it.sep?'<div class="cm-sep"></div>':`<div class="cm-item" data-i="${i}">${it.t}</div>`).join('');document.body.appendChild(m);const vw=window.innerWidth,vh=window.innerHeight;m.style.left=Math.max(6,Math.min(e.clientX,vw-190))+'px';m.style.top=Math.max(6,Math.min(e.clientY,vh-10-m.offsetHeight))+'px';m.querySelectorAll('.cm-item').forEach(el=>el.onclick=()=>{const it=items[+el.dataset.i];closeMenu();if(it&&it.f)it.f();});setTimeout(()=>document.addEventListener('mousedown',menuOutside),0);}
 function menuOutside(e){const m=document.getElementById('swCtxMenu');if(m&&!m.contains(e.target))closeMenu();}
 function closeMenu(){const m=document.getElementById('swCtxMenu');if(m)m.remove();document.removeEventListener('mousedown',menuOutside);}
-function rowMenu(e,id){e.preventDefault();selectedSchedId=id;selectedCol=null;setSelCells([]);renderSchedule(currentSchedTask);openMenu(e,[{t:'➕ 중과제 추가 (아래)',f:()=>insertRow('below',2)},{t:'➕ 소과제 추가 (선택 하위)',f:()=>insertRow('below',3)},{sep:1},{t:'⬆ 위에 행 삽입',f:()=>insertRow('above')},{t:'⬇ 아래에 행 삽입',f:()=>insertRow('below')},{sep:1},{t:'⧉ 행 복사',f:()=>copyRow()},{t:'📋 붙여넣기',f:()=>pasteRow()},{sep:1},{t:'🗑️ 행 삭제',f:()=>deleteRow(id)}]);}
+function rowMenu(e,id){e.preventDefault();selectedSchedId=id;selectedCol=null;setSelCells([]);renderSchedule(currentSchedTask);openMenu(e,[{t:'➕ 대과제 추가',f:()=>addWbsNode(1)},{t:'➕ 중과제 추가 (선택 대과제 하위)',f:()=>addWbsNode(2)},{t:'➕ 소과제 추가 (선택 중과제 하위)',f:()=>addWbsNode(3)},{sep:1},{t:'⬆ 위에 행 삽입',f:()=>insertRow('above')},{t:'⬇ 아래에 행 삽입',f:()=>insertRow('below')},{sep:1},{t:'⧉ 행 복사',f:()=>copyRow()},{t:'📋 붙여넣기',f:()=>pasteRow()},{sep:1},{t:'🗑️ 행 삭제',f:()=>deleteRow(id)}]);}
 /* 셀 우클릭(=맥 트랙패드 두 손가락) — 구글시트식 통합 메뉴 */
 function cellMenu(e,id,field){e.preventDefault();e.stopPropagation();
   const inSel=selectedCells.some(c=>c.rowId===id&&c.field===field);
