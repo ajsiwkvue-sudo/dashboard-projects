@@ -461,6 +461,8 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .sw-table td.sw-treecell[data-lvl="3"]{font-weight:400;color:var(--muted)}
 .sw-table td.sw-rownum .mid-tog{cursor:pointer;color:var(--muted);font-size:.62rem;margin-right:2px;user-select:none;vertical-align:middle}
 .sw-table td.sw-rownum .mid-tog:hover{color:var(--primary)}
+.sw-table td.sw-rownum[draggable]{cursor:grab}
+.sw-table tr.sw-drop-tgt td{box-shadow:inset 0 -2px 0 var(--primary)}
 .sw-table td.sw-seq{font-weight:700}
 /* 오늘 날짜선 · 지연만 토글 */
 .sw-table td.sw-c.sw-today{box-shadow:inset 2px 0 0 #c0492f}
@@ -1718,7 +1720,7 @@ function renderSchedule(tid){
     for(let i=0;i<wkCount;i++){const on=(sc!=null&&ec!=null&&i>=Math.min(sc,ec)&&i<=Math.max(sc,ec));cells+=`<td class="sw-c${on?' on':''}${i===todayIdx?' sw-today':''}" ${on?`style="background:${gcol}"`:''}></td>`;}
     const sel=(!selectedCells.length&&!selectedCol&&selectedSchedId===r.id)?' sw-selrow':'';
     return `<tr class="${sel}">`+
-      `<td class="sw-rownum sw-frozen" style="left:0" ${canEdit?`onclick="selectSchedRow('${r.id}')" oncontextmenu="rowMenu(event,'${r.id}')"`:''} title="클릭: 행 선택 · 우클릭: 삽입/삭제/복사">${caret||''}${no}</td>`+
+      `<td class="sw-rownum sw-frozen" style="left:0" ${canEdit?`draggable="true" ondragstart="rowDragStart(event,'${r.id}')" ondragover="rowDragOver(event,'${r.id}')" ondrop="rowDrop(event,'${r.id}')" ondragend="rowDragEnd(event)" onclick="selectSchedRow('${r.id}')" oncontextmenu="rowMenu(event,'${r.id}')"`:''} title="클릭: 행 선택 · 드래그: 순서 이동 · 우클릭: 삽입/삭제/복사">${caret||''}${no}</td>`+
       leftD.map(cd=>bodyTd(r,cd)).join('')+rightD.map(cd=>bodyTd(r,cd)).join('')+cells+`</tr>`;
   };
   // 대과제 그룹 + 상위 자동집계 행 + 접기/펼치기
@@ -1862,6 +1864,31 @@ function dateKey(e,el){if(e.key==='Enter'){e.preventDefault();el.blur();}if(e.ke
 function dateBlur(id,f,el){editingCell=false;myCell=null;updatePresence();const iso=parseDateInput(el.value);const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===id);const cur=row?row[f]:null;el.value=iso||'';if(iso===cur)return;updateSchedField(id,f,iso);}
 function needSel(){if(!authUser){alert('구글 로그인 후 이용하세요.');return false;}if(!selectedSchedId){alert('먼저 행을 선택하세요. (표 왼쪽 번호# 클릭)');return false;}return true;}
 /* 행 삽입/삭제 */
+// ── 드래그 행정렬 (중과제는 소과제 하위 블록까지 함께 이동) ──
+let dragRowId=null;
+function rowDragStart(e,id){dragRowId=id;try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',id);}catch(_){}}
+function rowDragOver(e,id){if(!dragRowId||dragRowId===id)return;e.preventDefault();try{e.dataTransfer.dropEffect='move';}catch(_){}const tr=e.currentTarget.closest('tr');if(tr){document.querySelectorAll('tr.sw-drop-tgt').forEach(x=>x.classList.remove('sw-drop-tgt'));tr.classList.add('sw-drop-tgt');}}
+function rowDragEnd(){dragRowId=null;document.querySelectorAll('tr.sw-drop-tgt').forEach(x=>x.classList.remove('sw-drop-tgt'));}
+function rowDrop(e,targetId){e.preventDefault();const src=dragRowId;dragRowId=null;document.querySelectorAll('tr.sw-drop-tgt').forEach(x=>x.classList.remove('sw-drop-tgt'));if(src&&src!==targetId)moveRowBlock(src,targetId);}
+async function moveRowBlock(srcId,targetId){
+  if(!authUser){alert('구글 로그인 후 이용하세요.');return;}
+  const arr=(schedCache[currentSchedTask]||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const si=arr.findIndex(r=>r.id===srcId);if(si<0)return;
+  const srcKey=_seqParts(arr[si].seq).join('.');
+  let end=si+1;while(end<arr.length){const k=_seqParts(arr[end].seq).join('.');if(srcKey&&k.startsWith(srcKey+'.'))end++;else break;}
+  const block=arr.slice(si,end);const blockIds=new Set(block.map(r=>r.id));
+  if(blockIds.has(targetId)){toast('같은 블록 안으로는 이동할 수 없어요.');return;}
+  const rest=arr.filter(r=>!blockIds.has(r.id));
+  let ti=rest.findIndex(r=>r.id===targetId);if(ti<0)return;
+  const merged=rest.slice(0,ti+1).concat(block, rest.slice(ti+1));
+  const before=arr.map(r=>({id:r.id,sort_order:r.sort_order}));
+  const updates=[];merged.forEach((r,i)=>{const so=(i+1)*10;if(r.sort_order!==so){r.sort_order=so;updates.push({id:r.id,so});}});
+  if(!updates.length)return;
+  try{for(const u of updates){const {error}=await supa.from('ax_schedules').update({sort_order:u.so,updated_by:whoAmI(),updated_at:new Date().toISOString()}).eq('id',u.id);if(error)throw error;}
+    pushUndo({label:'행 이동',run:async()=>{for(const b of before){await supa.from('ax_schedules').update({sort_order:b.sort_order}).eq('id',b.id);}await reloadSched(currentSchedTask);}});
+    await reloadSched(currentSchedTask);toast(block.length>1?`중과제+소과제 ${block.length}행 이동 완료`:'행 이동 완료');
+  }catch(err){alert('행 이동 실패: '+err.message);await reloadSched(currentSchedTask);}
+}
 function _autoSeq(sel,level,all){
   const p=_seqParts(sel&&sel.seq);const major=p[0]||1;
   if(level===3){const minor=p[1]||1;const subs=all.map(r=>_seqParts(r.seq)).filter(q=>q[0]===major&&q[1]===minor&&q.length>=3).map(q=>q[2]);const nx=(subs.length?Math.max(...subs):0)+1;return major+'.'+minor+'.'+nx;}
