@@ -454,6 +454,10 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .sw-table tr.wbs-grp td.wbs-gneg{color:#c0492f}
 .wbs-gtog{cursor:pointer;display:inline-block;width:16px;text-align:center;color:#a07d10;user-select:none;margin-right:3px;font-size:.7rem}
 .wbs-gcnt{display:inline-block;color:#a07d10;font-weight:700;font-size:.68rem;margin-left:6px;background:rgba(160,125,16,.15);border-radius:9px;padding:0 7px}
+.wbs-gname{outline:none;border-radius:4px;padding:0 2px}
+.wbs-gname[contenteditable]:hover{background:rgba(160,125,16,.12)}
+.wbs-gname[contenteditable]:focus{background:#fff;box-shadow:0 0 0 2px var(--primary) inset}
+.sw-table td.sw-pctcell:not(:empty)::after{content:'%';color:var(--muted);font-weight:400;font-size:.82em;margin-left:1px}
 .sw-table tr.wbs-grp td.wbs-gbar.on{background:rgba(160,120,20,.4)!important}
 /* WBS 트리 들여쓰기 마커 */
 .sw-table td.sw-treecell[data-lvl="3"]::before{content:"└ ";color:var(--muted);font-weight:400}
@@ -1629,6 +1633,14 @@ function toggleDelayedOnly(){schedView.delayedOnly=!schedView.delayedOnly;render
 function gotoToday(){const wrap=document.querySelector('.sw-tablewrap');const el=wrap&&wrap.querySelector('.sw-today');if(el&&wrap){wrap.scrollLeft=Math.max(0,el.offsetLeft-wrap.clientWidth*0.5);}else toast('오늘이 표시 기간(6개월) 밖이에요.');}
 // ── 대과제 계층: 접기/펼치기 + 상위 자동집계 ──
 let collapsedPhases=new Set((()=>{try{return JSON.parse(localStorage.getItem('ax_wbs_collapsed')||'[]');}catch(_){return[];}})());
+async function renamePhase(enc,newText){
+  if(!authUser)return;
+  const oldPhase=decodeURIComponent(enc);const nn=(newText||'').replace(/\s+/g,' ').trim();
+  if(!nn||nn===oldPhase){renderSchedule(currentSchedTask);return;}
+  const all=(schedCache[currentSchedTask]||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const first=all.find(r=>(r.phase||'').trim()===oldPhase);
+  if(first){await updateSchedField(first.id,'phase',nn);}else{renderSchedule(currentSchedTask);}
+}
 function toggleGroup(ev,enc){if(ev){ev.stopPropagation();}const phase=decodeURIComponent(enc);const key=currentSchedTask+'|'+phase;if(collapsedPhases.has(key))collapsedPhases.delete(key);else collapsedPhases.add(key);try{localStorage.setItem('ax_wbs_collapsed',JSON.stringify([...collapsedPhases]));}catch(_){}renderSchedule(currentSchedTask);}
 let collapsedMids=new Set((()=>{try{return JSON.parse(localStorage.getItem('ax_wbs_midcollapsed')||'[]');}catch(_){return[];}})());
 function toggleMid(enc){const mk=decodeURIComponent(enc);const key=currentSchedTask+'|'+mk;if(collapsedMids.has(key))collapsedMids.delete(key);else collapsedMids.add(key);try{localStorage.setItem('ax_wbs_midcollapsed',JSON.stringify([...collapsedMids]));}catch(_){}renderSchedule(currentSchedTask);}
@@ -1858,9 +1870,9 @@ function renderSchedule(tid){
       if(cd.calc==='status')inner=`<span class="wbs-stat s-${statusKey(v)}">${v||'-'}</span>`;
       else if(cd.calc==='diff'){const neg=v&&v[0]==='-';const pos=v&&v[0]==='+';cstyle+=neg?'color:#c0492f;font-weight:800;':(pos?'color:#2e8b57;font-weight:700;':'');inner=escH(v);}
       else inner=escH(v);
-      return `<td ${spanAttr} class="${cls} sw-calccell" style="${cstyle}">${inner}</td>`;}
+      return `<td ${spanAttr} class="${cls} sw-calccell${cd.calc==='planned'?' sw-pctcell':''}" style="${cstyle}">${inner}</td>`;}
     if(cd.sel)return `<td ${spanAttr} class="${cls} sw-cellclick" ${canEdit?`onclick="prioMenu(event,'${r.id}')" title="클릭하여 선택"`:''} style="${cellStyleInner(r,cd.f)}${extra}">${r[cd.f]?escH(r[cd.f]):'<span class="sw-ph">-</span>'}</td>`;
-    if(cd.num)return `<td ${spanAttr} class="${cls}" ${ce} ${cAttrK(cd.f,'numBlurCE')} style="${cellStyleInner(r,cd.f)}${extra}">${r[cd.f]!=null?escH(r[cd.f]):''}</td>`;
+    if(cd.num)return `<td ${spanAttr} class="${cls}${cd.f==='progress'?' sw-pctcell':''}" ${ce} ${cAttrK(cd.f,'numBlurCE')} style="${cellStyleInner(r,cd.f)}${extra}">${r[cd.f]!=null?escH(r[cd.f]):''}</td>`;
     if(cd.date)return `<td ${spanAttr} class="${cls} sw-datece" ${ce} ${cAttrK(cd.f,'dateBlurCE')} style="${cellStyleInner(r,cd.f)}${extra}" title="숫자로 입력 — 예 0715·20260715">${canEdit?escH(r[cd.f]||''):fmtD(r[cd.f])}</td>`;
     const val=cd.custom?escH(r.extra&&r.extra[cd.cid]):escH(r[cd.f]);
     if(cd.f==='name'){const lv=seqLevel(r);const ind=`padding-left:${8+(lv-2)*20}px;`;return `<td ${spanAttr} class="${cls} sw-treecell" data-lvl="${lv}" ${ce} ${cAttr(r,cd.f)} style="${cellStyleInner(r,cd.f)}${extra}${ind}">${val}</td>`;}
@@ -1873,7 +1885,7 @@ function renderSchedule(tid){
     const sel=(!selectedCells.length&&!selectedCol&&selectedSchedId===r.id)?' sw-selrow':'';
     return `<tr class="${sel}">`+
       `<td class="sw-rownum sw-frozen" style="left:0" ${canEdit?`draggable="true" ondragstart="rowDragStart(event,'${r.id}')" ondragover="rowDragOver(event,'${r.id}')" ondrop="rowDrop(event,'${r.id}')" ondragend="rowDragEnd(event)" onclick="selectSchedRow('${r.id}')" oncontextmenu="rowMenu(event,'${r.id}')"`:''} title="클릭: 행 선택 · 드래그: 순서 이동 · 우클릭: 삽입/삭제/복사">${caret||''}${no}</td>`+
-      leftD.map(cd=>bodyTd(r,cd)).join('')+rightD.map(cd=>bodyTd(r,cd)).join('')+cells+`</tr>`;
+      leftD.map(cd=>cd.f==='phase'?`<td class="${cd.cls}${frozenLeft[cd.f]!=null?' sw-frozen':''}" style="${frozenLeft[cd.f]!=null?`left:${frozenLeft[cd.f]}px;`:''}"></td>`:bodyTd(r,cd)).join('')+rightD.map(cd=>bodyTd(r,cd)).join('')+cells+`</tr>`;
   };
   // 대과제 그룹 + 상위 자동집계 행 + 접기/펼치기
   // phase가 블록 첫 행에만 있으므로 원본 순서 기준 아래로 채워(carry-down) 대과제를 확정
@@ -1885,13 +1897,13 @@ function renderSchedule(tid){
   // 소과제(3단)를 가진 중과제 키 집합 → 중과제 접기 토글 표시용
   const _midKids=new Set();viewRows.forEach(r=>{if(seqLevel(r)===3)_midKids.add(_seqParts(r.seq).slice(0,2).join('.'));});
   const _gv=(g,gr,f)=>{
-    if(f==='phase'){const col=collapsedPhases.has(currentSchedTask+'|'+g.phase);return `<span class="wbs-gtog" onclick="toggleGroup(event,'${encodeURIComponent(g.phase)}')">${col?'▶':'▼'}</span>${escH(g.phase)} <span class="wbs-gcnt">${gr.count}</span>`;}
+    if(f==='phase'){const col=collapsedPhases.has(currentSchedTask+'|'+g.phase);const enc=encodeURIComponent(g.phase);return `<span class="wbs-gtog" onclick="toggleGroup(event,'${enc}')">${col?'▶':'▼'}</span><span class="wbs-gname"${canEdit?` contenteditable="true" spellcheck="false" onblur="renamePhase('${enc}',this.innerText)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" title="클릭하여 대과제명 수정"`:''}>${escH(g.phase)}</span> <span class="wbs-gcnt">${gr.count}</span>`;}
     if(f==='weight')return gr.weight||'';
     if(f==='calc_dur')return gr.dur?gr.dur+'일':'';
     if(f==='start_date')return gr.start?fmtD(gr.start):'';
     if(f==='end_date')return gr.end?fmtD(gr.end):'';
-    if(f==='calc_planned')return gr.planned;
-    if(f==='progress')return gr.prog;
+    if(f==='calc_planned')return gr.planned+'%';
+    if(f==='progress')return gr.prog+'%';
     if(f==='calc_diff'){const d=gr.diff;return (d>0?'+':'')+d;}
     return '';};
   let body='',_no=0;
