@@ -623,15 +623,23 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 
 /* 5. 선택된 셀(강조) 스타일: z-index를 0으로 낮춰 절대 헤더 위로 못 올라오게 함 */
 .sw-table td.sw-selcell {
-    z-index: 0 !important;
-    background: rgba(61, 90, 152, 0.06) !important;
-    box-shadow: inset 0 0 0 2px var(--primary) !important;
+    /* z-index 간섭을 피하기 위해 auto로 설정 */
+    z-index: auto !important; 
+    
+    /* outline은 레이어(z-index)의 영향을 받지 않고 최상단에 그려짐 */
+    outline: 2px solid var(--primary) !important;
+    outline-offset: -2px !important;
+    
+    /* 배경색이 안 보일 경우를 대비해 약간의 불투명도 부여 */
+    background: rgba(61, 90, 152, 0.1) !important; 
 }
 
 /* 6. 고정열 내 선택된 셀 */
 .sw-table td.sw-frozen.sw-selcell {
     z-index: 501 !important;
     background: #eef3fb !important;
+    outline: 2px solid var(--primary) !important;
+    outline-offset: -2px !important;
 }
 .sw-table tr.sw-selrow td.sw-frozen { background: #fbf2e7 !important; }
 .sw-table.dragging,.sw-table.dragging *{user-select:none!important;-webkit-user-select:none!important;cursor:cell!important}
