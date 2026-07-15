@@ -2161,7 +2161,28 @@ function fieldLabel(f){const lbls={phase:'대과제',seq:'세부과제',name:'�
 function updateSelLabel(){const el=document.getElementById('swSel');if(!el)return;let txt='선택: 없음',has=false;const rows=schedCache[currentSchedTask]||[];if(selectedCells.length>1){has=true;txt='선택: '+selectedCells.length+'개 셀';}else if(selectedCells.length===1){const sc=selectedCells[0];const i=rows.findIndex(r=>r.id===sc.rowId);if(i>=0){has=true;txt='선택 셀: '+(i+1)+'행 · '+fieldLabel(sc.field);}}else if(selectedCol){has=true;txt='선택: 열 · '+fieldLabel(selectedCol);}else if(selectedSchedId){const i=rows.findIndex(r=>r.id===selectedSchedId);if(i>=0){has=true;const r=rows[i];txt='선택: '+(i+1)+'행 전체'+(r&&r.name?' · '+r.name:'');}}el.textContent=txt;el.classList.toggle('has',has);}
 function selectSchedRow(id){selectedSchedId=(selectedSchedId===id?null:id);selectedCol=null;setSelCells([]);renderSchedule(currentSchedTask);}
 function clearColHi(){document.querySelectorAll('.sw-table .sw-selcol').forEach(el=>el.classList.remove('sw-selcol'));}
-function cellFocus(id,field){if(justDragged)return;selectedSchedId=id;selectedCol=null;clearColHi();setSelCells(field?[{rowId:id,field:field}]:[]);editingCell=true;myCell=field?{rowId:id,field:field}:null;updatePresence();updateSelLabel();markSelectedCells();}
+function cellFocus(id, field) {
+    if (justDragged) return;
+    
+    selectedSchedId = id;
+    selectedCol = null;
+    clearColHi(); // 기존 선택 초기화
+    
+    // 선택된 셀 정보 설정
+    setSelCells(field ? [{rowId: id, field: field}] : []);
+    editingCell = true;
+    myCell = field ? {rowId: id, field: field} : null;
+    
+    updatePresence();
+    updateSelLabel();
+    
+    // 🌟 핵심: 클래스 강제 적용 (사진에서 클래스가 안 붙던 문제 해결)
+    document.querySelectorAll('.sw-table td.sw-selcell').forEach(td => td.classList.remove('sw-selcell'));
+    const targetTd = document.querySelector(`.sw-table td[data-id="${id}"][data-field="${field}"]`);
+    if (targetTd) {
+        targetTd.classList.add('sw-selcell');
+    }
+}
 function dateFocus(id,field){if(justDragged)return;selectedSchedId=id;selectedCol=null;clearColHi();setSelCells([{rowId:id,field:field}]);editingCell=true;myCell={rowId:id,field:field};updatePresence();updateSelLabel();markSelectedCells();}
 function cellKey(e,el){
   if(e.isComposing||e.keyCode===229)return;   // 한글 조합 중엔 이동 금지
