@@ -1890,7 +1890,7 @@ function renderSchedule(tid){
   const canEdit=!!authUser;const cols=(schedCfg.cols||[]);
   const _pw=document.querySelector('.sw-tablewrap');const _psl=_pw?_pw.scrollLeft:0,_pst=_pw?_pw.scrollTop:0;
   const gcol=t.goal===1?'#3d5a98':t.goal===2?'#0e8c86':'#c1791d';
-  const gm=gridMonths();wkCount=gm.reduce((a,b)=>a+b.wks,0);
+  const gm=gridMonths();const wkCount=gm.reduce((a,b)=>a+b.wks,0); 
   const _todayISO=new Date().toISOString().slice(0,10);const todayIdx=weekIndexOf(gm,_todayISO);
   let monthHead=gm.map(x=>`<th colspan="${x.wks}" class="sw-mh">${String(x.y).slice(2)}.${pad2(x.m)}</th>`).join('');
   let weekHead='';let _wi=0;gm.forEach(x=>{for(let w=1;w<=x.wks;w++){weekHead+=`<th class="sw-wh${_wi===todayIdx?' sw-today':''}">${w}</th>`;_wi++;}});
