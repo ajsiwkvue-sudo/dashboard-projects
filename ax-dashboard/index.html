@@ -633,19 +633,35 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 }
 
 /* 🌟 고정열 셀을 클릭했을 때 (헤더 위로 올라오는 현상 절대 차단) */
-.sw-table td.sw-frozen.sw-selcell,
-.sw-table td.sw-frozen[contenteditable]:focus {
-    background: #eef3fb !important; 
-    box-shadow: inset 0 0 0 2px var(--primary) !important;
-    z-index: 35 !important; 
-} /* 콤마(,) 삭제 후 중괄호로 닫음 */
+/* 1. 헤더 레이어 강제 고정 */
+.sw-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 100 !important; /* 🌟 헤더 전체를 최상위로 */
+}
 
-/* 🌟 헤더(thead) 고정 */
+/* 2. 헤더 셀 스타일 */
 .sw-table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 999 !important;
-  background: var(--bg) !important;
+    background: var(--bg) !important;
+    font-weight: 800;
+    position: relative; /* sticky와 함께 사용 */
+    z-index: 100 !important;
+}
+
+/* 3. 선택된 셀(강조) 스타일 */
+.sw-table td.sw-selcell {
+    /* z-index를 낮게 유지하여 헤더보다 뒤에 위치하게 함 */
+    z-index: 1 !important; 
+    /* 테두리를 box-shadow로 그려서, 다른 셀을 덮지 않도록 함 */
+    box-shadow: inset 0 0 0 2px var(--primary) !important;
+    background: rgba(61, 90, 152, 0.06) !important;
+}
+
+/* 4. 고정열 셀 클릭 시 */
+.sw-table td.sw-frozen.sw-selcell {
+    z-index: 5 !important; /* 고정열 안에서는 높게 */
+    background: #eef3fb !important;
+    box-shadow: inset 0 0 0 2px var(--primary) !important;
 }
 
 .sw-table tr.sw-selrow td.sw-frozen { background: #fbf2e7 !important; }
