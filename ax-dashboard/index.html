@@ -2480,20 +2480,23 @@ function pickColor(kind,c){closePalette();if(kind==='text')fmtTextColor(c);else 
 function fmtClearColor(kind){closePalette();applyFmtToCells(()=>kind==='text'?{tc:null}:{fc:null},kind==='text'?'글자색':'채우기');}
 async function fmtAlign(a){if(selectedCol){await setColAlign(selectedCol,a);return;}applyFmtToCells(()=>({al:a}),'정렬');}
 function selectSchedCol(field) {
-    // 1. 선택 상태 토글
+    // 1. 상태값 토글
     selectedCol = (selectedCol === field) ? null : field;
-    selectedSchedId = null; // 행 선택 해제
-    setSelCells([]); // 개별 셀 선택 해제
+    selectedSchedId = null; 
+    setSelCells([]); 
     
-    // 2. 뷰 렌더링
+    // 2. 렌더링 호출
     renderSchedule(currentSchedTask);
-    
-    // 3. 🌟 핵심: 해당 열 전체에 클래스 붙이기
-    if (selectedCol) {
-        document.querySelectorAll(`.sw-table td[data-field="${field}"]`).forEach(td => {
-            td.classList.add('sw-selcol');
-        });
-    }
+}
+// 🌟 [최종 수정] 렌더링 직후 DOM이 완성된 상태에서 선택된 열 클래스 적용
+  if (selectedCol) {
+    document.querySelectorAll(`.sw-table td[data-field="${selectedCol}"]`).forEach(td => {
+    td.classList.add('sw-selcol');
+    });
+  }
+
+  // 기존 focus 처리 코드
+  if(_pendingFocus){ ... }
 }
 function renameColPrompt(id){if(!authUser)return;const col=(schedCfg.cols||[]).find(c=>c.id===id);if(!col)return;const label=(prompt('열 이름을 입력하세요.',col.label)||'').trim();if(!label||label===col.label)return;renameColumn(id,label).then(()=>renderSchedule(currentSchedTask));}
 function deleteSelCol(){if(!selectedCol){toast('삭제할 열을 먼저 선택하세요. (머리글 클릭)');return;}const f=selectedCol;selectedCol=null;removeColumn(f);}
