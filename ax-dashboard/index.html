@@ -549,7 +549,7 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .sw-dinput{border:1px solid var(--border);border-radius:5px;font-family:var(--font);font-size:.7rem;padding:2px 3px;background:transparent;color:inherit;width:100%;box-sizing:border-box;text-align:inherit}
 .sw-dt{position:relative}
 .sw-tablewrap{overflow:auto;padding:0;flex:1 1 auto;min-height:0}
-.sw-table td.peer-edit {position: relative; z-index: 25 !important; overflow: visible !important; /* 뱃지가 잘리지 않게 강제 허용 */box-shadow: inset 0 0 0 2px var(--peer-color, var(--primary)) !important;}
+.sw-table td.peer-edit {position: relative;z-index: 20 !important;box-shadow: inset 0 0 0 2px var(--peer-color, var(--primary)) !important;}}
 .peer-badge {position: absolute;top: -12px;right: -6px;min-width: 20px;height: 20px;padding: 0 5px;border-radius: 10px;color: #fff;font-size: .65rem;font-weight: 800;display: flex;align-items: center;justify-content: center;box-shadow: 0 2px 6px rgba(0,0,0,.35);z-index: 30;pointer-events: none;white-space: nowrap;}
 .sw-ribbon .rb-sel{font-size:.76rem;font-weight:800;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:5px 10px;white-space:nowrap;max-width:230px;overflow:hidden;text-overflow:ellipsis}
 .sw-ribbon .rb-sel.has{color:var(--primary);border-color:var(--primary);background:rgba(61,90,152,.08)}
@@ -1597,24 +1597,34 @@ function renderPresence(){
 }
 // 다른 사용자가 편집 중인 셀을 색 테두리+이니셜 배지로 표시
 function paintPresenceCells(users){
+  // 기존 동시접속 마커 초기화
   document.querySelectorAll('.sw-table td.peer-edit').forEach(td=>{
     td.classList.remove('peer-edit');
-    td.style.removeProperty('--peer-color'); /* 기존 outline 방식 제거 */
-    const b=td.querySelector('.peer-badge');if(b)b.remove();
+    td.style.removeProperty('--peer-color');
+    // 원래 있던 title(툴팁) 복구
+    if(td.dataset.origTitle !== undefined) {
+      td.title = td.dataset.origTitle;
+      delete td.dataset.origTitle;
+    }
   });
-  if(!currentSchedTask)return;
+
+  if(!currentSchedTask) return;
+
   (users||[]).forEach(u=>{
-    if(u.id===CLIENT_ID||u.task!==currentSchedTask||!u.cell)return;
-    const td=document.querySelector(`.sw-table td[data-id="${u.cell.rowId}"][data-field="${u.cell.field}"]`);
-    if(!td)return;
+    if(u.id === CLIENT_ID || u.task !== currentSchedTask || !u.cell) return;
+    
+    const td = document.querySelector(`.sw-table td[data-id="${u.cell.rowId}"][data-field="${u.cell.field}"]`);
+    if(!td) return;
+
+    // 테두리 색상 적용
     td.classList.add('peer-edit');
     td.style.setProperty('--peer-color', u.color);
-    const b=document.createElement('span');
-    b.className='peer-badge';
-    b.textContent=u.name; // 이니셜 대신 전체 이름 표시로 더 명확하게 식별
-    b.style.background=u.color;
-    b.title=u.name+' 편집 중';
-    td.appendChild(b);
+    
+    // 원래 title 백업 후, 현재 편집 중인 사용자 이름으로 툴팁 변경 (마우스 오버 시 표시)
+    if(td.dataset.origTitle === undefined) {
+      td.dataset.origTitle = td.title || '';
+    }
+    td.title = `${u.name} 님이 수정 중입니다`;
   });
 }
 
