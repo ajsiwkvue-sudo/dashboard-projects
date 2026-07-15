@@ -587,22 +587,56 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .sw-table .col-rsz{position:absolute;top:0;right:0;width:8px;height:100%;cursor:col-resize;z-index:8}
 .sw-table .col-rsz:hover{background:var(--primary);opacity:.5}
 .sw-name,.sw-deliv,.sw-note,.sw-custom{white-space:normal;word-break:break-word}
-.sw-table thead th{background:var(--bg);font-weight:800;text-align:center;position:sticky;z-index:24}
-.sw-table thead tr:first-child th{top:0}
-.sw-table .sw-mh{font-size:.74rem;color:var(--primary)}
-.sw-table .sw-wh{font-size:.68rem;color:var(--muted);padding:2px;min-width:20px}
-.sw-phase{font-weight:700;font-size:.76rem;background:var(--bg);white-space:nowrap;text-overflow:ellipsis}
-.sw-phase-cont{background:var(--card)}
-.sw-custom{min-width:110px}
-.sw-table .colhdr{cursor:pointer}
-.sw-table .colhdr:hover{color:var(--primary)}
-.sw-table th.sw-selcol{background:rgba(61,90,152,.16)!important;box-shadow:inset 0 0 0 2px var(--primary)}
-.sw-table td.sw-selcol{box-shadow:inset 0 0 0 2px rgba(61,90,152,.45)}
-.sw-table td.sw-selcell{box-shadow:inset 0 0 0 2px var(--primary)!important;background:rgba(61,90,152,.06)}
-/* 고정열: 포커스/선택 시 배경 불투명(스크롤 셀 비침 방지) */
-.sw-table td.sw-frozen[contenteditable]:focus{background:#eef3fb}
-.sw-table td.sw-frozen.sw-selcell{background:#eef3fb!important}
-.sw-table tr.sw-selrow td.sw-frozen{background:#fbf2e7}
+/* --- 🌟 헤더 최상단 고정 및 셀 비침 완벽 방지 --- */
+.sw-table thead th {
+    background: var(--bg) !important;
+    font-weight: 800;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 100 !important; /* 🌟 헤더를 클릭된 셀보다 무조건 위로 강제 고정 */
+    opacity: 1 !important;
+}
+.sw-table thead tr:first-child th { top: 0; }
+.sw-table .sw-mh { font-size: .74rem; color: var(--primary); }
+.sw-table .sw-wh { font-size: .68rem; color: var(--muted); padding: 2px; min-width: 20px; }
+.sw-phase { font-weight: 700; font-size: .76rem; background: var(--bg); white-space: nowrap; text-overflow: ellipsis; }
+.sw-phase-cont { background: var(--card); }
+.sw-custom { min-width: 110px; }
+.sw-table .colhdr { cursor: pointer; }
+.sw-table .colhdr:hover { color: var(--primary); }
+
+/* 🌟 왼쪽 고정열(Frozen) 레이아웃 설정 */
+.sw-table .sw-frozen {
+    position: sticky;
+    background: var(--card) !important; /* 고정열 배경을 완전히 불투명하게 */
+    z-index: 30 !important; /* 헤더보단 아래, 일반 셀보단 위에 배치 */
+}
+.sw-table thead .sw-frozen {
+    z-index: 110 !important; /* 좌측 상단 모서리 헤더는 표 전체에서 가장 위에 배치 */
+    background: var(--bg) !important;
+}
+
+.sw-table th.sw-selcol { background: rgba(61,90,152,.16) !important; box-shadow: inset 0 0 0 2px var(--primary); }
+.sw-table td.sw-selcol { box-shadow: inset 0 0 0 2px rgba(61,90,152,.45); }
+
+/* 🌟 일반 셀 클릭 시 강조 */
+.sw-table td.sw-selcell {
+    box-shadow: inset 0 0 0 2px var(--primary) !important;
+    background: rgba(61, 90, 152, 0.06); 
+    z-index: 10 !important; /* 포커스 되더라도 헤더(100)보다 아래에 위치하도록 억제 */
+}
+
+/* 🌟 고정열 셀을 클릭했을 때 (투명해지며 비치는 현상 완벽 차단) */
+.sw-table td.sw-frozen.sw-selcell,
+.sw-table td.sw-frozen[contenteditable]:focus {
+    background: #eef3fb !important; /* 반투명이 아닌 완전 불투명한 색상으로 강제 덮어쓰기 */
+    box-shadow: inset 0 0 0 2px var(--primary) !important;
+    z-index: 35 !important; /* 고정열 기본(30)보다는 높고, 헤더(100)보다는 낮게 */
+}
+
+.sw-table tr.sw-selrow td.sw-frozen { background: #fbf2e7 !important; }
+/* ---------------------------------------------------- */
 .sw-table.dragging,.sw-table.dragging *{user-select:none!important;-webkit-user-select:none!important;cursor:cell!important}
 .sw-ribbon .rb-grp{display:inline-flex;align-items:center;gap:3px}
 .sw-ribbon .rb-ib{display:inline-flex;align-items:center;justify-content:center;gap:2px;min-width:32px;height:32px;padding:0 7px;background:var(--card);border:1px solid var(--border);border-radius:7px;font-family:var(--font);font-size:.9rem;font-weight:600;color:var(--text);cursor:pointer;position:relative;line-height:1}
