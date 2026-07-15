@@ -549,8 +549,8 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .sw-dinput{border:1px solid var(--border);border-radius:5px;font-family:var(--font);font-size:.7rem;padding:2px 3px;background:transparent;color:inherit;width:100%;box-sizing:border-box;text-align:inherit}
 .sw-dt{position:relative}
 .sw-tablewrap{overflow:auto;padding:0;flex:1 1 auto;min-height:0}
-.sw-table td.peer-edit{position:relative}
-.peer-badge{position:absolute;top:-8px;right:-4px;min-width:16px;height:16px;padding:0 3px;border-radius:8px;color:#fff;font-size:.62rem;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.35);z-index:3;pointer-events:none}
+.sw-table td.peer-edit {position: relative; z-index: 25 !important; overflow: visible !important; /* 뱃지가 잘리지 않게 강제 허용 */box-shadow: inset 0 0 0 2px var(--peer-color, var(--primary)) !important;}
+.peer-badge {position: absolute;top: -12px;right: -6px;min-width: 20px;height: 20px;padding: 0 5px;border-radius: 10px;color: #fff;font-size: .65rem;font-weight: 800;display: flex;align-items: center;justify-content: center;box-shadow: 0 2px 6px rgba(0,0,0,.35);z-index: 30;pointer-events: none;white-space: nowrap;}
 .sw-ribbon .rb-sel{font-size:.76rem;font-weight:800;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:5px 10px;white-space:nowrap;max-width:230px;overflow:hidden;text-overflow:ellipsis}
 .sw-ribbon .rb-sel.has{color:var(--primary);border-color:var(--primary);background:rgba(61,90,152,.08)}
 .sw-table{border-collapse:collapse;font-size:.78rem;min-width:1200px;table-layout:fixed}
@@ -1597,14 +1597,24 @@ function renderPresence(){
 }
 // 다른 사용자가 편집 중인 셀을 색 테두리+이니셜 배지로 표시
 function paintPresenceCells(users){
-  document.querySelectorAll('.sw-table td.peer-edit').forEach(td=>{td.classList.remove('peer-edit');td.style.removeProperty('outline');const b=td.querySelector('.peer-badge');if(b)b.remove();});
+  document.querySelectorAll('.sw-table td.peer-edit').forEach(td=>{
+    td.classList.remove('peer-edit');
+    td.style.removeProperty('--peer-color'); /* 기존 outline 방식 제거 */
+    const b=td.querySelector('.peer-badge');if(b)b.remove();
+  });
   if(!currentSchedTask)return;
   (users||[]).forEach(u=>{
     if(u.id===CLIENT_ID||u.task!==currentSchedTask||!u.cell)return;
     const td=document.querySelector(`.sw-table td[data-id="${u.cell.rowId}"][data-field="${u.cell.field}"]`);
     if(!td)return;
-    td.classList.add('peer-edit');td.style.outline='2px solid '+u.color;td.style.outlineOffset='-2px';
-    const b=document.createElement('span');b.className='peer-badge';b.textContent=u.initial;b.style.background=u.color;b.title=u.name+' 편집 중';td.appendChild(b);
+    td.classList.add('peer-edit');
+    td.style.setProperty('--peer-color', u.color);
+    const b=document.createElement('span');
+    b.className='peer-badge';
+    b.textContent=u.name; // 이니셜 대신 전체 이름 표시로 더 명확하게 식별
+    b.style.background=u.color;
+    b.title=u.name+' 편집 중';
+    td.appendChild(b);
   });
 }
 
@@ -1771,12 +1781,33 @@ function cellStyle(r,f){return `style="${cellStyleInner(r,f)}"`;}
 function pad2(n){return String(n).padStart(2,'0');}
 function mKey(y,m){return y*12+(m-1);}
 function gridMonths(){
-  // 좌우 스크롤 없이 6개월 고정: 이전 달 + 현재 달 + 이후 4개월
   const now=new Date();const startK=mKey(now.getFullYear(),now.getMonth()+1)-1;
-  const out=[];for(let i=0;i<6;i++){const k=startK+i;out.push({y:Math.floor(k/12),m:(k%12)+1});}
+  const out=[];
+  let totalWks=0;
+  for(let i=0;i<6;i++){
+    const k=startK+i;
+    const y=Math.floor(k/12), m=(k%12)+1;
+    const days=new Date(y,m,0).getDate();
+    const wks=Math.ceil(days/7); // ⭐ 각 달의 정확한 주차 계산 (4주 or 5주)
+    out.push({y,m,wks,startIdx:totalWks});
+    totalWks+=wks;
+  }
   return out;
 }
-function weekIndexOf(gm,ds){if(!ds)return null;const d=new Date(ds+'T00:00:00');if(isNaN(d))return null;const k=mKey(d.getFullYear(),d.getMonth()+1);const first=mKey(gm[0].y,gm[0].m),last=mKey(gm[gm.length-1].y,gm[gm.length-1].m);if(k<first)return 0;if(k>last)return gm.length*5-1;const mi=gm.findIndex(x=>mKey(x.y,x.m)===k);const w=Math.min(5,Math.max(1,Math.ceil(d.getDate()/7)))-1;return mi*5+w;}
+
+function weekIndexOf(gm,ds){
+  if(!ds)return null;
+  const d=new Date(ds+'T00:00:00');
+  if(isNaN(d))return null;
+  const k=mKey(d.getFullYear(),d.getMonth()+1);
+  const first=mKey(gm[0].y,gm[0].m),last=mKey(gm[gm.length-1].y,gm[gm.length-1].m);
+  if(k<first)return 0;
+  if(k>last){const l=gm[gm.length-1];return l.startIdx+l.wks-1;}
+  const mObj=gm.find(x=>mKey(x.y,x.m)===k);
+  if(!mObj)return null;
+  const w=Math.min(mObj.wks,Math.max(1,Math.ceil(d.getDate()/7)))-1;
+  return mObj.startIdx+w;
+}
 /* ---- 열 모델 (숨김/커스텀 포함) ---- */
 function colHidden(f){return (schedCfg.hidden||[]).indexOf(f)>=0;}
 // 우측 영역(산출물·비고·커스텀 열)의 정규화된 필드 순서
@@ -1859,10 +1890,10 @@ function renderSchedule(tid){
   const canEdit=!!authUser;const cols=(schedCfg.cols||[]);
   const _pw=document.querySelector('.sw-tablewrap');const _psl=_pw?_pw.scrollLeft:0,_pst=_pw?_pw.scrollTop:0;
   const gcol=t.goal===1?'#3d5a98':t.goal===2?'#0e8c86':'#c1791d';
-  const gm=gridMonths();const wkCount=gm.length*5;
+  const gm=gridMonths();wkCount=gm.reduce((a,b)=>a+b.wks,0);
   const _todayISO=new Date().toISOString().slice(0,10);const todayIdx=weekIndexOf(gm,_todayISO);
-  let monthHead=gm.map(x=>`<th colspan="5" class="sw-mh">${String(x.y).slice(2)}.${pad2(x.m)}</th>`).join('');
-  let weekHead='';let _wi=0;gm.forEach(()=>{for(let w=1;w<=5;w++){weekHead+=`<th class="sw-wh${_wi===todayIdx?' sw-today':''}">${w}</th>`;_wi++;}});
+  let monthHead=gm.map(x=>`<th colspan="${x.wks}" class="sw-mh">${String(x.y).slice(2)}.${pad2(x.m)}</th>`).join('');
+  let weekHead='';let _wi=0;gm.forEach(x=>{for(let w=1;w<=x.wks;w++){weekHead+=`<th class="sw-wh${_wi===todayIdx?' sw-today':''}">${w}</th>`;_wi++;}});
   const ce=canEdit?'contenteditable="true" spellcheck="false" onpaste="pastePlain(event)"':'';
   const cmH=f=>canEdit?`oncontextmenu="colMenu(event,'${f}')" onclick="selectSchedCol('${f}')"`:'';
   const csel=f=>selectedCol===f?' sw-selcol':'';
@@ -2110,7 +2141,7 @@ function updateRowComputedCells(r, tr){
   });
   const gm = gridMonths();
   const sc = weekIndexOf(gm, r.start_date), ec = weekIndexOf(gm, r.end_date);
-  const wkCount = gm.length * 5;
+  const wkCount = gm.reduce((a,b)=>a+b.wks,0);;
   const startWkCellIdx = 1 + allD.length;
   for(let i=0;i<wkCount;i++){
     const td = tr.children[startWkCellIdx + i];
@@ -2135,7 +2166,7 @@ function updateOptimisticRollup(tid){
   const rightD=defs.right.filter(c=>!colHidden(c.f));
   const allD = leftD.concat(rightD);
   const gm = gridMonths();
-  const wkCount = gm.length * 5;
+  const wkCount = gm.reduce((a,b)=>a+b.wks,0);
   const startWkCellIdx = 1 + allD.length;
   _grp.forEach((g, idx) => {
     const gr = phaseRollup(g.rows);
