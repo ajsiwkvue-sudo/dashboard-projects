@@ -560,7 +560,8 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .sw-table th,.sw-table td{border:1px solid var(--border);padding:5px 7px;vertical-align:middle;overflow:hidden}
 .sw-table th{position:relative}
 .sw-table td.sw-merged{vertical-align:middle}
-.sw-table .sw-frozen{position:sticky;background:var(--card);z-index:20}
+.sw-table .sw-frozen {position: sticky;background: var(--card) !important; /* 투명도 제거 */z-index: 30;}
+.sw-table thead tr th {background: var(--bg) !important; /* 헤더 배경 불투명 처리 */z-index: 40 !important;
 .sw-table thead .sw-frozen{z-index:30}
 /* 고정열: collapse+sticky로 배경이 테두리를 덮어 격자선이 사라지는 문제 → box-shadow로 재구성 */
 .sw-table td.sw-frozen{box-shadow:inset -1px 0 0 var(--border),inset 0 -1px 0 var(--border)}
@@ -1794,16 +1795,18 @@ function cellStyle(r,f){return `style="${cellStyleInner(r,f)}"`;}
 function pad2(n){return String(n).padStart(2,'0');}
 function mKey(y,m){return y*12+(m-1);}
 function gridMonths(){
-  const now=new Date();const startK=mKey(now.getFullYear(),now.getMonth()+1)-1;
-  const out=[];
-  let totalWks=0;
-  for(let i=0;i<6;i++){
-    const k=startK+i;
-    const y=Math.floor(k/12), m=(k%12)+1;
-    const days=new Date(y,m,0).getDate();
-    const wks=Math.ceil(days/7); // ⭐ 각 달의 정확한 주차 계산 (4주 or 5주)
-    out.push({y,m,wks,startIdx:totalWks});
-    totalWks+=wks;
+  const now = new Date(); // 시스템 날짜 기준
+  // 현재 달을 포함하여 전월 1개월 + 향후 4개월 = 총 6개월
+  const startK = mKey(now.getFullYear(), now.getMonth() + 1) - 1; 
+  const out = [];
+  let totalWks = 0;
+  for(let i=0; i<6; i++){
+    const k = startK + i;
+    const y = Math.floor(k/12), m = (k%12)+1;
+    const days = new Date(y, m, 0).getDate();
+    const wks = Math.ceil(days/7);
+    out.push({y, m, wks, startIdx: totalWks});
+    totalWks += wks;
   }
   return out;
 }
