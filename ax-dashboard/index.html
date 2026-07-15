@@ -1249,7 +1249,22 @@ function openKpiList(key){
 document.getElementById('overlay').onclick=e=>{if(e.target.id==='overlay')closeModal();};
 
 /* ---------- 진척 분석 ---------- */
-function teamStats(){const st={};Object.keys(teams).forEach(t=>st[t]={tasks:0,miles:0,done:0,prog:0,plan:0,over:0});TASKS.forEach(t=>{const s=st[t.team];s.tasks++;t.miles.forEach((m,i)=>{s.miles++;s[statusOf(t.id,i,m)]++;});});return st;}
+function teamStats(){
+  const st={};
+  Object.keys(teams).forEach(t=>st[t]={tasks:0, wbsCnt:0, done:0, prog:0, plan:0, over:0, totalPct:0});
+  TASKS.forEach(t=>{
+    const s=st[t.team];
+    s.tasks++;
+    s.totalPct += taskProgress(t); // WBS 기반 과제 진척률 합산
+    const c=taskStatusSummary(t);  // WBS 기준 상태 집계
+    s.wbsCnt += (c.done + c.prog + c.plan + c.over);
+    s.done += c.done;
+    s.prog += c.prog;
+    s.plan += c.plan;
+    s.over += c.over;
+  });
+  return st;
+}
 function shortTeam(n){return n.replace('·시스템 연계','연계').replace('·실증·교육 지원','교육').replace('·거버넌스','거버넌스');}
 const teamRole={
   "전략·거버넌스팀":"AX 전략 수립·이행관리, AI 표준·윤리·안전 체계, 성과지표(KPI) 관리, 국가정책사업 유치, 테스트베드 운영, 현장 과제 발굴, 성과 보상체계 — 거버넌스·전략 총괄",
@@ -1280,13 +1295,17 @@ function renderDeptTabs(){
 }
 function selectDept(o){deptSel=o;renderDeptTabs();renderDeptDetail(teamStats());}
 function deptCardHtml(n,st){
-  const tt=TASKS.filter(t=>t.team===n);const s=st[n];const pct=s.miles?Math.round(s.done/s.miles*100):0;
+  const tt=TASKS.filter(t=>t.team===n);
+  const s=st[n];
+  // 부서별 진척률 = 담당 과제들의 WBS 평균 진척률
+  const pct=s.tasks ? Math.round(s.totalPct/s.tasks) : 0;
+  
   return `<div class="dept-card" style="border-top-color:${teams[n]}">
       <div class="dept-head"><div class="dept-name" style="color:${teams[n]}">${n}</div></div>
       <div class="dept-role">${teamRole[n]||''}</div>
       <div class="dept-metrics">
         <div class="dm" onclick="openDeptList('${n}','tasks')"><b>${s.tasks}</b>담당 과제</div>
-        <div class="dm" onclick="openDeptList('${n}','all')"><b>${s.miles}</b>세부 마일스톤</div>
+        <div class="dm" onclick="openDeptList('${n}','all')"><b>${s.wbsCnt}</b>세부계획(WBS)</div>
         <div class="dm" onclick="openDeptList('${n}','done')"><b style="color:var(--success)">${s.done}</b>완료</div>
         <div class="dm" onclick="openDeptList('${n}','prog')"><b style="color:var(--warning)">${s.prog}</b>진행중</div>
         <div class="dm" onclick="openDeptList('${n}','over')"><b style="color:var(--danger)">${s.over}</b>지연</div>
@@ -1302,11 +1321,32 @@ function renderDeptDetail(st){
 }
 function openDeptList(team,key){
   modalTask=null;
-  const tt=TASKS.filter(t=>t.team===team);let title=team+' · ',body='';
-  if(key==='tasks'){title+='담당 과제 '+tt.length+'개';body=tt.map(t=>`<div class="kl-item click" onclick="openTask('${t.id}')"><span class="kl-main">${t.id} ${t.title}</span><span class="kl-pct">${taskProgress(t)}%</span></div>`).join('');}
-  else{const lab={all:'세부 마일스톤 전체',done:'완료 마일스톤',prog:'진행중 마일스톤',over:'지연 마일스톤'};const arr=[];tt.forEach(t=>t.miles.forEach((m,i)=>{const s=statusOf(t.id,i,m);if(key==='all'||s===key)arr.push(Object.assign({},m,{st:s,tid:t.id}));}));arr.sort((a,b)=>((a.y||9999)*12+(a.m||1))-((b.y||9999)*12+(b.m||1)));title+=lab[key]+' '+arr.length+'개';body=arr.map(m=>`<div class="kl-item click" onclick="openTask('${m.tid}')"><span class="kl-main"><span class="dot ${m.st}"></span>${m.label}</span><span class="kl-sub">${m.dstr||'-'} · ${m.tid}</span><span class="ms ${m.st}">${STAT_LABEL[m.st]}</span></div>`).join('')||'<div class="hint">항목이 없습니다.</div>';}
-  document.getElementById('modal').innerHTML=`<div class="mh"><div class="mt">${title}</div><button class="close" onclick="closeModal()">×</button></div><div class="hint" style="margin:2px 0 10px">항목을 클릭하면 해당 전략과제 상세로 이동합니다.</div><div class="kl-list">${body}</div>`;
-  document.getElementById('overlay').classList.add('open');refreshBodyLock();
+  const tt=TASKS.filter(t=>t.team===team);
+  let title=team+' · ',body='';
+  
+  if(key==='tasks'){
+    title+='담당 과제 '+tt.length+'개';
+    body=tt.map(t=>`<div class="kl-item click" onclick="openTask('${t.id}')"><span class="kl-main">${t.id} ${t.title}</span><span class="kl-pct">${taskProgress(t)}%</span></div>`).join('');
+  } else {
+    const lab={all:'세부계획(WBS) 전체',done:'완료 세부계획',prog:'진행중 세부계획',over:'지연 세부계획'};
+    const arr=[];
+    tt.forEach(t=>{
+      const rows=schedCache[t.id]||[];
+      _wbsLeaves(rows).forEach(r=>{
+        const s=wbsStatus(r);
+        const stMap=s==='완료'?'done':s==='진행중'?'prog':s==='지연'?'over':'plan';
+        if(key==='all'||stMap===key) arr.push({r,st:stMap,stLabel:s,tid:t.id});
+      });
+    });
+    // 시작일자 기준 정렬
+    arr.sort((a,b)=>((a.r.start_date||'9999')<(b.r.start_date||'9999')?-1:1));
+    title+=lab[key]+' '+arr.length+'개';
+    body=arr.map(m=>`<div class="kl-item click" onclick="openSchedule('${m.tid}')"><span class="kl-main"><span class="dot ${m.st}"></span>${escH(m.r.seq)} ${escH(m.r.name)}</span><span class="kl-sub">${m.r.start_date||'-'} · ${m.tid}</span><span class="ms ${m.st}">${m.stLabel}</span></div>`).join('')||'<div class="hint">항목이 없습니다.</div>';
+  }
+  
+  document.getElementById('modal').innerHTML=`<div class="mh"><div class="mt">${title}</div><button class="close" onclick="closeModal()">×</button></div><div class="hint" style="margin:2px 0 10px">항목을 클릭하면 해당 전략과제 상세(또는 세부계획)로 이동합니다.</div><div class="kl-list">${body}</div>`;
+  document.getElementById('overlay').classList.add('open');
+  refreshBodyLock();
 }
 
 /* ---------- 로드맵 ---------- */
