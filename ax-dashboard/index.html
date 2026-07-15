@@ -627,9 +627,9 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 
 /* 🌟 일반 셀 클릭 시 강조 */
 .sw-table td.sw-selcell {
-    box-shadow: inset 0 0 0 2px var(--primary) !important;
-    background: rgba(61, 90, 152, 0.06); 
-    z-index: 10 !important; 
+  box-shadow: inset 0 0 0 2px var(--primary) !important;
+  background: rgba(61, 90, 152, 0.06) !important;
+  z-index: 1 !important; /* 🌟 매우 중요: 헤더(z-index: 999)보다 훨씬 낮게 설정 */
 }
 
 /* 🌟 고정열 셀을 클릭했을 때 (헤더 위로 올라오는 현상 절대 차단) */
@@ -637,8 +637,18 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .sw-table td.sw-frozen[contenteditable]:focus {
     background: #eef3fb !important; 
     box-shadow: inset 0 0 0 2px var(--primary) !important;
-    z-index: 35 !important; /* 35는 thead의 999보다 무조건 낮으므로 절대 뚫고 올라올 수 없음 */
+    z-index: 35 !important; 
+} /* 콤마(,) 삭제 후 중괄호로 닫음 */
+
+/* 🌟 헤더(thead) 고정 */
+.sw-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 999 !important;
+  background: var(--bg) !important;
 }
+
+.sw-table tr.sw-selrow td.sw-frozen { background: #fbf2e7 !important; }
 
 .sw-table tr.sw-selrow td.sw-frozen { background: #fbf2e7 !important; }
 .sw-table.dragging,.sw-table.dragging *{user-select:none!important;-webkit-user-select:none!important;cursor:cell!important}
