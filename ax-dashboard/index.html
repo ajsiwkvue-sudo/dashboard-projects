@@ -2124,7 +2124,24 @@ function _swMoveCell(el,dr,dc){
   target.focus();_placeCaretEnd(target);return true;
 }
 function fixStickyHeader(){const thead=document.querySelector('.sw-table thead');if(!thead||!thead.rows[0])return;const h=thead.rows[0].offsetHeight;thead.querySelectorAll('tr:nth-child(2) th').forEach(th=>th.style.top=h+'px');}
-function markSelectedCells(){document.querySelectorAll('.sw-table td.sw-selcell').forEach(td=>td.classList.remove('sw-selcell'));(selectedCells||[]).forEach(sc=>{const td=document.querySelector(`.sw-table td[data-id="${sc.rowId}"][data-field="${sc.field}"]`);if(td)td.classList.add('sw-selcell');});}
+function markSelectedCells() {
+    // 1. 기존 강조 클래스 모두 제거
+    document.querySelectorAll('.sw-selcell').forEach(td => td.classList.remove('sw-selcell'));
+    document.querySelectorAll('.sw-selcol').forEach(td => td.classList.remove('sw-selcol'));
+
+    // 2. 선택된 셀에 클래스 추가
+    (selectedCells || []).forEach(sc => {
+        const td = document.querySelector(`.sw-table td[data-id="${sc.rowId}"][data-field="${sc.field}"]`);
+        if (td) td.classList.add('sw-selcell');
+    });
+
+    // 3. 선택된 열에 클래스 추가
+    if (selectedCol) {
+        document.querySelectorAll(`.sw-table td[data-field="${selectedCol}"]`).forEach(td => {
+            td.classList.add('sw-selcol');
+        });
+    }
+}
 /* 드래그 범위 선택 */
 function cellsInRect(aRow,aCol,bRow,bCol){const rows=schedViewRows.length?schedViewRows:(schedCache[currentSchedTask]||[]);const cols=fmtCols();const r1=Math.min(aRow,bRow),r2=Math.max(aRow,bRow),c1=Math.min(aCol,bCol),c2=Math.max(aCol,bCol);const out=[];for(let r=r1;r<=r2;r++)for(let c=c1;c<=c2;c++){if(rows[r]&&cols[c])out.push({rowId:rows[r].id,field:cols[c]});}return out;}
 function cellDown(e,id,field){if(!authUser||e.button!==0)return;dragAnchor={rowId:id,field:field};isDragging=false;}
