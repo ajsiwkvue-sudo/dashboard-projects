@@ -641,11 +641,21 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 }
 
 /* 2. 헤더 셀 스타일 */
+/* 🌟 헤더 배경을 강제로 불투명하게 덮어쓰기 */
 .sw-table thead th {
-    background: var(--bg) !important;
-    font-weight: 800;
-    position: relative; /* sticky와 함께 사용 */
+    position: sticky;
+    top: 0;
     z-index: 100 !important;
+    background-color: #e9eef3 !important; /* var(--bg) 대신 실제 색상값 직접 입력 */
+    background-clip: padding-box; /* 배경이 테두리를 넘어가지 않게 */
+}
+
+/* 🌟 고정 열 배경도 강제로 불투명하게 */
+.sw-table .sw-frozen {
+    position: sticky;
+    background-color: #ffffff !important; /* var(--card) 대신 실제 흰색 직접 입력 */
+    z-index: 30 !important;
+    background-clip: padding-box;
 }
 
 /* 3. 선택된 셀(강조) 스타일 */
