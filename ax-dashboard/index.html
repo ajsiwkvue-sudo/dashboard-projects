@@ -587,73 +587,52 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .sw-table .col-rsz{position:absolute;top:0;right:0;width:8px;height:100%;cursor:col-resize;z-index:8}
 .sw-table .col-rsz:hover{background:var(--primary);opacity:.5}
 .sw-name,.sw-deliv,.sw-note,.sw-custom{white-space:normal;word-break:break-word}
-/* --- 🌟 헤더 최상단 고정 및 셀 비침 완벽 방지 (브라우저 버그 차단) --- */
-.sw-table thead {
-    position: sticky;
-    top: 0;
-    z-index: 999 !important; /* 🌟 표의 머리글 전체를 무조건 최상위 층으로 강제 분리 */
-}
-.sw-table thead th {
-    background: var(--bg) !important;
-    font-weight: 800;
-    text-align: center;
-    position: sticky;
-    top: 0;
-    z-index: 999 !important; 
-    box-shadow: 0 1px 0 var(--border); /* 스크롤 시 하단 경계선 유지 */
-}
-.sw-table thead tr:first-child th { top: 0; }
-.sw-table .sw-mh { font-size: .74rem; color: var(--primary); }
-.sw-table .sw-wh { font-size: .68rem; color: var(--muted); padding: 2px; min-width: 20px; }
-.sw-phase { font-weight: 700; font-size: .76rem; background: var(--bg); white-space: nowrap; text-overflow: ellipsis; }
-.sw-phase-cont { background: var(--card); }
-.sw-custom { min-width: 110px; }
-.sw-table .colhdr { cursor: pointer; }
-.sw-table .colhdr:hover { color: var(--primary); }
-/* 1. 테이블 전체 컨테이너 설정 */
+/* 1. 테이블과 컨테이너 강제 고정 */
 .sw-tablewrap {
-    position: relative; 
+    position: relative;
     overflow: auto;
+    height: 100%;
 }
 
-/* 2. 헤더(thead)를 최상위 계층으로 고정 */
-.sw-table thead {
-    position: sticky;
-    top: 0;
-    z-index: 1000 !important; /* 가장 높은 수치 */
-    background-color: #e9eef3 !important;
+.sw-table {
+    border-collapse: separate; /* sticky 사용을 위해 separate로 변경 */
+    border-spacing: 0;
 }
 
+/* 2. 헤더를 최상위 계층으로 고정 */
 .sw-table thead th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important; /* 항상 최상위 */
     background-color: #e9eef3 !important;
-    position: sticky;
-    top: 0;
-    z-index: 1000 !important;
+    border-bottom: 2px solid var(--border) !important;
 }
 
 /* 3. 왼쪽 고정열 설정 */
 .sw-table .sw-frozen {
-    position: sticky;
-    background-color: #ffffff !important;
+    position: sticky !important;
+    left: 0; /* 고정 시작 위치 */
     z-index: 500 !important; /* 헤더보다는 아래, 일반 셀보다는 위 */
+    background-color: var(--card) !important;
 }
 
-/* 4. 선택된 셀 강조 (z-index를 0으로 설정하여 헤더보다 무조건 뒤에 있게 함) */
+/* 4. 왼쪽 고정열 헤더는 가장 위로 */
+.sw-table thead .sw-frozen {
+    z-index: 1001 !important; /* 헤더 중에서도 고정열이 가장 위 */
+}
+
+/* 5. 선택된 셀(강조) 스타일: z-index를 0으로 낮춰 절대 헤더 위로 못 올라오게 함 */
 .sw-table td.sw-selcell {
     z-index: 0 !important;
-    box-shadow: inset 0 0 0 2px var(--primary) !important;
     background: rgba(61, 90, 152, 0.06) !important;
-}
-
-/* 5. 고정열 안에서 선택된 셀 */
-.sw-table td.sw-frozen.sw-selcell {
-    z-index: 501 !important; /* 고정열 내에서는 가장 위 */
-    background: #eef3fb !important;
     box-shadow: inset 0 0 0 2px var(--primary) !important;
 }
 
-.sw-table tr.sw-selrow td.sw-frozen { background: #fbf2e7 !important; }
-
+/* 6. 고정열 내 선택된 셀 */
+.sw-table td.sw-frozen.sw-selcell {
+    z-index: 501 !important;
+    background: #eef3fb !important;
+}
 .sw-table tr.sw-selrow td.sw-frozen { background: #fbf2e7 !important; }
 .sw-table.dragging,.sw-table.dragging *{user-select:none!important;-webkit-user-select:none!important;cursor:cell!important}
 .sw-ribbon .rb-grp{display:inline-flex;align-items:center;gap:3px}
