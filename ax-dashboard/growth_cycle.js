@@ -39,12 +39,10 @@ function renderCycle(root){
   root.innerHTML=`
    <div class="eyebrow">Narrative · 01 / 전체 연결 구조</div>
    <h2>AI Platform Hospital — Growth Cycle</h2>
-   <p class="lede">3대 핵심목표는 독립된 사업이 아니라, 하나의 성장 선순환으로 연결됩니다. 각 과제의 산출물이 다음 단계의 입력이 되어, 병원이 스스로 진화하는 <b>Self-Evolving AI Hospital</b>을 구현합니다. 노드를 클릭하면 해당 과제로 이동합니다.</p>
-   <div class="card pad" style="display:grid;place-items:center;background:radial-gradient(120% 120% at 50% 0%,#f4f8fb,#e8eef4)">
-     <div id="ring" style="width:100%;display:flex;justify-content:center"></div>
-   </div>
+   <div class="cyc-grid"><div id="ring" class="cyc-ring"></div><div class="cyc-side"><p class="lede">3대 핵심목표는 독립된 사업이 아니라, 하나의 성장 선순환으로 연결됩니다. 각 과제의 산출물이 다음 단계의 입력이 되어, 병원이 스스로 진화하는 <b>Self-Evolving AI Hospital</b>을 구현합니다. 노드를 클릭하면 해당 과제로 이동합니다.</p>
+   
    <div class="handoff"><div class="label">왜 순환인가</div>
-     <p>전략 수립(1-1)에서 시작해 인프라·데이터·Agent·실증을 거쳐 성과(KPI·논문·특허)를 만들고, 그 성과가 다시 문화 확산과 새 과제 발굴로 이어져 전략을 고도화합니다. 일회성 도입이 아니라 "쓸수록 똑똑해지는" 운영체계라는 점이 일산병원 AX의 핵심 차별점입니다.</p></div>`;
+     <p>전략 수립(1-1)에서 시작해 인프라·데이터·Agent·실증을 거쳐 성과(KPI·논문·특허)를 만들고, 그 성과가 다시 문화 확산과 새 과제 발굴로 이어져 전략을 고도화합니다. 일회성 도입이 아니라 "쓸수록 똑똑해지는" 운영체계라는 점이 일산병원 AX의 핵심 차별점입니다.</p></div></div></div>`;
   drawRing(root.querySelector('#ring'));
 }
 function drawRing(container){
@@ -55,7 +53,7 @@ function drawRing(container){
   const ang=i=>(-90+i*step)*Math.PI/180;
   const svg=document.createElementNS(ns,"svg");
   svg.setAttribute("viewBox",`0 0 ${S} ${S}`);svg.setAttribute("width","100%");
-  svg.style.maxWidth="450px";
+  svg.style.maxWidth="370px"; svg.style.fontFamily="'Noto Sans KR',sans-serif";
   const defs=document.createElementNS(ns,"defs");
   defs.innerHTML=`<marker id="cyc-ah" markerWidth="10" markerHeight="10" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#0b6e6b"/></marker>`;
   svg.appendChild(defs);
@@ -73,7 +71,7 @@ function drawRing(container){
     p.setAttribute("d",`M ${x1} ${y1} A ${R} ${R} 0 0 1 ${x2} ${y2}`);
     p.setAttribute("fill","none");p.setAttribute("stroke","#0b6e6b");
     p.setAttribute("stroke-width","2.5");p.setAttribute("marker-end","url(#cyc-ah)");
-    p.setAttribute("opacity",".72");
+    p.setAttribute("opacity",".72");p.classList.add('cyc-arc');
     if(i===N-1)p.setAttribute("stroke-dasharray","8 6");
     svg.appendChild(p);
   }
@@ -82,7 +80,7 @@ function drawRing(container){
   addText(svg,ns,cx+LR*Math.cos(mA),cy+LR*Math.sin(mA)+6,"↻",{size:31,fill:"#0b6e6b",weight:"700"});
   // center
   const c1=document.createElementNS(ns,"circle");
-  c1.setAttribute("cx",cx);c1.setAttribute("cy",cy);c1.setAttribute("r",124);c1.setAttribute("fill","#12263a");
+  c1.setAttribute("cx",cx);c1.setAttribute("cy",cy);c1.setAttribute("r",124);c1.setAttribute("fill","#12263a");c1.classList.add('cyc-center');
   svg.appendChild(c1);
   addText(svg,ns,cx,cy-8,"∞",{size:80,fill:"#15b3a6",weight:"700",mono:true});
   addText(svg,ns,cx,cy+36,"SELF-EVOLVING",{size:22,fill:"#cdd8e2",mono:true,ls:".14em"});
@@ -90,7 +88,7 @@ function drawRing(container){
   // nodes + labels
   stages.forEach((c,i)=>{
     const a=ang(i), x=cx+R*Math.cos(a), y=cy+R*Math.sin(a), g=goalOf(c[1]);
-    const grp=document.createElementNS(ns,"g");grp.style.cursor="pointer";
+    const grp=document.createElementNS(ns,"g");grp.style.cursor="pointer";grp.classList.add('cyc-node');grp.style.animationDelay=(i*0.07)+'s';
     grp.onclick=()=>{openNode(c[1]);};
     const dot=document.createElementNS(ns,"circle");
     dot.setAttribute("cx",x);dot.setAttribute("cy",y);dot.setAttribute("r",NR);
@@ -114,7 +112,7 @@ function addText(parent,ns,x,y,txt,o){o=o||{};
   t.setAttribute("x",x);t.setAttribute("y",y);t.setAttribute("text-anchor",o.anchor||"middle");
   t.setAttribute("font-size",o.size||14);t.setAttribute("fill",o.fill||"#26384a");
   if(o.weight)t.setAttribute("font-weight",o.weight);
-  if(o.mono)t.setAttribute("font-family","var(--mono)");
+  if(o.mono)t.setAttribute("font-family","ui-monospace,SFMono-Regular,Menlo,monospace");
   if(o.ls)t.setAttribute("letter-spacing",o.ls);
   t.textContent=txt;parent.appendChild(t);return t;
 }

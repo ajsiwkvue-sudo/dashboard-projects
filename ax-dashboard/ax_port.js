@@ -169,19 +169,19 @@ function injectAxStyles(){
   if(document.getElementById('axPortStyle'))return;
   const st=document.createElement('style'); st.id='axPortStyle';
   st.textContent=`
-  #axConsoleBtn{position:fixed;left:18px;bottom:18px;z-index:8000;background:#3d5a98;color:#fff;border:none;border-radius:24px;padding:11px 18px;font-family:inherit;font-weight:800;font-size:.9rem;box-shadow:0 6px 20px rgba(18,38,58,.25);cursor:pointer}
+  #axConsoleBtn{position:fixed;right:20px;bottom:86px;z-index:8000;background:#3d5a98;color:#fff;border:none;border-radius:24px;padding:10px 16px;font-family:inherit;font-weight:800;font-size:.86rem;box-shadow:0 6px 20px rgba(18,38,58,.25);cursor:pointer}
   #axConsoleBtn:hover{background:#324b82}
-  #axConsoleOv{position:fixed;inset:0;background:rgba(18,38,58,.4);z-index:8500;display:none}
-  #axConsoleOv.open{display:block}
-  #axConsoleOv .axc-panel{position:absolute;top:0;right:0;height:100%;width:min(560px,94vw);background:#eef2f6;box-shadow:-8px 0 40px rgba(0,0,0,.25);display:flex;flex-direction:column;animation:axcIn .22s ease}
-  @keyframes axcIn{from{transform:translateX(30px);opacity:.4}to{transform:none;opacity:1}}
+  #axConsoleOv{position:fixed;inset:0;background:rgba(18,38,58,.45);z-index:8500;display:none}
+  #axConsoleOv.open{display:flex;align-items:center;justify-content:center;padding:20px}
+  #axConsoleOv .axc-panel{width:min(760px,96vw);max-height:90vh;background:#eef2f6;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden;animation:axcIn .2s ease}
+  @keyframes axcIn{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
   #axConsoleOv .axc-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 16px;background:#3d5a98;color:#fff}
   #axConsoleOv .axc-head b{font-size:1rem}
   #axConsoleOv .axc-actions{display:flex;gap:6px;align-items:center}
   #axConsoleOv .axc-btn{background:rgba(255,255,255,.16);color:#fff;border:none;border-radius:7px;padding:6px 10px;font-family:inherit;font-weight:700;font-size:.78rem;cursor:pointer}
   #axConsoleOv .axc-btn.on{background:#c0492f}
   #axConsoleOv .axc-x{background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;line-height:1;padding:0 4px}
-  #axConsoleOv .axc-body{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+  #axConsoleOv .axc-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:14px;display:flex;flex-direction:column;gap:12px}
   .ax-card{background:#fff;border:1px solid #d3dde6;border-radius:11px;padding:12px 14px}
   .ax-card .ax-h{font-weight:800;color:#12263a;font-size:.9rem;margin-bottom:9px}
   .ax-card textarea{width:100%;min-height:64px;border:1px solid #d3dde6;border-radius:8px;padding:8px;font-family:inherit;font-size:.85rem;resize:vertical;box-sizing:border-box}
@@ -216,13 +216,24 @@ function injectAxStyles(){
   body.ax-printing>*:not(#axPrintOverlay){display:none!important}
   #axPrintOverlay{position:fixed;inset:0;background:#fff;z-index:99999;overflow:auto}
   @media print{body.ax-printing>*:not(#axPrintOverlay){display:none!important}}
+  #axGrowthCard{font-family:'Noto Sans KR',sans-serif}
   #axGrowthCard .eyebrow{font-size:.72rem;font-weight:800;letter-spacing:.08em;color:#0e8c86;text-transform:uppercase;margin-bottom:4px}
-  #axGrowthCard h2{font-size:1.15rem;margin:0 0 6px;color:#12263a}
-  #axGrowthCard .lede{font-size:.86rem;color:#3a4a5a;line-height:1.6;margin:0 0 12px}
-  #axGrowthCard .card.pad{padding:18px;border:1px solid #d3dde6;border-radius:12px;box-shadow:none}
-  #axGrowthCard .handoff{margin-top:12px;border-left:3px solid #0e8c86;padding:9px 13px;background:#f4faf9;border-radius:8px}
+  #axGrowthCard h2{font-size:1.12rem;margin:0 0 8px;color:#12263a}
+  #axGrowthCard .cyc-grid{display:grid;grid-template-columns:minmax(280px,400px) 1fr;gap:24px;align-items:center;margin-top:4px}
+  #axGrowthCard .cyc-ring{display:grid;place-items:center;background:radial-gradient(120% 120% at 50% 0%,#f4f8fb,#e8eef4);border:1px solid #dbe4ec;border-radius:14px;padding:12px}
+  #axGrowthCard .cyc-ring svg{max-width:370px}
+  #axGrowthCard .lede{font-size:.86rem;color:#3a4a5a;line-height:1.62;margin:0 0 12px}
+  #axGrowthCard .handoff{border-left:3px solid #0e8c86;padding:10px 14px;background:#f4faf9;border-radius:8px}
   #axGrowthCard .handoff .label{font-weight:800;color:#0e8c86;font-size:.78rem;margin-bottom:3px}
   #axGrowthCard .handoff p{margin:0;font-size:.82rem;color:#3a4a5a;line-height:1.55}
+  @media(max-width:900px){#axGrowthCard .cyc-grid{grid-template-columns:1fr}}
+  #axGrowthCard .cyc-arc{stroke-dasharray:7 7;animation:cycDash 1s linear infinite}
+  @keyframes cycDash{to{stroke-dashoffset:-14}}
+  #axGrowthCard .cyc-node{cursor:pointer;transform-box:fill-box;transform-origin:center;transition:transform .2s ease;animation:cycPop .5s backwards}
+  #axGrowthCard .cyc-node:hover{transform:scale(1.15)}
+  @keyframes cycPop{from{opacity:0;transform:scale(.35)}to{opacity:1;transform:scale(1)}}
+  #axGrowthCard .cyc-center{transform-box:fill-box;transform-origin:center;animation:cycPulse 3.4s ease-in-out infinite}
+  @keyframes cycPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
   `;
   document.head.appendChild(st);
 }
