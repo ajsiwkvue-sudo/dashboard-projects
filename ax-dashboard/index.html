@@ -282,7 +282,26 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .overlay.open{display:flex;animation:ovFade .2s ease}
 @keyframes ovFade{from{background:rgba(0,0,0,0)}to{background:rgba(0,0,0,.42)}}
 
-.modal{background:var(--card);border-radius:16px;width:100%;max-width:680px;height:auto;max-height:90vh;overflow-y:auto;padding:24px;margin:auto;position:relative;box-shadow:0 16px 48px rgba(0,0,0,.25);animation:popIn .25s cubic-bezier(.22,1,.36,1);transition:max-width .28s cubic-bezier(.4,0,.2,1)}
+/* Modal (가장 긴 텍스트에 맞춰 자동 확장) */
+.modal {
+  background: var(--card);
+  border-radius: 16px;
+  
+  /* 💡 변경된 핵심 속성 */
+  width: fit-content;      /* 내부 콘텐츠 길이에 맞춰 너비 자동 조절 */
+  min-width: 680px;        /* 텍스트가 짧아도 최소 680px은 유지하여 안정감 부여 */
+  max-width: 90vw;         /* 텍스트가 아무리 길어도 모니터 화면 너비의 90%까지만 확장 */
+  
+  height: auto;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 24px;
+  margin: auto;
+  position: relative;
+  box-shadow: 0 16px 48px rgba(0,0,0,.25);
+  animation: popIn .25s cubic-bezier(.22,1,.36,1);
+  transition: all .28s cubic-bezier(.4,0,.2,1);
+}
 
 .modal.fs{max-width:100vw;max-height:100vh;height:100vh;border-radius:0}
 
