@@ -13,6 +13,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="AX 대시보드">
 <link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="aihos_arch.css"> <!-- ◀ 이거 추가 -->
 <style>
 :root{
   --primary:#3d5a98; --primary-light:#4f6bab; --accent:#0e8c86; --accent2:#6c4bd8;
@@ -960,7 +961,9 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 
 <!-- Modal -->
 <div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
-
+<script src="ax_port.js"></script>
+<script src="growth_cycle.js"></script>
+<script src="aihos_arch_bundle.js"></script>
 <script>
 "use strict";
 const TODAY = new Date(2026,6,1); // 2026-07-01 (기준일)
@@ -2717,7 +2720,7 @@ function colMenu(e,field){e.preventDefault();selectSchedCol(field);const isCusto
   try{const os=localStorage.getItem('ax_opensched');if(os&&TASKS.some(t=>t.id===os))openSchedule(os);}catch(_){}
   if('serviceWorker' in navigator && location.protocol.indexOf('http')===0){navigator.serviceWorker.register('sw.js').catch(()=>{});}
   // help card toggle (기억)
-  const hb=document.getEFlementById('helpBody'),ht=document.getElementById('helpToggle');
+  const hb=document.getElementById('helpBody'),ht=document.getElementById('helpToggle');
   if(localStorage.getItem('ax_help')==='closed'){hb.style.display='none';ht.textContent='도움말 보기';}
   ht.onclick=()=>{const closed=hb.style.display==='none';hb.style.display=closed?'block':'none';ht.textContent=closed?'접기':'도움말 보기';localStorage.setItem('ax_help',closed?'open':'closed');};
 })();
