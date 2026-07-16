@@ -132,5 +132,19 @@ function wrapLabel(s){
 
 /* ── ilsan-AX 연결부 (자체완결화) ───────────────────────────────── */
 function goalOf(code){ const g=String(code||'').split('-')[0]; return (typeof GOALS!=='undefined' && GOALS['G'+g]) || (typeof GOALS!=='undefined'?GOALS.G1:{hex:'#3d5a98'}); }
-function openNode(code){ try{ if(window.openTask) return window.openTask(code); if(window.openSchedule) return window.openSchedule(code); }catch(e){} }
+function openNode(code){ 
+  try { 
+    // code는 '1-1', '2-3' 형태이므로 앞자리 숫자를 추출해 목표(Goal) ID로 씁니다.
+    const goalId = parseInt(code.split('-')[0], 10);
+    const goalName = GOALS['G' + goalId].name;
+
+    // 마인드맵 함수가 메인 화면에 있다면 호출, 없다면 기존 팝업 띄우기
+    if (window.openMindMap) {
+      window.openMindMap(goalId, goalName);
+    } else if (window.openTask) {
+      window.openTask(code); 
+    }
+  } catch(e) {} 
+}
+if(typeof window!=='undefined') window.renderCycle = renderCycle;
 if(typeof window!=='undefined') window.renderCycle = renderCycle;
