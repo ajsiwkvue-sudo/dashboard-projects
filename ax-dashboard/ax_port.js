@@ -214,8 +214,28 @@ function injectAxStyles(){
   body.ax-printing>*:not(#axPrintOverlay){display:none!important}
   #axPrintOverlay{position:fixed;inset:0;background:#fff;z-index:99999;overflow:auto}
   @media print{body.ax-printing>*:not(#axPrintOverlay){display:none!important}}
+  #axGrowthCard .eyebrow{font-size:.72rem;font-weight:800;letter-spacing:.08em;color:#0e8c86;text-transform:uppercase;margin-bottom:4px}
+  #axGrowthCard h2{font-size:1.15rem;margin:0 0 6px;color:#12263a}
+  #axGrowthCard .lede{font-size:.86rem;color:#3a4a5a;line-height:1.6;margin:0 0 12px}
+  #axGrowthCard .card.pad{padding:18px;border:1px solid #d3dde6;border-radius:12px;box-shadow:none}
+  #axGrowthCard .handoff{margin-top:12px;border-left:3px solid #0e8c86;padding:9px 13px;background:#f4faf9;border-radius:8px}
+  #axGrowthCard .handoff .label{font-weight:800;color:#0e8c86;font-size:.78rem;margin-bottom:3px}
+  #axGrowthCard .handoff p{margin:0;font-size:.82rem;color:#3a4a5a;line-height:1.55}
   `;
   document.head.appendChild(st);
+}
+function _loadScript(src){return new Promise((res,rej)=>{ if([...document.scripts].some(s=>(s.src||'').indexOf(src)>=0))return res(); const s=document.createElement('script'); s.src=src; s.onload=()=>res(); s.onerror=()=>rej(new Error(src+' 로드 실패')); document.head.appendChild(s); });}
+function mountGrowthCycle(){
+  if(document.getElementById('axGrowthCard'))return;
+  if(typeof window.renderCycle!=='function')return;
+  injectAxStyles();
+  const vm=document.getElementById('visionMap');
+  const anchor=vm?vm.closest('.card'):null;
+  const wrap=anchor?anchor.parentNode:document.querySelector('#v-overview .wrap');
+  if(!wrap)return;
+  const card=document.createElement('div'); card.id='axGrowthCard'; card.className='card'; card.style.marginTop='16px';
+  if(anchor&&anchor.nextSibling) wrap.insertBefore(card,anchor.nextSibling); else wrap.appendChild(card);
+  try{ window.renderCycle(card); }catch(e){ console.warn('[growth]',e); card.remove(); }
 }
 function mountConsoleUI(){
   if(document.getElementById('axConsoleBtn'))return;
@@ -255,6 +275,7 @@ async function axPortInit(hooks){
     await loadCfg();
     mountConsoleUI();
     renderLockBtn();
+    _loadScript('growth_cycle.js').then(mountGrowthCycle).catch(e=>console.warn('[growth]',e && e.message||e));
     subscribeAll(()=>{ if(_consoleRender)_consoleRender(); if(hooks&&hooks.rerender)hooks.rerender(); });
   }catch(e){ console.warn('[ax_port] init 경고:', e && e.message || e); }
 }

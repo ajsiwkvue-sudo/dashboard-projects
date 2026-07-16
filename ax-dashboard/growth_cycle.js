@@ -131,3 +131,8 @@ function wrapLabel(s){
 /* =========================================================================
    PAGE: GOAL NARRATIVE
    ========================================================================= */
+
+/* ── ilsan-AX 연결부 (자체완결화) ───────────────────────────────── */
+function goalOf(code){ const g=String(code||'').split('-')[0]; return (typeof GOALS!=='undefined' && GOALS['G'+g]) || (typeof GOALS!=='undefined'?GOALS.G1:{hex:'#3d5a98'}); }
+function openNode(code){ try{ if(window.openTask) return window.openTask(code); if(window.openSchedule) return window.openSchedule(code); }catch(e){} }
+if(typeof window!=='undefined') window.renderCycle = renderCycle;
