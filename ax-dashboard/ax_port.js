@@ -169,8 +169,11 @@ function injectAxStyles(){
   if(document.getElementById('axPortStyle'))return;
   const st=document.createElement('style'); st.id='axPortStyle';
   st.textContent=`
-  #axConsoleBtn{position:fixed;right:20px;bottom:86px;z-index:8000;background:#3d5a98;color:#fff;border:none;border-radius:24px;padding:10px 16px;font-family:inherit;font-weight:800;font-size:.86rem;box-shadow:0 6px 20px rgba(18,38,58,.25);cursor:pointer}
+  #axConsoleBtn{position:fixed;right:20px;bottom:88px;z-index:8000;height:52px;display:flex;align-items:center;background:#3d5a98;color:#fff;border:none;border-radius:26px;padding:0 20px;font-family:inherit;font-weight:800;font-size:.9rem;box-shadow:0 6px 20px rgba(18,38,58,.25);cursor:pointer}
   #axConsoleBtn:hover{background:#324b82}
+  /* AI 비서 버튼: 문구 제거 · 말풍선 아이콘만 · 크기 통일 */
+  #agentFab .fab-label{display:none!important}
+  #agentFab{width:52px!important;min-width:52px!important;height:52px!important;padding:0!important;border-radius:50%!important;font-size:1.5rem!important;display:flex!important;align-items:center;justify-content:center;line-height:1}
   #axConsoleOv{position:fixed;inset:0;background:rgba(18,38,58,.45);z-index:8500;display:none}
   #axConsoleOv.open{display:flex;align-items:center;justify-content:center;padding:20px}
   #axConsoleOv .axc-panel{width:min(760px,96vw);max-height:90vh;background:#eef2f6;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden;animation:axcIn .2s ease}
@@ -257,11 +260,16 @@ function mountGrowthCycle(){
   if(anchor&&anchor.nextSibling) wrap.insertBefore(card,anchor.nextSibling); else wrap.appendChild(card);
   try{ window.renderCycle(card); }catch(e){ console.warn('[growth]',e); card.remove(); }
 }
+function styleFabs(){
+  // AI 비서 버튼: 로봇 이모지 → 말풍선(💬), 라벨은 CSS로 숨김
+  const ai=document.getElementById('agentFab');
+  if(ai){ const n=[...ai.childNodes].find(c=>c.nodeType===3 && c.nodeValue.trim()); if(n) n.nodeValue='💬'; else if(!ai.querySelector('.ax-bubble')){ const s=document.createElement('span'); s.className='ax-bubble'; s.textContent='💬'; ai.insertBefore(s,ai.firstChild); } }
+}
 function mountConsoleUI(){
   if(document.getElementById('axConsoleBtn'))return;
   injectAxStyles();
   const btn=document.createElement('button');
-  btn.id='axConsoleBtn'; btn.innerHTML='🗂 운영 콘솔'; btn.title='초점 · 리스크 · KPI · 변경이력 · 주간보고';
+  btn.id='axConsoleBtn'; btn.textContent='운영 콘솔'; btn.title='초점 · 리스크 · KPI · 변경이력 · 주간보고';
   document.body.appendChild(btn);
   const ov=document.createElement('div'); ov.id='axConsoleOv';
   ov.innerHTML=`<div class="axc-panel">
@@ -354,6 +362,7 @@ async function axPortInit(hooks){
     wrapHostMutations();
     wrapRenderScheduleForPanel();
     mountConsoleUI();
+    styleFabs(); setTimeout(styleFabs,1500);
     renderLockBtn();
     _loadScript('growth_cycle.js').then(mountGrowthCycle).catch(e=>console.warn('[growth]',e && e.message||e));
     subscribeAll(()=>{ if(_consoleRender)_consoleRender(); if(hooks&&hooks.rerender)hooks.rerender(); });
