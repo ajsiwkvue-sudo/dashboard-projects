@@ -1967,7 +1967,19 @@ function wbsCalc(r,kind){const t=_today0();const ps=_dparse(r.start_date),pe=_dp
   if(kind==='updated')return _fmtDT(r.updated_at);
   if(kind==='updater')return r.updated_by||'';
   return '';}
-function plannedPct(r){const t=_today0(),ps=_dparse(r.start_date),pe=_dparse(r.end_date);if(!ps||!pe)return 0;if(t<=ps)return 0;if(t>=pe)return 100;return Math.round(_days(ps,t)/Math.max(1,_days(ps,pe))*100);}
+function plannedPct(r){
+  const t=_today0(), ps=_dparse(r.start_date), pe=_dparse(r.end_date);
+  
+  if(!ps||!pe) return 0;
+  if(t<=ps) return 0;
+  if(t>=pe) return 100;
+  
+  // _days(캘린더 일수) 대신 _bizDays(영업일수)를 사용하여 진도율 계산
+  const passed = _bizDays(ps, t);
+  const total = Math.max(1, _bizDays(ps, pe));
+  
+  return Math.round((passed / total) * 100);
+}
 function wbsRollup(rows){let sw=0,swp=0,swpl=0,n=0,sp=0;rows.forEach(r=>{const w=+r.weight||0;const pr=Math.max(0,Math.min(100,+r.progress||0));if(w>0){sw+=w;swp+=w*pr;swpl+=w*plannedPct(r);}n++;sp+=pr;});const prog=sw>0?Math.round(swp/sw):(n?Math.round(sp/n):0);const planned=sw>0?Math.round(swpl/sw):0;const spi=planned>0?(prog/planned).toFixed(2):'-';return {prog,planned,spi,weighted:sw>0,wsum:Math.round(sw)};}
 async function numBlur(id,f,el){let raw=el.value.replace(/[^0-9.]/g,'');let v=raw===''?0:parseFloat(raw);if(isNaN(v))v=0;if(f==='progress')v=Math.max(0,Math.min(100,Math.round(v)));if(f==='weight')v=Math.max(0,v);const row=(schedCache[currentSchedTask]||[]).find(x=>x.id===id);const cur=row?(+row[f]||0):0;el.value=v;if(v===cur){renderSchedule(currentSchedTask);return;}updateSchedField(id,f,v);}
 // WBS 셀: 폼컨트롤 대신 텍스트+클릭편집(비침 방지)
