@@ -854,6 +854,12 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
     <div class="gauge"><div class="bar"><div class="fill" id="ovFill"></div></div><div class="pct" id="ovPct">0%</div></div>
     <div class="mstat" id="ovLegend"></div>
   </div>
+  <div class="grid3" style="margin-bottom: 16px;">
+    <div id="focusBox"></div> <!-- 이번 분기 초점 -->
+    <div id="riskBox"></div>  <!-- 리스크 보드 -->
+    <div id="auditBox"></div> <!-- 변경 이력 (감사 로그) -->
+  </div>
+  <div id="kpiBox" style="margin-bottom: 16px;"></div> <!-- 전체 성과지표(KPI) -->
   <div class="grid2">
     <div class="card"><h3>핵심목표별 진척도 <span style="font-weight:400;font-size:.78rem;color:var(--muted)">(WBS 세부계획 롤업)</span></h3><div class="chart-box"><canvas id="goalChart"></canvas></div></div>
     <div class="card"><h3>📋 세부계획(WBS) 진척 현황 <span style="font-weight:400;font-size:.78rem;color:var(--muted)">(전략과제별 · 클릭 → 세부계획)</span></h3><div id="wbsCover"></div></div>
@@ -1136,6 +1142,17 @@ function renderOverview(){
   renderWbsCover();
   document.getElementById('visionMap').innerHTML=goals.map(g=>{const gt=TASKS.filter(t=>t.goal===g.id);return `<div class="vcol v${g.id}"><div class="axis">${g.axis} 축 · 핵심목표 ${g.id}</div><div class="goal">${g.name}</div>${gt.map(t=>{const p=taskProgress(t);const nx=nextMile(t);return `<div class="mini" title="담당: ${t.team}${nx?' · 다음 할 일: '+nx:''}"><span class="mt2">${t.id} ${t.title}</span><div class="mrow"><div class="mbar"><div class="mbf" style="width:${p}%"></div></div><span class="mpct">${p}%</span></div></div>`;}).join('')}</div>`;}).join('');
   drawGoalChart();drawMonthChart();
+  if (window.axPort) {
+    const focusBox = document.getElementById('focusBox');
+    const riskBox = document.getElementById('riskBox');
+    const auditBox = document.getElementById('auditBox');
+    const kpiBox = document.getElementById('kpiBox');
+    
+    if(focusBox) axPort.renderFocus(focusBox);
+    if(riskBox) axPort.renderRisks(riskBox);
+    if(auditBox) axPort.renderAudit(auditBox);
+    if(kpiBox) axPort.renderKpis(kpiBox); // 전체 KPI 트래커
+  }
 }
 function drawGoalChart(){
   const data=goals.map(g=>{const gt=TASKS.filter(t=>t.goal===g.id);return Math.round(gt.reduce((s,t)=>s+taskProgress(t),0)/gt.length);});
