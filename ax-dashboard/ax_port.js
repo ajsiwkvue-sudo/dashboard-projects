@@ -20,9 +20,10 @@ const sb = {
   get storage() { return _sb().storage; }
 };
 function currentUser(){ return window.whoAmI ? window.whoAmI() : '게스트'; }
-const SCHED = () => (window.TASKS || []).map(t => ({
-  id: t.id, title: t.title, goal: t.goal,
-  progress: window.taskProgress ? window.taskProgress(t) : 0
+function _tasks(){ if(typeof window!=='undefined' && window.TASKS) return window.TASKS; try{ if(typeof TASKS!=='undefined') return TASKS; }catch(e){} return []; }
+function _tprog(t){ if(window.taskProgress) return window.taskProgress(t); try{ if(typeof taskProgress!=='undefined') return taskProgress(t); }catch(e){} return 0; }
+const SCHED = () => (_tasks()).map(t => ({
+  id: t.id, title: t.title, goal: t.goal, progress: _tprog(t)
 }));
 const taskTitle = (id) => { const r=SCHED().find(s=>s.id===id); return r? (r.title||id):id; };
 /* ================================================== */
@@ -267,10 +268,10 @@ function mountConsoleUI(){
   const renderTaskSection=()=>{
     const sel=$('#axTaskSel',ov); if(!sel)return;
     if(!sel.options.length){
-      (window.TASKS||[]).forEach(t=>{ const o=document.createElement('option'); o.value=t.id; o.textContent=t.id+' '+t.title; sel.appendChild(o); });
+      _tasks().forEach(t=>{ const o=document.createElement('option'); o.value=t.id; o.textContent=t.id+' '+t.title; sel.appendChild(o); });
       sel.onchange=()=>{ const tid=sel.value; renderKpis($('#axKpiTaskRoot',ov),tid); renderOutputs($('#axOutRoot',ov),tid); };
     }
-    const tid=sel.value||(window.TASKS&&window.TASKS[0]&&window.TASKS[0].id);
+    const tid=sel.value||(_tasks()[0]&&_tasks()[0].id);
     if(tid){ renderKpis($('#axKpiTaskRoot',ov),tid); renderOutputs($('#axOutRoot',ov),tid); }
   };
   const render=()=>{ renderFocus($('#axFocusRoot',ov)); renderRisks($('#axRiskRoot',ov)); renderKpis($('#axKpiRoot',ov)); renderTaskSection(); renderAudit($('#axAuditRoot',ov)); renderLockBtn(); };
