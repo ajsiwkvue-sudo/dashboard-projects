@@ -277,12 +277,17 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .dot{width:9px;height:9px;border-radius:50%;display:inline-block;vertical-align:middle;margin-right:3px}
 .dot.done{background:var(--success)}.dot.prog{background:var(--warning)}.dot.plan{background:var(--gray)}.dot.over{background:var(--danger)}
 /* Modal */
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:1000;justify-content:flex-end;align-items:stretch;padding:0;overflow:hidden}
-.overlay.open{display:flex;animation:ovFade .28s ease}
+/* Modal (중앙 팝업으로 변경) */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:1000;justify-content:center;align-items:center;padding:20px;overflow:hidden}
+.overlay.open{display:flex;animation:ovFade .2s ease}
 @keyframes ovFade{from{background:rgba(0,0,0,0)}to{background:rgba(0,0,0,.42)}}
-.modal{background:var(--card);border-radius:0;width:100%;max-width:580px;height:100vh;max-height:100vh;overflow-y:auto;padding:24px;margin:0;position:relative;box-shadow:-14px 0 44px rgba(18,38,58,.18);animation:drawerIn .32s cubic-bezier(.22,1,.36,1);transition:max-width .28s cubic-bezier(.4,0,.2,1)}
-.modal.fs{max-width:100vw}
-@keyframes drawerIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+
+.modal{background:var(--card);border-radius:16px;width:100%;max-width:680px;height:auto;max-height:90vh;overflow-y:auto;padding:24px;margin:auto;position:relative;box-shadow:0 16px 48px rgba(0,0,0,.25);animation:popIn .25s cubic-bezier(.22,1,.36,1);transition:max-width .28s cubic-bezier(.4,0,.2,1)}
+
+.modal.fs{max-width:100vw;max-height:100vh;height:100vh;border-radius:0}
+
+@keyframes popIn{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+
 .modal .mh{position:sticky;top:-24px;background:var(--card);z-index:3}
 .fs-btn{position:absolute;top:22px;right:56px;background:#eef3f7;border:1px solid var(--border);border-radius:8px;width:34px;height:34px;cursor:pointer;font-size:.95rem;color:var(--text);display:flex;align-items:center;justify-content:center;transition:.15s}
 .fs-btn:hover{background:var(--border)}
