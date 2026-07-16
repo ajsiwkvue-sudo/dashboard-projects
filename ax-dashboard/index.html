@@ -1335,7 +1335,6 @@ function openDeptList(team,key){
       _wbsLeaves(rows).forEach(r=>{
         const s=wbsStatus(r);
         const stMap=s==='완료'?'done':s==='진행중'?'prog':s==='지연'?'over':'plan';
-        // 배열에 tTitle: t.title (전략과제명) 정보를 추가로 담아줍니다.
         if(key==='all'||stMap===key) arr.push({r,st:stMap,stLabel:s,tid:t.id, tTitle:t.title});
       });
     });
@@ -1343,10 +1342,15 @@ function openDeptList(team,key){
     arr.sort((a,b)=>((a.r.start_date||'9999')<(b.r.start_date||'9999')?-1:1));
     title+=lab[key]+' '+arr.length+'개';
 
-    // 메인에는 세부과제, 서브에는 전략과제명과 날짜를 배치하도록 구조를 변경했습니다.
+    // 브레드크럼 형태로 렌더링 (전략과제 > 세부계획)
     body=arr.map(m=>`<div class="kl-item click" onclick="openSchedule('${m.tid}')">
-      <span class="kl-main" style="display:block; margin-bottom:2px;"><span class="dot ${m.st}"></span>${escH(m.r.seq)} ${escH(m.r.name)}</span>
-      <span class="kl-sub"><b>${m.tid}</b> ${escH(m.tTitle)} · 시작일: ${m.r.start_date||'-'}</span>
+      <span class="kl-main" style="line-height:1.4;">
+        <span class="dot ${m.st}"></span>
+        <span style="color:var(--muted); font-size:.8rem; font-weight:700;">${m.tid} ${escH(m.tTitle)}</span>
+        <span style="color:var(--border); margin:0 5px; font-size:.7rem;">▶</span>
+        <span style="font-weight:800;">${escH(m.r.seq)} ${escH(m.r.name)}</span>
+      </span>
+      <span class="kl-sub">시작일: ${m.r.start_date||'-'}</span>
       <span class="ms ${m.st}">${m.stLabel}</span>
       </div>`).join('')||'<div class="hint">항목이 없습니다.</div>';
   }
