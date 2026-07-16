@@ -89,7 +89,7 @@ function drawRing(container){
   stages.forEach((c,i)=>{
     const a=ang(i), x=cx+R*Math.cos(a), y=cy+R*Math.sin(a), g=goalOf(c[1]);
     const grp=document.createElementNS(ns,"g");grp.style.cursor="pointer";grp.classList.add('cyc-node');grp.style.animationDelay=(i*0.07)+'s';
-    grp.onclick=()=>{openNode(c[1]);};
+    grp.onclick=()=>{cycOpenNode(c[1]);};
     const dot=document.createElementNS(ns,"circle");
     dot.setAttribute("cx",x);dot.setAttribute("cy",y);dot.setAttribute("r",NR);
     dot.setAttribute("fill","#fff");dot.setAttribute("stroke",g.hex);dot.setAttribute("stroke-width","5");
@@ -132,19 +132,12 @@ function wrapLabel(s){
 
 /* ── ilsan-AX 연결부 (자체완결화) ───────────────────────────────── */
 function goalOf(code){ const g=String(code||'').split('-')[0]; return (typeof GOALS!=='undefined' && GOALS['G'+g]) || (typeof GOALS!=='undefined'?GOALS.G1:{hex:'#3d5a98'}); }
-function openNode(code){ 
-  try { 
-    // code는 '1-1', '2-3' 형태이므로 앞자리 숫자를 추출해 목표(Goal) ID로 씁니다.
-    const goalId = parseInt(code.split('-')[0], 10);
-    const goalName = GOALS['G' + goalId].name;
-
-    // 마인드맵 함수가 메인 화면에 있다면 호출, 없다면 기존 팝업 띄우기
-    if (window.openMindMap) {
-      window.openMindMap(goalId, goalName);
-    } else if (window.openTask) {
-      window.openTask(code); 
-    }
-  } catch(e) {} 
+function cycOpenNode(code){
+  try{
+    var goalId=parseInt(String(code).split("-")[0],10);
+    var goalName=(typeof GOALS!=="undefined"&&GOALS["G"+goalId])?GOALS["G"+goalId].name:"";
+    if(window.openMindMap) return window.openMindMap(goalId, goalName);
+    if(window.openTask) return window.openTask(code);
+  }catch(e){ console.warn("[cycle] node click:", e&&e.message); }
 }
-if(typeof window!=='undefined') window.renderCycle = renderCycle;
 if(typeof window!=='undefined') window.renderCycle = renderCycle;
