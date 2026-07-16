@@ -8,12 +8,16 @@
 'use strict';
 
 /* ===================== ADAPTER (여기만 맞추세요) ===================== */
-/* ===================== ADAPTER (여기만 맞추세요) ===================== */
-// 1) DB 클라이언트를 동적으로 가져오도록 변경 (에러 원인 해결)
+// 1) DB 클라이언트 해석: window.supa 또는 본체의 전역 supa(let) 를 런타임에 가져옴
+function _sb(){
+  if (typeof window !== 'undefined' && window.supa) return window.supa;
+  try { if (typeof supa !== 'undefined' && supa) return supa; } catch(e){}
+  return null;
+}
 const sb = {
-  get from() { return window.supa.from.bind(window.supa); },
-  get channel() { return window.supa.channel.bind(window.supa); },
-  get storage() { return window.supa.storage; }
+  get from()    { const c=_sb(); return c.from.bind(c); },
+  get channel() { const c=_sb(); return c.channel.bind(c); },
+  get storage() { return _sb().storage; }
 };
 
 // 2) 현재 사용자 이름
@@ -28,7 +32,6 @@ const SCHED = () => (window.TASKS || []).map(t => ({
 }));
 const taskProgress = (id) => { const r=SCHED().find(s=>s.id===id); return r? (r.progress||0):0; };
 const taskTitle    = (id) => { const r=SCHED().find(s=>s.id===id); return r? (r.title||id):id; };
-/* ==================================================================== */
 /* ==================================================================== */
 
 const $ = (s,r)=> (r||document).querySelector(s);
@@ -166,7 +169,11 @@ function subscribeAll(rerender){
 
 /* ==================== 초기화 ==================== */
 async function axPortInit(hooks){   // hooks.rerender: 화면 갱신 콜백(선택)
-  await loadCfg(); renderLockBtn(); subscribeAll(hooks&&hooks.rerender);
+  // 본체의 Supabase 클라이언트(supa)가 준비될 때까지 최대 6초 대기
+  for(let i=0;i<40 && !_sb();i++){ await new Promise(r=>setTimeout(r,150)); }
+  if(!_sb()){ console.warn('[ax_port] Supabase 클라이언트를 찾지 못해 초기화를 건너뜁니다.'); return; }
+  try{ await loadCfg(); renderLockBtn(); subscribeAll(hooks&&hooks.rerender); }
+  catch(e){ console.warn('[ax_port] init 경고:', e && e.message || e); }
 }
 
 // 전역 노출
