@@ -192,6 +192,7 @@ function injectAxStyles(){
   .ax-risk .rsev{color:#fff;font-weight:800;border:none;border-radius:6px;padding:5px;cursor:pointer}
   .ax-risk .rtext{flex:1;border:1px solid #d3dde6;border-radius:6px;padding:6px 8px;font-family:inherit;font-size:.82rem}
   .ax-risk .rdel{background:none;border:1px solid #d3dde6;border-radius:6px;color:#c0492f;cursor:pointer;padding:4px 8px}
+  .ax-tasksel{width:100%;padding:7px 9px;border:1px solid #d3dde6;border-radius:7px;font-family:inherit;font-size:.82rem;margin-bottom:8px;background:#fff}
   .ax-add{margin-top:6px;background:#eef2f6;border:1px dashed #b7c5d2;border-radius:7px;padding:7px 12px;font-family:inherit;font-weight:700;font-size:.8rem;color:#3d5a98;cursor:pointer}
   .ax-kpi{border-top:1px solid #eef2f6;padding:8px 0}
   .ax-kpi .kt{font-weight:700;font-size:.84rem}
@@ -255,10 +256,24 @@ function mountConsoleUI(){
       <div id="axFocusRoot"></div>
       <div id="axRiskRoot"></div>
       <div id="axKpiRoot"></div>
+      <div class="ax-card"><div class="ax-h">📎 과제별 (산출물 · KPI)</div>
+        <select id="axTaskSel" class="ax-tasksel"></select>
+        <div id="axKpiTaskRoot"></div>
+        <div id="axOutRoot"></div>
+      </div>
       <div id="axAuditRoot"></div>
     </div></div>`;
   document.body.appendChild(ov);
-  const render=()=>{ renderFocus($('#axFocusRoot',ov)); renderRisks($('#axRiskRoot',ov)); renderKpis($('#axKpiRoot',ov)); renderAudit($('#axAuditRoot',ov)); renderLockBtn(); };
+  const renderTaskSection=()=>{
+    const sel=$('#axTaskSel',ov); if(!sel)return;
+    if(!sel.options.length){
+      (window.TASKS||[]).forEach(t=>{ const o=document.createElement('option'); o.value=t.id; o.textContent=t.id+' '+t.title; sel.appendChild(o); });
+      sel.onchange=()=>{ const tid=sel.value; renderKpis($('#axKpiTaskRoot',ov),tid); renderOutputs($('#axOutRoot',ov),tid); };
+    }
+    const tid=sel.value||(window.TASKS&&window.TASKS[0]&&window.TASKS[0].id);
+    if(tid){ renderKpis($('#axKpiTaskRoot',ov),tid); renderOutputs($('#axOutRoot',ov),tid); }
+  };
+  const render=()=>{ renderFocus($('#axFocusRoot',ov)); renderRisks($('#axRiskRoot',ov)); renderKpis($('#axKpiRoot',ov)); renderTaskSection(); renderAudit($('#axAuditRoot',ov)); renderLockBtn(); };
   btn.onclick=()=>{ ov.classList.add('open'); render(); };
   $('#axCloseBtn',ov).onclick=()=>ov.classList.remove('open');
   ov.onclick=e=>{ if(e.target===ov)ov.classList.remove('open'); };
@@ -267,12 +282,39 @@ function mountConsoleUI(){
   _consoleRender=()=>{ if(ov.classList.contains('open'))render(); };
 }
 
+/* ==================== 본체 함수 래핑: 편집잠금 게이트 + 감사 로그 ==================== */
+function _wrapFn(name, auditLabel){
+  const orig = window[name];
+  if(typeof orig !== 'function' || orig.__axWrapped) return;
+  const w = function(){
+    if(isLocked()){ toast('🔒 편집이 잠겨 있어요. 콘솔에서 잠금을 해제하세요.'); return; }
+    const ret = orig.apply(this, arguments);
+    if(auditLabel){ try{ Promise.resolve(ret).then(()=>{ audit(auditLabel, ''); }).catch(()=>{}); }catch(e){} }
+    return ret;
+  };
+  w.__axWrapped = true;
+  window[name] = w;
+}
+function wrapHostMutations(){
+  // 잠금만(편집 차단)
+  ['updateSchedField','updateExtraField','applyCellValues','cutCells','pasteCells','clearSelectedCells',
+   'saveColWidth','applyFmtToCells','setColAlign','mergeCells','unmergeCells','saveMeetingField','saveActionField',
+   'renameColumn'].forEach(n=>_wrapFn(n,null));
+  // 잠금 + 감사 로그
+  [['deleteRow','행 삭제'],['deleteSelected','행 삭제'],['addWbsNode','과제 추가'],['insertRow','행 삽입'],
+   ['pasteRow','행 붙여넣기'],['moveRowBlock','행 이동'],['addColumn','열 추가'],['deleteColumn','열 삭제'],
+   ['removeColumn','열 삭제'],['insertColumn','열 삽입'],['clearColumnData','열 비우기'],['_applyWbsImport','WBS 가져오기'],
+   ['setMileStatus','마일스톤 상태변경'],['addMeeting','회의 추가'],['deleteMeeting','회의 삭제'],
+   ['addAction','액션 추가'],['deleteAction','액션 삭제']].forEach(([n,l])=>_wrapFn(n,l));
+}
+
 /* ==================== 초기화 ==================== */
 async function axPortInit(hooks){
   for(let i=0;i<40 && !_sb();i++){ await new Promise(r=>setTimeout(r,150)); }
   if(!_sb()){ console.warn('[ax_port] Supabase 클라이언트를 찾지 못해 초기화를 건너뜁니다.'); return; }
   try{
     await loadCfg();
+    wrapHostMutations();
     mountConsoleUI();
     renderLockBtn();
     _loadScript('growth_cycle.js').then(mountGrowthCycle).catch(e=>console.warn('[growth]',e && e.message||e));
