@@ -1,6 +1,6 @@
 // AX 대시보드 서비스워커
-// HTML은 항상 최신 배포본(network-first), 정적 자원은 캐시 폴백.
-const CACHE = 'ax-dashboard-v2';
+// 온라인이면 항상 최신 배포본(network-first) · 오프라인일 때만 캐시 폴백.
+const CACHE = 'ax-dashboard-v3';
 const SHELL = ['./index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
@@ -21,30 +21,12 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== self.location.origin) return;
 
-  const accept = req.headers.get('accept') || '';
-  const isHTML = req.mode === 'navigate' || accept.includes('text/html')
-    || url.pathname === '/' || url.pathname.endsWith('/') || url.pathname.endsWith('index.html');
-
-  if (isHTML) {
-    // 네트워크 우선: 온라인이면 항상 최신, 오프라인이면 캐시
-    e.respondWith(
-      fetch(req).then(resp => {
-        const copy = resp.clone();
-        caches.open(CACHE).then(c => c.put('./index.html', copy)).catch(() => {});
-        return resp;
-      }).catch(() => caches.match('./index.html'))
-    );
-  } else {
-    // 정적 자원: 캐시 우선 + 백그라운드 갱신
-    e.respondWith(
-      caches.match(req).then(cached => {
-        const net = fetch(req).then(resp => {
-          const copy = resp.clone();
-          caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
-          return resp;
-        }).catch(() => cached);
-        return cached || net;
-      })
-    );
-  }
+  // 전부 네트워크 우선: 최신 index.html/ax_port.js/자원 보장, 실패 시 캐시 폴백
+  e.respondWith(
+    fetch(req).then(resp => {
+      const copy = resp.clone();
+      caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
+      return resp;
+    }).catch(() => caches.match(req).then(c => c || caches.match('./index.html')))
+  );
 });
