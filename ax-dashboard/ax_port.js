@@ -185,7 +185,14 @@ function injectAxStyles(){
   .ax-card{background:#fff;border:1px solid #d3dde6;border-radius:11px;padding:12px 14px}
   .ax-card .ax-h{font-weight:800;color:#12263a;font-size:.9rem;margin-bottom:9px}
   .ax-card textarea{width:100%;min-height:64px;border:1px solid #d3dde6;border-radius:8px;padding:8px;font-family:inherit;font-size:.85rem;resize:vertical;box-sizing:border-box}
-  .ax-logs{max-height:220px;overflow:auto;display:flex;flex-direction:column;gap:3px}
+  .ax-logs{max-height:132px;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:3px}
+  #axTaskPop{position:fixed;inset:0;background:rgba(18,38,58,.45);z-index:9600;display:none;align-items:center;justify-content:center;padding:20px}
+  #axTaskPop.open{display:flex}
+  #axTaskPop .tp-panel{width:min(680px,96vw);max-height:88vh;background:#eef2f6;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.4);display:flex;flex-direction:column;overflow:hidden;animation:axcIn .2s ease}
+  #axTaskPop .tp-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:#3d5a98;color:#fff}
+  #axTaskPop .tp-head b{font-size:.95rem}
+  #axTaskPop .tp-x{background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;line-height:1;padding:0 4px}
+  #axTaskPop .tp-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:14px;display:flex;flex-direction:column;gap:12px}
   .ax-log{display:flex;gap:8px;font-size:.74rem;color:#12263a;padding:3px 0;border-bottom:1px solid #eef2f6}
   .ax-log .t{color:#6c7d8e;flex:0 0 auto}.ax-log .u{font-weight:700;flex:0 0 auto}
   .ax-empty{color:#6c7d8e;font-size:.8rem;padding:6px 0}
@@ -268,30 +275,48 @@ function mountConsoleUI(){
       <div id="axFocusRoot"></div>
       <div id="axRiskRoot"></div>
       <div id="axKpiRoot"></div>
-      <div class="ax-card"><div class="ax-h">📎 과제별 (산출물 · KPI)</div>
-        <select id="axTaskSel" class="ax-tasksel"></select>
-        <div id="axKpiTaskRoot"></div>
-        <div id="axOutRoot"></div>
-      </div>
       <div id="axAuditRoot"></div>
     </div></div>`;
   document.body.appendChild(ov);
-  const renderTaskSection=()=>{
-    const sel=$('#axTaskSel',ov); if(!sel)return;
-    if(!sel.options.length){
-      _tasks().forEach(t=>{ const o=document.createElement('option'); o.value=t.id; o.textContent=t.id+' '+t.title; sel.appendChild(o); });
-      sel.onchange=()=>{ const tid=sel.value; renderKpis($('#axKpiTaskRoot',ov),tid); renderOutputs($('#axOutRoot',ov),tid); };
-    }
-    const tid=sel.value||(_tasks()[0]&&_tasks()[0].id);
-    if(tid){ renderKpis($('#axKpiTaskRoot',ov),tid); renderOutputs($('#axOutRoot',ov),tid); }
-  };
-  const render=()=>{ renderFocus($('#axFocusRoot',ov)); renderRisks($('#axRiskRoot',ov)); renderKpis($('#axKpiRoot',ov)); renderTaskSection(); renderAudit($('#axAuditRoot',ov)); renderLockBtn(); };
+  const render=()=>{ renderFocus($('#axFocusRoot',ov)); renderRisks($('#axRiskRoot',ov)); renderKpis($('#axKpiRoot',ov)); renderAudit($('#axAuditRoot',ov)); renderLockBtn(); };
   btn.onclick=()=>{ ov.classList.add('open'); render(); };
   $('#axCloseBtn',ov).onclick=()=>ov.classList.remove('open');
   ov.onclick=e=>{ if(e.target===ov)ov.classList.remove('open'); };
   $('#axLockBtn',ov).onclick=()=>toggleLock().then(render);
   $('#axPrintBtn',ov).onclick=()=>printReport();
   _consoleRender=()=>{ if(ov.classList.contains('open'))render(); };
+}
+
+/* ==================== 세부계획(WBS) 화면: 과제별 산출물·KPI 팝업 ==================== */
+function openTaskPop(tid){
+  if(!tid)return; injectAxStyles();
+  let ov=document.getElementById('axTaskPop');
+  if(!ov){
+    ov=document.createElement('div'); ov.id='axTaskPop';
+    ov.innerHTML=`<div class="tp-panel"><div class="tp-head"><b class="tp-title"></b><button class="tp-x" title="닫기">×</button></div>
+      <div class="tp-body"><div id="axTPKpi"></div><div id="axTPOut"></div></div></div>`;
+    document.body.appendChild(ov);
+    ov.querySelector('.tp-x').onclick=()=>ov.classList.remove('open');
+    ov.onclick=e=>{ if(e.target===ov)ov.classList.remove('open'); };
+  }
+  const t=_tasks().find(x=>x.id===tid);
+  ov.querySelector('.tp-title').textContent='📎 '+(t?(t.id+' '+t.title):tid)+' — 산출물·KPI';
+  ov.classList.add('open');
+  renderKpis(ov.querySelector('#axTPKpi'), tid);
+  renderOutputs(ov.querySelector('#axTPOut'), tid);
+}
+function injectSchedTaskBtn(tid){
+  const rb=document.querySelector('#swPanel .sw-ribbon'); if(!rb || rb.querySelector('#axSchedTaskBtn'))return;
+  const b=document.createElement('button'); b.id='axSchedTaskBtn'; b.className='rb-ib rb-add'; b.textContent='📎 산출물·KPI';
+  b.title='이 과제의 기대 산출물·성과지표';
+  b.onclick=()=>openTaskPop(tid);
+  rb.appendChild(b);
+}
+function wrapRenderScheduleForPanel(){
+  const orig=window.renderSchedule;
+  if(typeof orig!=='function' || orig.__axPanel) return;
+  const w=function(tid){ const r=orig.apply(this,arguments); try{ injectSchedTaskBtn(tid); }catch(e){} return r; };
+  w.__axPanel=true; window.renderSchedule=w;
 }
 
 /* ==================== 본체 함수 래핑: 편집잠금 게이트 + 감사 로그 ==================== */
@@ -327,6 +352,7 @@ async function axPortInit(hooks){
   try{
     await loadCfg();
     wrapHostMutations();
+    wrapRenderScheduleForPanel();
     mountConsoleUI();
     renderLockBtn();
     _loadScript('growth_cycle.js').then(mountGrowthCycle).catch(e=>console.warn('[growth]',e && e.message||e));
