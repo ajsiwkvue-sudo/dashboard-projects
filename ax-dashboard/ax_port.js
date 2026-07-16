@@ -8,13 +8,18 @@
 'use strict';
 
 /* ===================== ADAPTER (여기만 맞추세요) ===================== */
-// 1) ilsan-AX가 이미 만든 Supabase 클라이언트. (createClient(...) 결과)
-const sb = window.supabase || window.sb;                 // ← 실제 클라이언트 변수로
-// 2) 현재 사용자 이름 (presence/로그인). 없으면 '게스트'
+/* ===================== ADAPTER (여기만 맞추세요) ===================== */
+// 1) DB 클라이언트를 동적으로 가져오도록 변경 (에러 원인 해결)
+const sb = {
+  get from() { return window.supa.from.bind(window.supa); },
+  get channel() { return window.supa.channel.bind(window.supa); },
+  get storage() { return window.supa.storage; }
+};
+
+// 2) 현재 사용자 이름
 function currentUser(){ return window.whoAmI ? window.whoAmI() : '게스트'; }
-// 3) ilsan-AX의 과제(스케줄) 배열/맵과 진척 접근자.
-//    - SCHED: [{id:'1-1', title, goal, progress, ...}, ...]
-//    - taskProgress(id): 0~100 진척률
+
+// 3) WBS 배열 연결
 const SCHED = () => (window.TASKS || []).map(t => ({
   id: t.id,
   title: t.title,
@@ -23,6 +28,7 @@ const SCHED = () => (window.TASKS || []).map(t => ({
 }));
 const taskProgress = (id) => { const r=SCHED().find(s=>s.id===id); return r? (r.progress||0):0; };
 const taskTitle    = (id) => { const r=SCHED().find(s=>s.id===id); return r? (r.title||id):id; };
+/* ==================================================================== */
 /* ==================================================================== */
 
 const $ = (s,r)=> (r||document).querySelector(s);
