@@ -378,11 +378,11 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .bm-card a:hover{text-decoration:underline}
 .bm-cat{display:inline-block;font-size:.68rem;font-weight:800;padding:2px 8px;border-radius:8px;background:var(--bg);color:var(--muted);margin-bottom:6px}
 /* Assistant floating widget */
-.agent-fab{position:fixed;bottom:22px;right:22px;z-index:1400;display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;border:none;border-radius:30px;padding:12px 18px 12px 15px;font-size:1.35rem;cursor:pointer;box-shadow:0 6px 20px rgba(61,90,152,.4);font-family:var(--font);transition:transform .2s,box-shadow .2s}
+.agent-fab{position:fixed;bottom:22px;right:22px;z-index:9998;display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;border:none;border-radius:30px;padding:12px 18px 12px 15px;font-size:1.35rem;cursor:pointer;box-shadow:0 6px 20px rgba(61,90,152,.4);font-family:var(--font);transition:transform .2s,box-shadow .2s}
 .agent-fab:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 8px 26px rgba(61,90,152,.5)}
 .agent-fab .fab-label{font-size:.9rem;font-weight:800}
 .agent-fab.hidden{display:none}
-.agent-widget{position:fixed;bottom:22px;right:22px;z-index:1401;width:400px;max-width:calc(100vw - 24px);height:560px;max-height:calc(100vh - 44px);background:var(--card);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.28);display:none;flex-direction:column;overflow:hidden;animation:widgetIn .25s ease}
+.agent-widget{position:fixed;bottom:22px;right:22px;z-index:9999;width:400px;max-width:calc(100vw - 24px);height:560px;max-height:calc(100vh - 44px);background:var(--card);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.28);display:none;flex-direction:column;overflow:hidden;animation:widgetIn .25s ease}
 .agent-widget.open{display:flex}
 @keyframes widgetIn{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 .agent-wh{background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;padding:14px 16px;font-weight:800;font-size:1rem;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
@@ -850,8 +850,60 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 .ax-out .odel:hover { transform: scale(1.2); }
 #axOutAdd { width: 100%; padding: 8px; background: var(--bg); border: 1px dashed var(--muted); border-radius: 8px; font-weight: 700; cursor: pointer; font-size: .85rem; color: var(--text); transition: .2s; }
 #axOutAdd:hover { border-color: var(--primary); color: var(--primary); background: rgba(61,90,152,.05); }
+/* 마인드맵 오버레이 및 줌인(빨려들어가는) 애니메이션 */
+.mindmap-overlay {
+  position: fixed; inset: 0; background: var(--bg); z-index: 9000;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  visibility: hidden; opacity: 0;
+  transform: scale(0.7); /* 시작 크기 (작게) */
+  transition: opacity 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mindmap-overlay.active {
+  visibility: visible; opacity: 1; transform: scale(1); /* 줌인 완료 */
+}
+.mindmap-close {
+  position: absolute; top: 24px; right: 30px; font-size: 2.5rem; font-weight: 300;
+  cursor: pointer; background: none; border: none; color: var(--muted); transition: 0.2s;
+}
+.mindmap-close:hover { color: var(--danger); transform: scale(1.1); }
+.mindmap-title {
+  position: absolute; top: 30px; left: 30px; font-size: 1.2rem; font-weight: 900; color: var(--primary);
+  letter-spacing: -0.5px;
+}
+.mindmap-container {
+  position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+}
+
+/* 마인드맵 노드 스타일 */
+.mm-center {
+  padding: 20px 30px; background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: #fff; border-radius: 40px; font-weight: 900; font-size: 1.4rem; z-index: 10;
+  box-shadow: 0 10px 30px rgba(61, 90, 152, 0.4); text-align: center;
+  animation: pulseCenter 2s infinite alternate;
+}
+@keyframes pulseCenter {
+  from { box-shadow: 0 10px 30px rgba(61, 90, 152, 0.3); }
+  to { box-shadow: 0 10px 40px rgba(61, 90, 152, 0.6); transform: scale(1.02); }
+}
+.mm-node {
+  position: absolute; padding: 14px 20px; background: var(--card);
+  border: 2px solid var(--border); border-radius: 16px;
+  box-shadow: var(--shadow); cursor: pointer; transition: all 0.25s ease;
+  min-width: 180px; text-align: center; z-index: 5;
+}
+.mm-node:hover {
+  border-color: var(--primary); transform: scale(1.08) !important;
+  box-shadow: 0 12px 30px rgba(61, 90, 152, 0.2); z-index: 20;
+}
+.mm-node .mm-id { font-size: 0.75rem; color: var(--primary); font-weight: 800; margin-bottom: 4px; }
+.mm-node .mm-title { font-size: 0.9rem; font-weight: 700; color: var(--text); line-height: 1.3; }
+
+/* 중심에서 뻗어나가는 선 */
+.mm-line {
+  position: absolute; background: var(--border); height: 2px;
+  transform-origin: 0 50%; z-index: 1; transition: background 0.3s;
+}
 </style> <!-- ◀ 이 태그 바로 위에 위치해야 합니다! -->
-</style>
 </head>
 <body>
 <div class="app" id="app">
@@ -2749,7 +2801,89 @@ function colMenu(e,field){e.preventDefault();selectSchedCol(field);const isCusto
   {t:'🗑️ 이 열 삭제',f:()=>removeColumn(field)},
   ...((schedCfg.hidden&&schedCfg.hidden.length)?[{sep:1},{t:'삭제한 열 되살리기 ('+schedCfg.hidden.length+'개)',f:()=>unhideAllCols()}]:[])
 ]);}
+/* ================= 마인드맵 인터랙션 ================= */
+function openMindMap(goalId, goalName) {
+  const overlay = document.getElementById('mindmapOverlay');
+  const container = document.getElementById('mindmapContainer');
+  
+  // 컨테이너 초기화 및 중앙 노드 생성
+  container.innerHTML = `<div class="mm-center" id="mmCenter">목표 ${goalId}.<br>${goalName}</div>`;
+  
+  // 클릭한 목표(Goal)에 속하는 세부 전략과제 필터링
+  const relatedTasks = TASKS.filter(t => t.goal === goalId);
+  if(relatedTasks.length === 0) {
+      alert("해당 목표에 연결된 과제가 없습니다.");
+      return;
+  }
 
+  // 화면 크기에 비례하여 퍼지는 반경 설정
+  const radius = Math.min(window.innerWidth, window.innerHeight) * 0.32; 
+  const angleStep = (2 * Math.PI) / relatedTasks.length;
+
+  relatedTasks.forEach((task, i) => {
+    // 원형 배치 좌표 계산
+    const angle = i * angleStep;
+    const x = Math.cos(angle) * radius;
+    const y = Math.sin(angle) * radius;
+
+    // 연결 선(Line) 생성
+    const line = document.createElement('div');
+    line.className = 'mm-line';
+    line.style.width = `${radius}px`;
+    // 컨테이너 중앙(50%, 50%)에서 시작하도록 위치 조정
+    line.style.left = '50%';
+    line.style.top = '50%';
+    line.style.transform = `translateY(-50%) rotate(${angle}rad)`;
+
+    // 개별 과제 노드 생성
+    const node = document.createElement('div');
+    node.className = 'mm-node';
+    node.innerHTML = `
+      <div class="mm-id">${task.id}</div>
+      <div class="mm-title">${task.title}</div>
+      <div class="nz-prog" style="margin-top: 8px; justify-content: center;">
+        <div class="nz-bar" style="max-width: 80px;"><i style="width:${taskProgress(task)}%; background:${progColor(taskProgress(task))}"></i></div>
+        <span>${taskProgress(task)}%</span>
+      </div>
+    `;
+    
+    // 좌표 적용 (중앙 기준 오프셋 보정은 CSS/JS 조합으로 처리)
+    node.style.left = `calc(50% + ${x}px)`;
+    node.style.top = `calc(50% + ${y}px)`;
+    node.style.transform = `translate(-50%, -50%)`; // 노드의 정중앙을 좌표에 맞춤
+
+    // 노드 클릭 시 마인드맵을 닫고 해당 과제 상세 모달 열기
+    node.onclick = () => {
+      closeMindMap();
+      setTimeout(() => openTask(task.id), 300); // 줌아웃 후 모달이 뜨도록 딜레이
+    };
+
+    container.appendChild(line);
+    container.appendChild(node);
+  });
+
+  // 애니메이션 트리거 (화면 나타남)
+  overlay.classList.add('active');
+  document.body.classList.add('modal-open');
+}
+
+function closeMindMap() {
+  const overlay = document.getElementById('mindmapOverlay');
+  overlay.classList.remove('active');
+  document.body.classList.remove('modal-open');
+}
+
+// ESC 키를 누르면 마인드맵도 닫히도록 기존 ESC 이벤트 리스너(대략 1018번째 줄)에 로직 추가
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape') {
+    const mmOverlay = document.getElementById('mindmapOverlay');
+    if(mmOverlay && mmOverlay.classList.contains('active')) {
+      closeMindMap();
+      return;
+    }
+    // ... (기존 ESC 닫기 로직들) ...
+  }
+});
 /* init */
 (function(){
   if(localStorage.getItem('ax_theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');document.getElementById('themeBtn').textContent='☀️';}
@@ -2775,5 +2909,11 @@ function colMenu(e,field){e.preventDefault();selectSchedCol(field);const isCusto
   ht.onclick=()=>{const closed=hb.style.display==='none';hb.style.display=closed?'block':'none';ht.textContent=closed?'접기':'도움말 보기';localStorage.setItem('ax_help',closed?'open':'closed');};
 })();
 </script>
+  <!-- 마인드맵 오버레이 -->
+<div class="mindmap-overlay" id="mindmapOverlay">
+  <button class="mindmap-close" onclick="closeMindMap()" title="닫기">×</button>
+  <div class="mindmap-title">전략 상세 마인드맵</div>
+  <div class="mindmap-container" id="mindmapContainer"></div>
+</div>
 </body>
 </html>
