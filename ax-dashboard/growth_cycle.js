@@ -282,3 +282,21 @@ function _cycHookRefresh(tries){
   window.renderOverview=w;
 }
 _cycHookRefresh(0);
+
+/* 초기 경합 보정 — 훅이 설치되기 전에 renderOverview 가 이미 끝났을 수 있다.
+   일정 데이터(schedCache)가 도착하면 카드만 한 번 다시 그린다(차트 재렌더 없음). */
+(function(){
+  var n=0;
+  var t=setInterval(function(){
+    if(++n>20){ clearInterval(t); return; }
+    var ready=false;
+    try{ ready=Object.keys(schedCache||{}).length>0; }catch(e){}
+    if(!ready) return;
+    var card=document.getElementById('axGrowthCard');
+    if(!card||!card.querySelector('.cycle-step')) return;
+    var open=[].slice.call(card.querySelectorAll('.cycle-step')).map(function(s){return s.classList.contains('expanded');});
+    renderCycle(card);
+    card.querySelectorAll('.cycle-step').forEach(function(s,i){ if(open[i]) s.classList.add('expanded'); });
+    clearInterval(t);
+  },500);
+})();
