@@ -1,3 +1,27 @@
+/* ── 데이터 변경 연동 ──────────────────────────────────────────
+   세부계획이 추가·수정되면 실시간 구독이 _bumpAllSched → loadAllSchedules →
+   renderOverview + renderTasks 를 부른다. 사이클 패널도 여기에 물려서
+   진척률·세부계획 건수가 같이 갱신되게 한다.
+   링(SVG·노드)은 건드리지 않으므로 인트로 애니메이션이 다시 돌지 않는다.
+   현재 어떤 화면인지는 DOM 으로 판별한다 — 목록이면 목록, 상세면 그 상세만 다시 채움. */
+(function(){
+  function refresh(){
+    const card=document.getElementById('axGrowthCard'); if(!card) return;
+    const inner=card.querySelector('.cy-in'); if(!inner) return;
+    if(inner.querySelector('.cy-list')){ inner.innerHTML=_cycListHTML(); return; }
+    const on=card.querySelector('.cy-n.on');
+    if(on) inner.innerHTML=_cycDetailHTML(+on.dataset.i);
+  }
+  function hook(tries){
+    const orig=window.renderOverview;
+    if(typeof orig!=='function'){ if((tries||0)<40) setTimeout(function(){ hook((tries||0)+1); },300); return; }
+    if(orig.__cyHooked) return;
+    const w=function(){ const r=orig.apply(this,arguments); try{ refresh(); }catch(e){ console.warn('[cycle] refresh:',e&&e.message); } return r; };
+    w.__cyHooked=true;
+    window.renderOverview=w;
+  }
+  hook(0);
+})();
 /* ── 패널 높이 고정 ────────────────────────────────────────────
    목록(구간 헤더 3개 포함)이 상세 카드보다 높아서, 전환할 때 그리드 행 높이가
    줄며 카드 전체가 흔들린다. 최초 목록 높이를 재서 min-height 로 고정한다.
