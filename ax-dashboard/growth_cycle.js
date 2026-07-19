@@ -1,3 +1,19 @@
+/* ── done 확정 가드 ─────────────────────────────────────────────
+   노드 선택 시 나머지를 흐리는 dim 은 인트로 애니메이션의 fill-forwards 가
+   걷힌 뒤에야 적용된다(애니메이션 값은 일반 CSS 선언보다 우선하기 때문).
+   .done 은 animationend 로 붙지만, 이벤트를 놓치면 dim·hover 가 통째로 죽는다.
+   인트로 시작이 감지되면 소요시간 뒤에 무조건 확정한다. */
+(function(){
+  const t=setInterval(function(){
+    const n=document.querySelector('#axGrowthCard .cy-nodes.play');
+    if(!n) return;
+    clearInterval(t);
+    setTimeout(function(){
+      n.querySelectorAll('.cy-n').forEach(function(e){ e.classList.add('done'); });
+    },1400);
+  },400);
+  setTimeout(function(){ clearInterval(t); },40000);
+})();
 /* =========================================================================
  * growth_cycle.js — AI Platform Hospital · Growth Cycle
  * -------------------------------------------------------------------------
