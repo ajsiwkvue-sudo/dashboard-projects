@@ -1,3 +1,23 @@
+
+/* ── 인트로 안전장치 ────────────────────────────────────────────
+   IntersectionObserver 는 백그라운드 탭에서 콜백을 전달하지 않는다(문서가 렌더되지 않음).
+   그 상태로 남으면 노드/궤도가 opacity:0 인 채 빈 링만 보인다.
+   ① 탭이 다시 보이면 재확인 ② 주기적 재확인 ③ 30초 뒤에는 조건 없이 표시. */
+(function(){
+  function arm(force){
+    document.querySelectorAll('#axGrowthCard .cyc-svg:not(.play)').forEach(function(s){
+      if(force){ s.classList.add('play'); return; }
+      const st=s.parentElement; if(!st || st.offsetParent===null) return;
+      const r=st.getBoundingClientRect();
+      if(r.height>0 && r.top<window.innerHeight && r.bottom>0) s.classList.add('play');
+    });
+  }
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState==='visible') setTimeout(function(){arm(false);},120);
+  });
+  const t=setInterval(function(){ if(document.visibilityState==='visible') arm(false); },700);
+  setTimeout(function(){ clearInterval(t); arm(true); },30000);
+})();
 /* =========================================================================
  * growth_cycle.js — AI Platform Hospital · Growth Cycle
  * -------------------------------------------------------------------------
