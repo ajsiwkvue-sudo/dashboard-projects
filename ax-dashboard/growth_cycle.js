@@ -149,7 +149,7 @@ function _cycStyles(){
   @keyframes cyIn{from{opacity:0;transform:translate(-50%,-50%) scale(.7)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
   @keyframes cyFade{to{opacity:1}}
   @keyframes cySpin{to{transform:rotate(360deg)}}
-  #axGrowthCard .cy-stage.play .cy-comet{opacity:1;animation:cySpin 9s linear infinite}
+  #axGrowthCard .cy-stage.play .cy-comet{opacity:1;animation:cySpin 7s linear infinite}
   #axGrowthCard .cy-stage.play .cy-center{animation:cyFade .6s ease .5s forwards}
   #axGrowthCard .cy-stage.play .cy-glow{animation:cyBreathe 5s ease-in-out infinite alternate}
   @keyframes cyBreathe{from{transform:translate(-50%,-50%) scale(.9);opacity:.7}to{transform:translate(-50%,-50%) scale(1.1);opacity:1}}
