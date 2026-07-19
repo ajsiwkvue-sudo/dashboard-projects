@@ -31,13 +31,19 @@ const GOALS = {
   G3:{no:"③",name:"전 직원 AX 문화 조성",hex:"#c1791d"}
 };
 
-/* 12단계 — [링 라벨, 실제 과제 id] · 성장 선순환 순서 */
+/* 12단계 — [링 라벨, 실제 과제 id]
+   배열 기준 = 목표 순서. 목표 자체가 handoff 사슬로 정의돼 있어 그대로 성장 구도가 된다.
+     ① 거버넌스(기반)  전략·표준·KPI·재원을 정의해 ②가 무엇을 어떤 기준으로 구축할지 결정
+     ② 프로세스(실행)  실증 데이터·성과·검증 결과를 만들어 ③의 재료를 공급
+     ③ 문화(확산)      새 과제·성과·인재를 만들어 다시 ①의 전략을 고도화 → 순환이 닫힘
+   덕분에 네이비/틸/오커가 각각 연속된 1/3 호를 이뤄 색 자체가 성장 단계를 말한다. */
 const CYCLE = [
- ["전략 수립","1-1"],   ["표준·윤리","1-2"],   ["AI 인프라","2-1"],
- ["데이터 확보","2-2"], ["AI 에이전트","2-3"], ["테스트베드","2-4"],
- ["성과 측정","1-3"],   ["가치창출","3-3"],    ["인재 양성","3-2"],
- ["성과 보상","3-4"],   ["과제 발굴","3-1"],   ["국책사업","1-4"]
+ ["전략 수립","1-1"],   ["표준·윤리","1-2"],   ["성과 측정","1-3"],   ["국책사업","1-4"],
+ ["AI 인프라","2-1"],   ["데이터 확보","2-2"], ["AI 에이전트","2-3"], ["테스트베드","2-4"],
+ ["과제 발굴","3-1"],   ["인재 양성","3-2"],   ["가치창출","3-3"],    ["성과 보상","3-4"]
 ];
+/* 4개씩 묶은 구간명. 링 바깥에 두면 노드 라벨과 충돌하므로 오른쪽 목록의 그룹 헤더로 쓴다. */
+const CYCLE_PHASES = {0:["기반","G1"],4:["실행","G2"],8:["확산","G3"]};
 
 /* ── 헬퍼 ─────────────────────────────────────────────────── */
 function goalOf(code){ return GOALS['G'+String(code||'').split('-')[0]] || GOALS.G1; }
@@ -79,8 +85,18 @@ function _cycStyles(){
     transform:translate(-50%,-50%);
     background:radial-gradient(circle,rgba(14,140,134,.15) 0%,rgba(14,140,134,.05) 45%,rgba(14,140,134,0) 72%)}
   #axGrowthCard .cy-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-  #axGrowthCard .cy-track{fill:none;stroke:var(--border);stroke-width:1;stroke-dasharray:2 7;stroke-linecap:round}
-  #axGrowthCard .cy-trail{fill:none;stroke:#0e8c86;stroke-width:2;stroke-linecap:round;opacity:0}
+  /* 궤도 점선 — 반지름은 노드 배치(박스 폭의 40% = viewBox 400)와 반드시 일치해야 한다 */
+  #axGrowthCard .cy-track{fill:none;stroke:#c3ccd6;stroke-width:1.5;stroke-dasharray:2 8;stroke-linecap:round;opacity:.55}
+
+  /* 혜성 트레일 — conic-gradient 로 머리는 진하고 꼬리는 투명.
+     mask 로 링만 남긴 뒤 통째로 회전(transform)시켜 GPU 에서 처리한다. */
+  #axGrowthCard .cy-comet{position:absolute;inset:0;border-radius:50%;opacity:0;pointer-events:none;
+    background:conic-gradient(from 0deg,
+      rgba(14,140,134,0) 0deg, rgba(14,140,134,0) 232deg,
+      rgba(14,140,134,.08) 286deg, rgba(14,140,134,.34) 331deg,
+      rgba(14,140,134,.85) 358deg, rgba(14,140,134,0) 360deg);
+    -webkit-mask:radial-gradient(circle closest-side,transparent 0 78.6%,#000 79.6%,#000 80.6%,transparent 81.6%);
+    mask:radial-gradient(circle closest-side,transparent 0 78.6%,#000 79.6%,#000 80.6%,transparent 81.6%)}
 
   #axGrowthCard .cy-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
     text-align:center;pointer-events:none;opacity:0}
@@ -88,21 +104,23 @@ function _cycStyles(){
     font-variant-numeric:tabular-nums}
   #axGrowthCard .cy-c2{display:block;font-size:.68rem;color:var(--muted);letter-spacing:.09em;margin-top:3px}
 
-  #axGrowthCard .cy-n{position:absolute;transform:translate(-50%,-50%);width:8px;height:8px;
+  #axGrowthCard .cy-n{position:absolute;transform:translate(-50%,-50%);width:18px;height:18px;
     padding:0;border:0;background:none;cursor:pointer;opacity:0}
-  #axGrowthCard .cy-n::before{content:'';position:absolute;inset:-11px;border-radius:50%}
-  #axGrowthCard .cy-dot{display:block;width:8px;height:8px;border-radius:50%;background:var(--c);
-    transition:transform .22s ease}
+  #axGrowthCard .cy-n::before{content:'';position:absolute;inset:-9px;border-radius:50%}
+  #axGrowthCard .cy-dot{display:flex;align-items:center;justify-content:center;width:18px;height:18px;
+    border-radius:50%;background:var(--c);transition:transform .22s ease}
+  #axGrowthCard .cy-num{font-size:.58rem;font-weight:700;color:#fff;line-height:1;
+    font-variant-numeric:tabular-nums;letter-spacing:0}
   #axGrowthCard .cy-lab{position:absolute;white-space:nowrap;font-size:.71rem;font-weight:700;
     color:var(--muted);transition:color .22s ease}
-  #axGrowthCard .cy-n.r .cy-lab{left:15px;top:50%;transform:translateY(-50%)}
-  #axGrowthCard .cy-n.l .cy-lab{right:15px;top:50%;transform:translateY(-50%)}
-  #axGrowthCard .cy-n.t .cy-lab{left:50%;bottom:15px;transform:translateX(-50%)}
-  #axGrowthCard .cy-n.b .cy-lab{left:50%;top:15px;transform:translateX(-50%)}
-  #axGrowthCard .cy-n:hover .cy-dot{transform:scale(1.5)}
+  #axGrowthCard .cy-n.r .cy-lab{left:25px;top:50%;transform:translateY(-50%)}
+  #axGrowthCard .cy-n.l .cy-lab{right:25px;top:50%;transform:translateY(-50%)}
+  #axGrowthCard .cy-n.t .cy-lab{left:50%;bottom:24px;transform:translateX(-50%)}
+  #axGrowthCard .cy-n.b .cy-lab{left:50%;top:24px;transform:translateX(-50%)}
+  #axGrowthCard .cy-n:hover .cy-dot{transform:scale(1.22)}
   #axGrowthCard .cy-n:hover .cy-lab{color:var(--text)}
   #axGrowthCard .cy-n:focus-visible .cy-dot{box-shadow:0 0 0 3px rgba(61,90,152,.25)}
-  #axGrowthCard .cy-n.on .cy-dot{transform:scale(1.9)}
+  #axGrowthCard .cy-n.on .cy-dot{transform:scale(1.3);box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 18%,transparent)}
   #axGrowthCard .cy-n.on .cy-lab{color:var(--text)}
   #axGrowthCard .cy-nodes{position:absolute;inset:0}
   #axGrowthCard .cy-nodes.sel .cy-n{transition:opacity .22s ease}
@@ -111,8 +129,8 @@ function _cycStyles(){
   /* 인트로 — 화면에 보일 때 1회 */
   @keyframes cyIn{from{opacity:0;transform:translate(-50%,-50%) scale(.7)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
   @keyframes cyFade{to{opacity:1}}
-  @keyframes cyRun{to{stroke-dashoffset:-1885}}
-  #axGrowthCard .cy-svg.play .cy-trail{opacity:.5;stroke-dasharray:70 1815;animation:cyRun 7s linear infinite}
+  @keyframes cySpin{to{transform:rotate(360deg)}}
+  #axGrowthCard .cy-stage.play .cy-comet{opacity:1;animation:cySpin 9s linear infinite}
   #axGrowthCard .cy-stage.play .cy-center{animation:cyFade .6s ease .5s forwards}
   #axGrowthCard .cy-stage.play .cy-glow{animation:cyBreathe 5s ease-in-out infinite alternate}
   @keyframes cyBreathe{from{transform:translate(-50%,-50%) scale(.9);opacity:.7}to{transform:translate(-50%,-50%) scale(1.1);opacity:1}}
@@ -126,7 +144,14 @@ function _cycStyles(){
   #axGrowthCard .cy-in.out{opacity:0}
   #axGrowthCard .cy-hint{font-size:.74rem;color:var(--muted);margin-bottom:9px}
   #axGrowthCard .cy-list{display:grid;gap:1px}
-  #axGrowthCard .cy-li{display:grid;grid-template-columns:16px 1fr auto auto;align-items:center;gap:9px;
+  #axGrowthCard .cy-ph{display:flex;align-items:baseline;gap:7px;padding:9px 0 4px 4px;margin-top:2px;
+    border-top:1px solid var(--border)}
+  #axGrowthCard .cy-list>.cy-ph:first-child{border-top:0;padding-top:0;margin-top:0}
+  #axGrowthCard .cy-phn{font-size:.72rem;font-weight:800;color:var(--c);letter-spacing:.02em}
+  #axGrowthCard .cy-phg{font-size:.68rem;color:var(--muted)}
+  #axGrowthCard .cy-li em{font-style:normal;font-size:.66rem;font-weight:800;color:var(--muted);
+    font-variant-numeric:tabular-nums;text-align:right}
+  #axGrowthCard .cy-li{display:grid;grid-template-columns:14px 16px 1fr auto auto;align-items:center;gap:9px;
     width:100%;text-align:left;padding:5px 8px 5px 4px;border:0;border-radius:7px;background:transparent;
     font-family:inherit;cursor:pointer;transition:background .15s ease}
   #axGrowthCard .cy-li:hover{background:rgba(61,90,152,.06)}
@@ -162,8 +187,9 @@ function _cycStyles(){
   @media(prefers-reduced-motion:reduce){
     #axGrowthCard .cy-n{opacity:1;animation:none!important}
     #axGrowthCard .cy-center{opacity:1;animation:none!important}
-    #axGrowthCard .cy-glow,#axGrowthCard .cy-trail{animation:none!important}
-    #axGrowthCard .cy-svg.play .cy-trail{opacity:.35}
+    #axGrowthCard .cy-glow{animation:none!important}
+    #axGrowthCard .cy-comet{animation:none!important}
+    #axGrowthCard .cy-stage.play .cy-comet{opacity:1}
     #axGrowthCard .cy-in{transition:none}
   }
 
@@ -186,7 +212,13 @@ function _cycStyles(){
 function _cycListHTML(){
   const rows=CYCLE.map((c,i)=>{
     const t=_cycTask(c[1]), g=goalOf(c[1]);
-    return `<button class="cy-li" data-i="${i}" style="--c:${g.hex}"><i></i>`+
+    let head='';
+    if(CYCLE_PHASES[i]){
+      const p=CYCLE_PHASES[i], G=GOALS[p[1]];
+      head=`<div class="cy-ph" style="--c:${G.hex}"><span class="cy-phn">${_cycEsc(p[0])}</span>`+
+        `<span class="cy-phg">${G.no} ${_cycEsc(G.name)}</span></div>`;
+    }
+    return head+`<button class="cy-li" data-i="${i}" style="--c:${g.hex}"><em>${i+1}</em><i></i>`+
       `<b>${_cycEsc(t?t.title:c[0])}</b><s>${_cycEsc(c[1])}</s><u>${_cycProg(t)}%</u></button>`;
   }).join('');
   return `<div class="cy-hint">앞 단계의 산출물이 다음 단계의 입력이 됩니다. 항목을 클릭하면 상세가 열립니다.</div>
@@ -223,9 +255,9 @@ function renderCycle(root){
       <div class="cy-stage">
         <div class="cy-glow"></div>
         <svg class="cy-svg" viewBox="0 0 1000 1000" aria-hidden="true">
-          <circle class="cy-track" cx="500" cy="500" r="300"/>
-          <circle class="cy-trail" cx="500" cy="500" r="300"/>
+          <circle class="cy-track" cx="500" cy="500" r="400"/>
         </svg>
+        <div class="cy-comet"></div>
         <div class="cy-nodes"></div>
         <div class="cy-center"><span class="cy-c1">12</span><span class="cy-c2">전략과제</span></div>
       </div>
@@ -248,7 +280,8 @@ function renderCycle(root){
     b.style.top=(50+40*uy)+'%';
     b.style.animationDelay=(i*0.055)+'s';
     b.setAttribute('aria-label',c[0]+' '+c[1]);
-    b.innerHTML=`<span class="cy-dot"></span><span class="cy-lab">${_cycEsc(c[0])}</span>`;
+    b.innerHTML=`<span class="cy-dot"><span class="cy-num">${i+1}</span></span>`+
+      `<span class="cy-lab">${_cycEsc(c[0])}</span>`;
     nodes.appendChild(b);
   });
 
