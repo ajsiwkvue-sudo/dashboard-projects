@@ -253,3 +253,32 @@ function cycOpenNode(code){
 }
 
 if(typeof window!=='undefined'){ window.renderCycle = renderCycle; window.renderCycleRing = renderCycleRing; }
+
+/* ── 진척률 갱신 훅 ───────────────────────────────────────────
+   개요는 일정(schedCache) 로딩 전에 먼저 렌더되므로, 최초 렌더 시점엔
+   진척률이 0으로 나온다. renderOverview 가 다시 불릴 때(로딩 완료·실시간
+   반영) 사이클 카드도 같이 다시 그려 주고, 펼침 상태는 유지한다. */
+function _cycHookRefresh(tries){
+  if(typeof window==='undefined') return;
+  const orig=window.renderOverview;
+  if(typeof orig!=='function'){
+    if((tries||0)<40) setTimeout(()=>_cycHookRefresh((tries||0)+1),300);
+    return;
+  }
+  if(orig.__cycHooked) return;
+  const w=function(){
+    const r=orig.apply(this,arguments);
+    try{
+      const card=document.getElementById('axGrowthCard');
+      if(card && card.querySelector('.cycle-step')){
+        const open=[...card.querySelectorAll('.cycle-step')].map(s=>s.classList.contains('expanded'));
+        renderCycle(card);
+        card.querySelectorAll('.cycle-step').forEach((s,i)=>{ if(open[i]) s.classList.add('expanded'); });
+      }
+    }catch(e){ console.warn('[cycle] refresh:', e&&e.message); }
+    return r;
+  };
+  w.__cycHooked=true;
+  window.renderOverview=w;
+}
+_cycHookRefresh(0);
