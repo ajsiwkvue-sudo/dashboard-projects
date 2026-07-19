@@ -1,3 +1,22 @@
+/* ── 패널 높이 고정 ────────────────────────────────────────────
+   목록(구간 헤더 3개 포함)이 상세 카드보다 높아서, 전환할 때 그리드 행 높이가
+   줄며 카드 전체가 흔들린다. 최초 목록 높이를 재서 min-height 로 고정한다.
+   2단 레이아웃일 때만 적용하고, 폭이 바뀌면 다시 잰다. */
+(function(){
+  function lock(){
+    const el=document.querySelector('#axGrowthCard .cy-in');
+    if(!el || !el.querySelector('.cy-list')) return false;   // 상세 표시 중이면 건드리지 않는다
+    if(!window.matchMedia('(min-width:901px)').matches){ el.style.minHeight=''; return true; }
+    el.style.minHeight='';
+    const h=el.offsetHeight;
+    if(h<=0) return false;
+    el.style.minHeight=h+'px';
+    return true;
+  }
+  const t=setInterval(function(){ if(lock()) clearInterval(t); },400);
+  setTimeout(function(){ clearInterval(t); },30000);
+  let rt; window.addEventListener('resize',function(){ clearTimeout(rt); rt=setTimeout(lock,250); });
+})();
 /* ── done 확정 가드 ─────────────────────────────────────────────
    노드 선택 시 나머지를 흐리는 dim 은 인트로 애니메이션의 fill-forwards 가
    걷힌 뒤에야 적용된다(애니메이션 값은 일반 CSS 선언보다 우선하기 때문).
