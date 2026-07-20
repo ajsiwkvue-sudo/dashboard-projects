@@ -24,10 +24,20 @@
             || (function(){ try{ return TASKS.find(function(x){return x.id===tid;}); }catch(e){ return null; } })();
     if(task) view.dataset.g=String(task.goal);
     tab.click();
-    setTimeout(function(){
+    // render() 가 innerHTML 을 통째로 갈아끼우기 때문에 한 번만 스크롤하면
+    // 뒤이어 오는 재렌더에 밀려 원위치된다. 자리를 잡을 때까지 몇 번 다시 맞춘다.
+    // behavior:'smooth' 를 반복 호출하면 매번 애니메이션이 취소돼 영영 도착하지 못한다.
+    // 즉시 스크롤로 자리를 잡고, 자리가 맞으면 멈춘다.
+    let n=0, settled=0;
+    const t=setInterval(function(){
       const lane=view.querySelector('.sw[data-t="'+tid+'"]');
-      if(lane) lane.scrollIntoView({block:'center',behavior:'smooth'});
-    },280);
+      if(lane){
+        const r=lane.getBoundingClientRect();
+        if(Math.abs(r.top+r.height/2-window.innerHeight/2)<80){ if(++settled>=2) return clearInterval(t); }
+        else { settled=0; lane.scrollIntoView({block:'center'}); }
+      }
+      if(++n>14) clearInterval(t);
+    },200);
     return true;
   };
 })();
