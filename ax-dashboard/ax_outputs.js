@@ -82,6 +82,14 @@
     try{ if(typeof schedCache!=='undefined' && schedCache) return schedCache[id]||[]; }catch(e){}
     return [];
   }
+  /* 전략과제 진척률 — index.html 의 taskProgress 를 그대로 쓴다 */
+  function _prog(t){
+    try{ if(typeof taskProgress==='function') return Math.round(taskProgress(t)); }catch(e){}
+    try{ if(typeof window.taskProgress==='function') return Math.round(window.taskProgress(t)); }catch(e){}
+    const rs=_sched(t.id); if(!rs.length) return 0;
+    let sw=0,sp=0; rs.forEach(r=>{ const w=+(r.weight||1); sw+=w; sp+=w*(+(r.progress||0)); });
+    return sw? Math.round(sp/sw):0;
+  }
   function _me(){
     try{ if(typeof whoAmI==='function') return whoAmI(); }catch(e){}
     return '';
