@@ -363,3 +363,12 @@ window.axPort = { init:axPortInit, CFG, isLocked, gate, toggleLock, audit,
   s.onerror=function(){ console.warn('[ax] ax_outputs.js 로드 실패'); };
   document.head.appendChild(s);
 })();
+
+/* ── 프레즌스 보정 모듈 로더 ──────────────────────────────────────────
+   동시접속자 위치정보가 유령 세션에 고정되던 문제를 바로잡는다. */
+(function(){
+  if([].slice.call(document.scripts).some(function(s){return (s.src||'').indexOf('ax_presence.js')>=0;})) return;
+  var s=document.createElement('script'); s.src='ax_presence.js';
+  s.onerror=function(){ console.warn('[ax] ax_presence.js 로드 실패'); };
+  document.head.appendChild(s);
+})();
