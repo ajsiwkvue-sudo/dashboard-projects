@@ -106,7 +106,8 @@
       _sched(t.id).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)).forEach(r=>{
         const d=String(r.deliverable||'').trim(); if(!d) return;
         out.push({key:t.id+'|sched|'+r.id, task_id:t.id, kind:'sched', idx:0, sched_id:r.id,
-                  text:d, sub:(r.seq||'')+' '+(r.name||''), due:r.end_date||'', guess:parseTarget(d)});
+                  text:d, sub:(r.seq||'')+' '+(r.name||''), due:r.end_date||'',
+                  rowPct:Math.max(0,Math.min(100,+(r.progress||0))), guess:parseTarget(d)});
       });
     });
     return out;
@@ -240,7 +241,8 @@
     const openG=view.dataset.g||'1';
 
     const zones=[1,2,3].map(g=>{
-      const G=(window.GOALS&&window.GOALS['G'+g])||{};
+      let G={}; try{ if(typeof GOALS!=='undefined' && GOALS && GOALS['G'+g]) G=GOALS['G'+g]; }catch(e){}
+      if(!G.name) G=(window.GOALS&&window.GOALS['G'+g])||{};
       const hex=G.hex||['','#3d5a98','#0e8c86','#c1791d'][g];
       const mine=_tasks().filter(t=>String(t.goal)===String(g));
       if(!mine.length) return '';
