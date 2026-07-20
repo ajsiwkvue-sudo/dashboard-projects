@@ -1,11 +1,3 @@
-/* 산출물·KPI 탭 로더 — ax_outputs.js 는 자기완결적이라 로드만 하면 탭이 주입된다. */
-(function(){
-  if([].slice.call(document.scripts).some(function(s){return (s.src||'').indexOf('ax_outputs.js')>=0;})) return;
-  var s=document.createElement('script');
-  s.src='ax_outputs.js';
-  s.onerror=function(){ console.warn('[ax] ax_outputs.js 로드 실패'); };
-  document.head.appendChild(s);
-})();
 /* =========================================================================
  * ax_port.js — 콘솔 기능의 ilsan-AX(Supabase) 이식 모듈 (+ 자체 UI 마운트)
  * -------------------------------------------------------------------------
@@ -197,13 +189,6 @@ function injectAxStyles(){
   .ax-card .ax-h{font-weight:800;color:#12263a;font-size:.9rem;margin-bottom:9px}
   .ax-card textarea{width:100%;min-height:64px;border:1px solid #d3dde6;border-radius:8px;padding:8px;font-family:inherit;font-size:.85rem;resize:vertical;box-sizing:border-box}
   .ax-logs{max-height:132px;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:3px}
-  #axTaskPop{position:fixed;inset:0;background:rgba(18,38,58,.45);z-index:9600;display:none;align-items:center;justify-content:center;padding:20px}
-  #axTaskPop.open{display:flex}
-  #axTaskPop .tp-panel{width:min(680px,96vw);max-height:88vh;background:#eef2f6;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.4);display:flex;flex-direction:column;overflow:hidden;animation:axcIn .2s ease}
-  #axTaskPop .tp-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:#3d5a98;color:#fff}
-  #axTaskPop .tp-head b{font-size:.95rem}
-  #axTaskPop .tp-x{background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;line-height:1;padding:0 4px}
-  #axTaskPop .tp-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:14px;display:flex;flex-direction:column;gap:12px}
   .ax-log{display:flex;gap:8px;font-size:.74rem;color:#12263a;padding:3px 0;border-bottom:1px solid #eef2f6}
   .ax-log .t{color:#6c7d8e;flex:0 0 auto}.ax-log .u{font-weight:700;flex:0 0 auto}
   .ax-empty{color:#6c7d8e;font-size:.8rem;padding:6px 0}
@@ -303,29 +288,16 @@ function mountConsoleUI(){
   _consoleRender=()=>{ if(ov.classList.contains('open'))render(); };
 }
 
-/* ==================== 세부계획(WBS) 화면: 과제별 산출물·KPI 팝업 ==================== */
-function openTaskPop(tid){
-  if(!tid)return; injectAxStyles();
-  let ov=document.getElementById('axTaskPop');
-  if(!ov){
-    ov=document.createElement('div'); ov.id='axTaskPop';
-    ov.innerHTML=`<div class="tp-panel"><div class="tp-head"><b class="tp-title"></b><button class="tp-x" title="닫기">×</button></div>
-      <div class="tp-body"><div id="axTPKpi"></div><div id="axTPOut"></div></div></div>`;
-    document.body.appendChild(ov);
-    ov.querySelector('.tp-x').onclick=()=>ov.classList.remove('open');
-    ov.onclick=e=>{ if(e.target===ov)ov.classList.remove('open'); };
-  }
-  const t=_tasks().find(x=>x.id===tid);
-  ov.querySelector('.tp-title').textContent='📎 '+(t?(t.id+' '+t.title):tid)+' — 산출물·KPI';
-  ov.classList.add('open');
-  renderKpis(ov.querySelector('#axTPKpi'), tid);
-  renderOutputs(ov.querySelector('#axTPOut'), tid);
-}
+/* ==================== 세부계획(WBS) 리본: 산출물 탭으로 이동 ==================== */
 function injectSchedTaskBtn(tid){
   const rb=document.querySelector('#swPanel .sw-ribbon'); if(!rb || rb.querySelector('#axSchedTaskBtn'))return;
-  const b=document.createElement('button'); b.id='axSchedTaskBtn'; b.className='rb-ib rb-add'; b.textContent='📎 산출물·KPI';
-  b.title='이 과제의 기대 산출물·성과지표';
-  b.onclick=()=>openTaskPop(tid);
+  const b=document.createElement('button'); b.id='axSchedTaskBtn'; b.className='rb-ib rb-add'; b.textContent='📦 산출물 보기 →';
+  b.title='이 과제의 산출물을 산출물 탭에서 봅니다';
+  // 예전에는 여기서 빈 목록을 띄우는 팝업을 열었다. 이제 산출물 탭으로 보낸다.
+  b.onclick=()=>{
+    if(typeof window.closeSchedule==='function') window.closeSchedule();
+    setTimeout(()=>{ if(typeof window.axOutputsGoto==='function') window.axOutputsGoto(tid); },120);
+  };
   rb.appendChild(b);
 }
 function wrapRenderScheduleForPanel(){
