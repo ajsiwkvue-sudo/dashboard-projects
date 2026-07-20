@@ -1,3 +1,42 @@
+/* ── 세부계획 리본의 "산출물·KPI" 버튼 → 산출물 탭으로 이동 ──────────────
+   ax_port.js 의 팝업(openTaskPop)은 빈 ax_outputs 를 보여주던 구버전이다.
+   ax_port.js 를 직접 수술하지 않고, 캡처 단계에서 클릭을 가로채
+   팝업 대신 산출물 탭의 해당 과제 그룹으로 보낸다. */
+(function(){
+  function goto(tid){
+    const tab=[].slice.call(document.querySelectorAll('nav.tabs .tab')).find(function(t){return t.dataset.t==='outputs';});
+    const view=document.getElementById('v-outputs');
+    if(!tab||!view) return false;
+    if(tid) view.dataset.open=tid;
+    tab.click();
+    setTimeout(function(){
+      const g=view.querySelector('.op-g[data-t="'+tid+'"]');
+      if(g) g.scrollIntoView({block:'center',behavior:'smooth'});
+    },280);
+    return true;
+  }
+  document.addEventListener('click',function(e){
+    const b=e.target&&e.target.closest&&e.target.closest('#axSchedTaskBtn');
+    if(!b) return;
+    e.preventDefault(); e.stopImmediatePropagation();   // 구버전 팝업 차단
+    let tid=null;
+    try{ tid=(typeof currentSchedTask!=='undefined'&&currentSchedTask)||null; }catch(_){}
+    if(!tid) tid=window.currentSchedTask||null;
+    if(typeof window.closeSchedule==='function') window.closeSchedule();
+    setTimeout(function(){ goto(tid); },120);
+  },true);
+  // 버튼 문구를 이동 동작에 맞게 바꾼다
+  let n=0; const t=setInterval(function(){
+    if(++n>120){ clearInterval(t); return; }
+    const b=document.getElementById('axSchedTaskBtn');
+    if(b && b.textContent.indexOf('→')<0){
+      b.textContent='📦 산출물 보기 →';
+      b.title='이 과제의 산출물을 산출물 탭에서 봅니다';
+    }
+  },500);
+  window.axOutputsGoto=goto;
+})();
+
 /* =========================================================================
  * ax_outputs.js — 산출물 · KPI 트래커 탭
  * -------------------------------------------------------------------------
