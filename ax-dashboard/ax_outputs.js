@@ -153,57 +153,79 @@
     }catch(e){ console.warn('[outputs] save:',e&&e.message); toast('저장 실패: '+(e&&e.message||'')); }
   }
 
-  /* ── 스타일 ── */
+  /* ── 스타일 (Jira 스타일 3단 보드) ── */
   function styles(){
     if(document.getElementById('axOutStyles')) return;
     const st=document.createElement('style'); st.id='axOutStyles';
     st.textContent=`
     #v-outputs .op-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
     #v-outputs .op-kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
-    #v-outputs .op-kpi b{display:block;font-size:1.5rem;font-weight:800;color:var(--text);line-height:1.1;
-      font-variant-numeric:tabular-nums}
+    #v-outputs .op-kpi b{display:block;font-size:1.5rem;font-weight:800;color:var(--text);line-height:1.1;font-variant-numeric:tabular-nums}
     #v-outputs .op-kpi span{font-size:.74rem;color:var(--muted)}
-    #v-outputs .op-g{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;
-      overflow:hidden}
-    #v-outputs .op-gh{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;
-      border-left:4px solid var(--c)}
-    #v-outputs .op-gh:hover{background:rgba(61,90,152,.05)}
-    #v-outputs .op-gid{font-size:.74rem;font-weight:800;color:var(--c);font-variant-numeric:tabular-nums}
-    #v-outputs .op-gt{flex:1;min-width:0;font-size:.9rem;font-weight:800;color:var(--text);
-      overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    #v-outputs .op-gc{font-size:.76rem;color:var(--muted);font-variant-numeric:tabular-nums}
-    #v-outputs .op-gb{width:90px;height:5px;border-radius:3px;background:var(--track,#e6eaef);overflow:hidden;flex-shrink:0}
-    #v-outputs .op-gb i{display:block;height:100%;background:var(--c);border-radius:3px}
-    #v-outputs .op-body{display:none;padding:0 14px 12px}
-    #v-outputs .op-g.open .op-body{display:block}
-    #v-outputs .op-sec{font-size:.72rem;font-weight:800;color:var(--muted);letter-spacing:.03em;
-      padding:12px 0 6px;border-top:1px solid var(--border);margin-top:6px}
-    #v-outputs .op-g .op-body>.op-sec:first-child{border-top:0;margin-top:0}
-    #v-outputs .op-r{display:grid;grid-template-columns:26px 1fr 132px 108px 92px;gap:10px;align-items:center;
-      padding:8px 6px;border-radius:8px}
-    #v-outputs .op-r:hover{background:rgba(61,90,152,.04)}
-    #v-outputs .op-r.goal{background:rgba(61,90,152,.035)}
-    #v-outputs .op-chk{width:17px;height:17px;cursor:pointer;accent-color:var(--c)}
-    #v-outputs .op-t{min-width:0}
-    #v-outputs .op-t b{display:block;font-size:.83rem;font-weight:700;color:var(--text);line-height:1.35}
-    #v-outputs .op-t span{display:block;font-size:.71rem;color:var(--muted);overflow:hidden;
-      text-overflow:ellipsis;white-space:nowrap}
-    #v-outputs .op-num{display:flex;align-items:center;gap:4px}
-    #v-outputs .op-num input{width:44px;padding:4px 5px;border:1px solid var(--border);border-radius:6px;
-      background:var(--bg);color:var(--text);font-family:inherit;font-size:.76rem;text-align:right;
-      font-variant-numeric:tabular-nums}
-    #v-outputs .op-num em{font-style:normal;font-size:.72rem;color:var(--muted)}
-    #v-outputs .op-file{display:flex;gap:5px;align-items:center}
-    #v-outputs .op-b{padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:transparent;
-      color:var(--muted);font-family:inherit;font-size:.71rem;font-weight:700;cursor:pointer;white-space:nowrap}
-    #v-outputs .op-b:hover{border-color:var(--primary);color:var(--primary)}
-    #v-outputs .op-b.has{border-color:var(--c);color:var(--c)}
-    #v-outputs .op-p{font-size:.76rem;font-weight:800;color:var(--c);text-align:right;
-      font-variant-numeric:tabular-nums}
     #v-outputs .op-hint{font-size:.78rem;color:var(--muted);margin-bottom:14px;line-height:1.6}
-    @media(max-width:820px){
-      #v-outputs .op-r{grid-template-columns:26px 1fr;gap:6px}
-      #v-outputs .op-num,#v-outputs .op-file,#v-outputs .op-p{grid-column:2}
+
+    /* 목표 그룹 */
+    #v-outputs .gz{margin-bottom:14px}
+    #v-outputs .gz-h{display:flex;align-items:center;gap:9px;padding:9px 12px;cursor:pointer;
+      background:var(--card);border:1px solid var(--border);border-left:4px solid var(--c);border-radius:10px}
+    #v-outputs .gz-h:hover{background:rgba(61,90,152,.04)}
+    #v-outputs .gz-tg{font-size:.66rem;color:var(--muted);width:12px;text-align:center}
+    #v-outputs .gz-n{flex:1;min-width:0;font-size:.88rem;font-weight:800;color:var(--c);
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    #v-outputs .gz-c{font-size:.74rem;color:var(--muted);font-variant-numeric:tabular-nums}
+    #v-outputs .gz-b{display:none;margin-top:12px}
+    #v-outputs .gz.open .gz-b{display:block}
+
+    /* 스윔레인 */
+    #v-outputs .sw{display:grid;grid-template-columns:1fr 1.2fr 1.5fr;gap:16px;background:var(--bg);
+      padding:14px;border-radius:12px;border:1px solid var(--border);margin-bottom:12px}
+    #v-outputs .swc{display:flex;flex-direction:column;gap:9px;min-width:0}
+    #v-outputs .swh{font-size:.7rem;font-weight:800;color:var(--muted);letter-spacing:.04em}
+    #v-outputs .swh i{font-style:normal;background:var(--border);color:var(--text);padding:1px 6px;
+      border-radius:9px;font-size:.66rem;margin-left:4px;font-variant-numeric:tabular-nums}
+    #v-outputs .jc{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;
+      box-shadow:0 1px 3px rgba(0,0,0,.04);transition:box-shadow .18s,border-color .18s}
+    #v-outputs .jc:hover{box-shadow:0 4px 12px rgba(61,90,152,.10);border-color:var(--c)}
+    #v-outputs .mc .mt{font-size:.92rem;font-weight:800;color:var(--text);line-height:1.4;margin-bottom:11px}
+    #v-outputs .mc .mp{display:flex;align-items:center;gap:8px}
+    #v-outputs .mc .mb{flex:1;height:8px;background:var(--track);border-radius:4px;overflow:hidden}
+    #v-outputs .mc .mb i{display:block;height:100%;background:var(--c);border-radius:4px}
+    #v-outputs .mc .mv{font-size:.78rem;font-weight:800;color:var(--c);font-variant-numeric:tabular-nums}
+    #v-outputs .mc .mm{font-size:.7rem;color:var(--muted);margin-top:8px}
+
+    #v-outputs .cl{display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:.83rem;
+      font-weight:700;line-height:1.4;color:var(--text)}
+    #v-outputs .cl input{margin-top:3px;accent-color:var(--c);cursor:pointer;flex:0 0 auto}
+    #v-outputs .num{display:flex;align-items:center;gap:5px;margin:9px 0 0 21px}
+    #v-outputs .num input{width:46px;padding:3px 5px;border:1px solid var(--border);border-radius:5px;
+      background:var(--bg);color:var(--text);font-family:inherit;font-size:.75rem;text-align:right;
+      font-variant-numeric:tabular-nums}
+    #v-outputs .num em{font-style:normal;font-size:.71rem;color:var(--muted)}
+    #v-outputs .num b{margin-left:auto;font-size:.75rem;font-weight:800;color:var(--c)}
+
+    #v-outputs .scroll{display:flex;flex-direction:column;gap:9px;max-height:290px;overflow-y:auto;
+      padding-right:4px;overscroll-behavior:contain}
+    #v-outputs .scroll::-webkit-scrollbar{width:5px}
+    #v-outputs .scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+    #v-outputs .sh{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:5px}
+    #v-outputs .sd{font-size:.73rem;color:var(--muted);margin:0 0 9px 21px;line-height:1.45}
+    #v-outputs .sf{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-left:21px;
+      padding-top:8px;border-top:1px dashed var(--border)}
+    #v-outputs .due{font-size:.69rem;color:var(--muted);font-weight:700;white-space:nowrap}
+    #v-outputs .acts{display:flex;gap:5px}
+    #v-outputs .bs{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:3px 8px;
+      font-size:.69rem;font-weight:700;color:var(--text);cursor:pointer;transition:.15s;font-family:inherit;white-space:nowrap}
+    #v-outputs .bs:hover{background:var(--c);color:#fff;border-color:var(--c)}
+    #v-outputs .bs.on{border-color:var(--c);color:var(--c)}
+    #v-outputs .bg{font-size:.64rem;padding:2px 6px;border-radius:4px;font-weight:800;white-space:nowrap;flex:0 0 auto}
+    #v-outputs .bg.plan{background:rgba(108,125,142,.12);color:var(--gray)}
+    #v-outputs .bg.prog{background:rgba(217,131,36,.12);color:var(--warning)}
+    #v-outputs .bg.done{background:rgba(29,158,117,.14);color:#0e8c86}
+    #v-outputs .none{font-size:.74rem;color:var(--muted);padding:10px 2px}
+
+    @media(max-width:1024px){
+      #v-outputs .sw{grid-template-columns:1fr}
+      #v-outputs .scroll{max-height:none}
     }`;
     document.head.appendChild(st);
   }
@@ -215,87 +237,98 @@
     const done=list.filter(r=>pctOf(r,OUT[r.key])>=100).length;
     const files=list.filter(r=>(OUT[r.key]||{}).file_path||(OUT[r.key]||{}).link).length;
     const goals=list.filter(r=>r.kind==='goal').length;
+    const openG=view.dataset.g||'1';
 
-    const groups=_tasks().map(t=>{
-      const mine=list.filter(r=>r.task_id===t.id); if(!mine.length) return '';
-      const g=(typeof window.GOALS!=='undefined'&&window.GOALS['G'+t.goal])||{hex:'#3d5a98'};
-      const dn=mine.filter(r=>pctOf(r,OUT[r.key])>=100).length;
-      const pct=Math.round(mine.reduce((s,r)=>s+pctOf(r,OUT[r.key]),0)/mine.length);
-      const open=view.dataset.open===t.id?' open':'';
-      const sec=(k,label)=>{
-        const arr=mine.filter(r=>r.kind===k); if(!arr.length) return '';
-        return `<div class="op-sec">${label} (${arr.length})</div>`+arr.map(r=>row(r,g.hex)).join('');
-      };
-      return `<div class="op-g${open}" data-t="${esc(t.id)}" style="--c:${g.hex}">
-        <div class="op-gh"><span class="op-gid">${esc(t.id)}</span>
-          <span class="op-gt">${esc(t.title)}</span>
-          <span class="op-gc">${dn}/${mine.length}</span>
-          <span class="op-gb"><i style="width:${pct}%"></i></span></div>
-        <div class="op-body">${sec('goal','기대산출물')}${sec('sched','세부과제 산출물')}</div>
-      </div>`;
+    const zones=[1,2,3].map(g=>{
+      const G=(window.GOALS&&window.GOALS['G'+g])||{};
+      const hex=G.hex||['','#3d5a98','#0e8c86','#c1791d'][g];
+      const mine=_tasks().filter(t=>String(t.goal)===String(g));
+      if(!mine.length) return '';
+      const all=list.filter(r=>mine.some(t=>t.id===r.task_id));
+      const dn=all.filter(r=>pctOf(r,OUT[r.key])>=100).length;
+      const op=String(openG)===String(g)?' open':'';
+      return `<div class="gz${op}" data-g="${g}" style="--c:${hex}">
+        <div class="gz-h"><span class="gz-tg">${op?'▾':'▸'}</span>
+          <span class="gz-n">${esc((G.no||'')+' '+(G.name||('목표'+g)))}</span>
+          <span class="gz-c">산출물 ${dn}/${all.length}</span></div>
+        <div class="gz-b">${mine.map(t=>lane(t,hex,list)).join('')}</div></div>`;
     }).join('');
 
     view.innerHTML=`<div class="wrap">
       <h2 style="margin:0 0 4px">📦 산출물 · KPI</h2>
-      <p class="op-hint">사업계획서에 이미 정의된 산출물입니다. 수량형(예: AI Agent 30종)은 <b>목표/실적</b>을 입력하면 진행률이 계산되고,
+      <p class="op-hint">사업계획서에 정의된 산출물입니다. 수량형(예: AI Agent 30종)은 <b>목표/실적</b>을 입력하면 진행률이 계산되고,
       그 외는 <b>완료 체크</b>로 관리합니다. 파일은 업로드하거나 내부 파일서버 경로를 링크로 남길 수 있습니다.</p>
       <div class="op-sum">
         <div class="op-kpi"><b>${done}/${list.length}</b><span>완료 산출물</span></div>
         <div class="op-kpi"><b>${goals}</b><span>전략과제 기대산출물</span></div>
         <div class="op-kpi"><b>${list.length-goals}</b><span>세부과제 산출물</span></div>
         <div class="op-kpi"><b>${files}</b><span>파일·링크 등록</span></div>
-      </div>
-      ${groups}</div>`;
+      </div>${zones}</div>`;
   }
 
-  function row(r,hex){
+  function lane(t,hex,list){
+    const mid=list.filter(r=>r.task_id===t.id&&r.kind==='goal');
+    const mic=list.filter(r=>r.task_id===t.id&&r.kind==='sched');
+    const pct=_prog(t);
+    const n=_sched(t.id).length;
+    return `<div class="sw" style="--c:${hex}">
+      <div class="swc"><div class="swh">전략 개요</div>
+        <div class="jc mc"><div class="mt">${esc(t.id)} ${esc(t.title)}</div>
+          <div class="mp"><span class="mb"><i style="width:${pct}%"></i></span><span class="mv">${pct}%</span></div>
+          <div class="mm">${esc(t.team||'-')} · 세부계획 ${n}건</div></div></div>
+      <div class="swc"><div class="swh">기대 산출물<i>${mid.length}</i></div>
+        ${mid.length?mid.map(r=>midCard(r)).join(''):'<div class="none">등록된 기대산출물이 없습니다.</div>'}</div>
+      <div class="swc"><div class="swh">세부과제 산출물<i>${mic.length}</i></div>
+        ${mic.length?`<div class="scroll">${mic.map(r=>micCard(r)).join('')}</div>`
+                    :'<div class="none">세부계획에 산출물이 기재되지 않았습니다.</div>'}</div>
+    </div>`;
+  }
+
+  function midCard(r){
     const s=OUT[r.key]||{};
-    const tg=+(s.target_num|| (s.id?0:(r.guess?r.guess.target:0)) )||0;
+    const tg=+(s.target_num||(s.id?0:(r.guess?r.guess.target:0)))||0;
     const cur=+(s.current_num||0);
     const unit=s.unit||(r.guess?r.guess.unit:'');
-    const pct=pctOf(r,s);
     const numeric=tg>0||(!s.id&&r.guess);
-    const fileBtn=s.file_path
-      ? `<button class="op-b has" data-act="open" data-k="${esc(r.key)}">📎 파일</button>`
-      : `<button class="op-b" data-act="up" data-k="${esc(r.key)}">＋파일</button>`;
-    const linkBtn=s.link
-      ? `<button class="op-b has" data-act="link" data-k="${esc(r.key)}">🔗 링크</button>`
-      : `<button class="op-b" data-act="link" data-k="${esc(r.key)}">＋링크</button>`;
-    return `<div class="op-r ${r.kind}">
-      <input type="checkbox" class="op-chk" data-act="done" data-k="${esc(r.key)}" ${s.done?'checked':''}
-        ${numeric?'disabled title="수량 입력으로 자동 판정"':''}>
-      <div class="op-t"><b>${esc(r.text)}</b>${r.sub?`<span>${esc(r.sub)}${r.due?' · ~'+esc(r.due):''}</span>`:''}</div>
-      <div class="op-num">${numeric
-        ? `<input data-act="cur" data-k="${esc(r.key)}" value="${cur}"><em>/</em>
-           <input data-act="tg" data-k="${esc(r.key)}" value="${tg}"><em>${esc(unit)}</em>`
-        : `<em style="font-size:.72rem;color:var(--muted)">완료체크</em>`}</div>
-      <div class="op-file">${fileBtn}${linkBtn}</div>
-      <div class="op-p">${pct}%</div>
-    </div>`;
+    const pct=pctOf(r,s);
+    return `<div class="jc"><label class="cl"><input type="checkbox" data-act="done" data-k="${esc(r.key)}"
+        ${s.done?'checked':''} ${numeric?'disabled title="수량 입력으로 자동 판정"':''}><span>${esc(r.text)}</span></label>
+      ${numeric?`<div class="num"><input data-act="cur" data-k="${esc(r.key)}" value="${cur}"><em>/</em>
+        <input data-act="tg" data-k="${esc(r.key)}" value="${tg}"><em>${esc(unit)}</em><b>${pct}%</b></div>`:''}</div>`;
+  }
+
+  function micCard(r){
+    const s=OUT[r.key]||{};
+    const p=r.rowPct||0;
+    const st = s.done?['done','완료'] : (p>=100?['done','완료'] : p>0?['prog','진행중'] : ['plan','예정']);
+    const f=s.file_path?'<button class="bs on" data-act="open" data-k="'+esc(r.key)+'">📎 파일</button>'
+                       :'<button class="bs" data-act="up" data-k="'+esc(r.key)+'">＋파일</button>';
+    const l=s.link?'<button class="bs on" data-act="link" data-k="'+esc(r.key)+'">🔗 링크</button>'
+                  :'<button class="bs" data-act="link" data-k="'+esc(r.key)+'">＋링크</button>';
+    return `<div class="jc">
+      <div class="sh"><label class="cl"><input type="checkbox" data-act="done" data-k="${esc(r.key)}" ${s.done?'checked':''}>
+        <span>${esc(r.text)}</span></label><span class="bg ${st[0]}">${st[1]}</span></div>
+      ${r.sub?`<div class="sd">${esc(r.sub)}</div>`:''}
+      <div class="sf"><span class="due">${r.due?'~'+esc(r.due):'기한 미정'}</span>
+        <div class="acts">${f}${l}</div></div></div>`;
   }
 
   /* ── 이벤트 ── */
   function bind(view){
     view.addEventListener('click',async e=>{
-      const gh=e.target.closest('.op-gh');
-      if(gh){ const g=gh.parentElement; const id=g.dataset.t;
-        view.dataset.open = g.classList.contains('open')?'':id; render(); return; }
+      const gh=e.target.closest('.gz-h');
+      if(gh){ const z=gh.parentElement; view.dataset.g = z.classList.contains('open')?'':z.dataset.g; render(); return; }
       const b=e.target.closest('[data-act]'); if(!b) return;
       const act=b.dataset.act, key=b.dataset.k;
       const r=rows().find(x=>x.key===key); if(!r) return;
       const s=OUT[key]||{};
       if(act==='done'){ await save(r,{done:b.checked, status:b.checked?'완료':'예정'}); return; }
-      if(act==='link'){
-        const v=prompt('파일서버 경로 또는 URL', s.link||'');
-        if(v===null) return; await save(r,{link:v.trim()}); return;
-      }
+      if(act==='link'){ const v=prompt('파일서버 경로 또는 URL', s.link||''); if(v===null) return; await save(r,{link:v.trim()}); return; }
       if(act==='open'){
         const sb=_sb(); if(!sb||!s.file_path) return;
-        try{
-          const {data,error}=await sb.storage.from(BUCKET).createSignedUrl(s.file_path,3600);
+        try{ const {data,error}=await sb.storage.from(BUCKET).createSignedUrl(s.file_path,3600);
           if(error) throw error; window.open(data.signedUrl,'_blank','noopener');
-        }catch(err){ toast('파일 열기 실패'); }
-        return;
+        }catch(err){ toast('파일 열기 실패'); } return;
       }
       if(act==='up'){
         const inp=document.createElement('input'); inp.type='file';
@@ -303,11 +336,8 @@
           const f=inp.files&&inp.files[0]; if(!f) return;
           const sb=_sb(); if(!sb) return;
           const path='outputs/'+r.task_id+'/'+Date.now()+'_'+f.name.replace(/[^\w.\-가-힣]/g,'_');
-          try{
-            const {error}=await sb.storage.from(BUCKET).upload(path,f,{upsert:true});
-            if(error) throw error;
-            await save(r,{file_path:path});
-            toast('업로드 완료');
+          try{ const {error}=await sb.storage.from(BUCKET).upload(path,f,{upsert:true});
+            if(error) throw error; await save(r,{file_path:path}); toast('업로드 완료');
           }catch(err){ toast('업로드 실패: '+(err&&err.message||'')); }
         };
         inp.click(); return;
@@ -316,10 +346,10 @@
     view.addEventListener('change',async e=>{
       const i=e.target.closest('input[data-act="cur"],input[data-act="tg"]'); if(!i) return;
       const r=rows().find(x=>x.key===i.dataset.k); if(!r) return;
-      const box=i.closest('.op-num');
+      const box=i.closest('.num');
       const cur=+(box.querySelector('[data-act="cur"]').value||0);
       const tg=+(box.querySelector('[data-act="tg"]').value||0);
-      const c=Math.max(0,Math.min(tg||cur,cur));   // 실적은 목표를 넘지 않게
+      const c=Math.max(0,Math.min(tg||cur,cur));
       await save(r,{current_num:c, target_num:tg, unit:(r.guess?r.guess.unit:''), done:tg>0&&c>=tg});
     });
   }
