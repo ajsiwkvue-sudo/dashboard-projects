@@ -10,43 +10,26 @@
   });
 })();
 
-/* ── 세부계획 리본의 "산출물·KPI" 버튼 → 산출물 탭으로 이동 ──────────────
-   ax_port.js 의 팝업(openTaskPop)은 빈 ax_outputs 를 보여주던 구버전이다.
-   ax_port.js 를 직접 수술하지 않고, 캡처 단계에서 클릭을 가로채
-   팝업 대신 산출물 탭의 해당 과제 그룹으로 보낸다. */
+/* ── 세부계획 리본 → 산출물 탭 이동 (ax_port.js 의 버튼이 직접 호출한다) ──
+   예전에는 ax_port.js 의 팝업을 캡처 단계에서 가로챘지만, 팝업 자체를 없애고
+   버튼이 이 함수를 바로 부르도록 바꿨다. 가로채기 해킹은 더 이상 필요 없다. */
 (function(){
-  function goto(tid){
-    const tab=[].slice.call(document.querySelectorAll('nav.tabs .tab')).find(function(t){return t.dataset.t==='outputs';});
+  window.axOutputsGoto=function(tid){
+    const tab=[].slice.call(document.querySelectorAll('nav.tabs .tab'))
+                .find(function(t){return t.dataset.t==='outputs';});
     const view=document.getElementById('v-outputs');
     if(!tab||!view) return false;
-    if(tid) view.dataset.open=tid;
+    // 해당 과제가 속한 목표 그룹을 먼저 펼친다
+    const task=(window.TASKS||[]).find(function(x){return x.id===tid;})
+            || (function(){ try{ return TASKS.find(function(x){return x.id===tid;}); }catch(e){ return null; } })();
+    if(task) view.dataset.g=String(task.goal);
     tab.click();
     setTimeout(function(){
-      const g=view.querySelector('.op-g[data-t="'+tid+'"]');
-      if(g) g.scrollIntoView({block:'center',behavior:'smooth'});
+      const lane=view.querySelector('.sw[data-t="'+tid+'"]');
+      if(lane) lane.scrollIntoView({block:'center',behavior:'smooth'});
     },280);
     return true;
-  }
-  document.addEventListener('click',function(e){
-    const b=e.target&&e.target.closest&&e.target.closest('#axSchedTaskBtn');
-    if(!b) return;
-    e.preventDefault(); e.stopImmediatePropagation();   // 구버전 팝업 차단
-    let tid=null;
-    try{ tid=(typeof currentSchedTask!=='undefined'&&currentSchedTask)||null; }catch(_){}
-    if(!tid) tid=window.currentSchedTask||null;
-    if(typeof window.closeSchedule==='function') window.closeSchedule();
-    setTimeout(function(){ goto(tid); },120);
-  },true);
-  // 버튼 문구를 이동 동작에 맞게 바꾼다
-  let n=0; const t=setInterval(function(){
-    if(++n>120){ clearInterval(t); return; }
-    const b=document.getElementById('axSchedTaskBtn');
-    if(b && b.textContent.indexOf('→')<0){
-      b.textContent='📦 산출물 보기 →';
-      b.title='이 과제의 산출물을 산출물 탭에서 봅니다';
-    }
-  },500);
-  window.axOutputsGoto=goto;
+  };
 })();
 
 /* =========================================================================
@@ -101,6 +84,15 @@
   function parseTarget(text){
     const m=String(text||'').match(/(\d+)\s*(종|명|건|편|개|대)/);
     return m ? {target:+m[1], unit:m[2]} : null;
+  }
+
+  /* ── Storage 키: ASCII 만 남기고 확장자는 보존 ── */
+  function _key(name){
+    const s=String(name||'file');
+    const i=s.lastIndexOf('.');
+    const ext=(i>0? s.slice(i+1):'').replace(/[^A-Za-z0-9]/g,'').slice(0,8).toLowerCase();
+    const base=(i>0? s.slice(0,i):s).replace(/[^A-Za-z0-9._-]/g,'').slice(0,40);
+    return Date.now()+'_'+(base||'file')+(ext?'.'+ext:'');
   }
 
   /* ── 정의된 산출물 목록(두 층) ── */
@@ -281,7 +273,7 @@
     const mic=list.filter(r=>r.task_id===t.id&&r.kind==='sched');
     const pct=_prog(t);
     const n=_sched(t.id).length;
-    return `<div class="sw" style="--c:${hex}">
+    return `<div class="sw" data-t="${esc(t.id)}" style="--c:${hex}">
       <div class="swc"><div class="swh">전략 개요</div>
         <div class="jc mc"><div class="mt">${esc(t.id)} ${esc(t.title)}</div>
           <div class="mp"><span class="mb"><i style="width:${pct}%"></i></span><span class="mv">${pct}%</span></div>
@@ -311,7 +303,8 @@
     const s=OUT[r.key]||{};
     const p=r.rowPct||0;
     const st = s.done?['done','완료'] : (p>=100?['done','완료'] : p>0?['prog','진행중'] : ['plan','예정']);
-    const f=s.file_path?'<button class="bs on" data-act="open" data-k="'+esc(r.key)+'">📎 파일</button>'
+    const fn=s.file_name||'';
+    const f=s.file_path?'<button class="bs on" data-act="open" data-k="'+esc(r.key)+'" title="'+esc(fn||'첨부파일 열기')+'">📎 파일</button>'
                        :'<button class="bs" data-act="up" data-k="'+esc(r.key)+'">＋파일</button>';
     const l=s.link?'<button class="bs on" data-act="link" data-k="'+esc(r.key)+'">🔗 링크</button>'
                   :'<button class="bs" data-act="link" data-k="'+esc(r.key)+'">＋링크</button>';
@@ -345,9 +338,11 @@
         inp.onchange=async()=>{
           const f=inp.files&&inp.files[0]; if(!f) return;
           const sb=_sb(); if(!sb) return;
-          const path='outputs/'+r.task_id+'/'+Date.now()+'_'+f.name.replace(/[^\w.\-가-힣]/g,'_');
+          // Supabase Storage 키는 ASCII 만 허용한다. 한글 파일명은 Invalid key 로 업로드가 실패했다.
+          // 저장 경로는 ASCII 로 안전하게 만들고, 원래 파일명은 file_name 에 따로 보관한다.
+          const path='outputs/'+r.task_id+'/'+_key(f.name);
           try{ const {error}=await sb.storage.from(BUCKET).upload(path,f,{upsert:true});
-            if(error) throw error; await save(r,{file_path:path}); toast('업로드 완료');
+            if(error) throw error; await save(r,{file_path:path, file_name:f.name}); toast('업로드 완료');
           }catch(err){ toast('업로드 실패: '+(err&&err.message||'')); }
         };
         inp.click(); return;
