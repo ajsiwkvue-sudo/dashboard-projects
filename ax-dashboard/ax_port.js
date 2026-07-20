@@ -353,3 +353,13 @@ window.axPort = { init:axPortInit, CFG, isLocked, gate, toggleLock, audit,
   renderFocus, renderAudit, renderRisks, renderKpis, renderOutputs,
   plannedPct, buildWeeklyReport, printReport, loadCfg, mountConsoleUI };
 })();
+
+/* ── 산출물·KPI 탭 로더 ──────────────────────────────────────────────
+   ax_outputs.js 는 자기완결적이라 로드만 하면 탭이 주입된다.
+   (ax_outputs.js 가 다시 ax_gantt.js 를 잇는다) */
+(function(){
+  if([].slice.call(document.scripts).some(function(s){return (s.src||'').indexOf('ax_outputs.js')>=0;})) return;
+  var s=document.createElement('script'); s.src='ax_outputs.js';
+  s.onerror=function(){ console.warn('[ax] ax_outputs.js 로드 실패'); };
+  document.head.appendChild(s);
+})();
