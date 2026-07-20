@@ -1,3 +1,11 @@
+/* 산출물·KPI 탭 로더 — ax_outputs.js 는 자기완결적이라 로드만 하면 탭이 주입된다. */
+(function(){
+  if([].slice.call(document.scripts).some(function(s){return (s.src||'').indexOf('ax_outputs.js')>=0;})) return;
+  var s=document.createElement('script');
+  s.src='ax_outputs.js';
+  s.onerror=function(){ console.warn('[ax] ax_outputs.js 로드 실패'); };
+  document.head.appendChild(s);
+})();
 /* =========================================================================
  * ax_port.js — 콘솔 기능의 ilsan-AX(Supabase) 이식 모듈 (+ 자체 UI 마운트)
  * -------------------------------------------------------------------------
