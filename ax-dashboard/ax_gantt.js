@@ -26,13 +26,18 @@
     try{ if(typeof taskProgress==='function') return taskProgress(t); }catch(e){}
     return window.taskProgress? window.taskProgress(t):0;
   }
+  /* GOALS 는 growth_cycle.js 의 const 라 window 에 없다 — 전역 렉시컬로 접근한다 */
+  function _G(g){
+    try{ if(typeof GOALS!=='undefined' && GOALS && GOALS['G'+g]) return GOALS['G'+g]; }catch(e){}
+    return (window.GOALS&&window.GOALS['G'+g])||null;
+  }
   function _goalHex(g){
-    const G=(window.GOALS&&window.GOALS['G'+g]);
+    const G=_G(g);
     return (G&&G.hex)||['','#3d5a98','#0e8c86','#c1791d'][g]||'#3d5a98';
   }
   function _goalName(g){
-    const G=(window.GOALS&&window.GOALS['G'+g]);
-    return (G&&G.name)||('목표'+g);
+    const G=_G(g);
+    return G? ((G.no?G.no+' ':'')+G.name) : ('목표'+g);
   }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   const D=s=>s?new Date(s+'T00:00:00'):null;
