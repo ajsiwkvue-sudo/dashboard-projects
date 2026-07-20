@@ -1,3 +1,15 @@
+/* ── 확장 모듈 로더 ────────────────────────────────────────────────
+   ax_port.js 는 이 파일만 로드한다. 이후 추가되는 자기완결 모듈은 여기서 잇는다.
+   (ax_port.js 는 콘솔·편집잠금·감사로그가 얽혀 있어 수정 위험이 커 손대지 않는다) */
+(function(){
+  ['ax_gantt.js'].forEach(function(f){
+    if([].slice.call(document.scripts).some(function(s){return (s.src||'').indexOf(f)>=0;})) return;
+    var s=document.createElement('script'); s.src=f;
+    s.onerror=function(){ console.warn('[ax] '+f+' 로드 실패'); };
+    document.head.appendChild(s);
+  });
+})();
+
 /* ── 세부계획 리본의 "산출물·KPI" 버튼 → 산출물 탭으로 이동 ──────────────
    ax_port.js 의 팝업(openTaskPop)은 빈 ax_outputs 를 보여주던 구버전이다.
    ax_port.js 를 직접 수술하지 않고, 캡처 단계에서 클릭을 가로채
