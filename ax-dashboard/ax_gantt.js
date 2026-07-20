@@ -226,3 +226,25 @@
 
   window.axGantt={ draw };
 })();
+
+/* ── 목표 필터가 옛 간트를 되살리던 버그 수정 ────────────────────────────
+   index.html 은 `rg.onchange=renderGantt` 로 '원본 함수 자체'를 붙여놨다.
+   window.renderGantt 를 래핑해도 그 참조는 옛 함수를 그대로 가리켜서,
+   필터를 바꾸는 순간 이전 타임라인 차트가 다시 그려졌다.
+   지연 바인딩으로 바꿔 항상 현재의 롤업 간트를 그리게 한다. */
+(function(){
+  function rebind(){
+    var sel=document.getElementById('rGoal');
+    if(!sel || sel.__rgBound) return true;
+    sel.onchange=function(){
+      try{ if(window.axGantt && window.axGantt.draw) return window.axGantt.draw(); }catch(e){ console.warn('[gantt]',e&&e.message); }
+    };
+    sel.__rgBound=true;
+    return true;
+  }
+  if(rebind() && document.getElementById('rGoal')) return;
+  var n=0, t=setInterval(function(){
+    if(++n>80){ clearInterval(t); return; }
+    if(document.getElementById('rGoal')){ rebind(); clearInterval(t); }
+  },400);
+})();
