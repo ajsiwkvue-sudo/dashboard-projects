@@ -37,8 +37,12 @@ let _consoleRender = null;   // 드로어 열려있을 때 실시간 재렌더 �
 const CFG = { focus_text:'', locked:false, base_date:null };
 async function loadCfg(){ const {data}=await sb.from('ax_cfg').select('*').eq('id','main').single(); if(data)Object.assign(CFG,data); }
 async function saveCfg(patch){ Object.assign(CFG,patch); await sb.from('ax_cfg').update({...patch,updated_at:new Date().toISOString()}).eq('id','main'); }
+function isAuthed(){
+  try{ if(typeof authUser!=='undefined' && authUser) return true; }catch(e){}
+  return !!(window.authUser);
+}
 function isLocked(){ return !!CFG.locked; }
-function gate(){ if(isLocked()){ toast('🔒 편집 잠금 상태'); return false; } return true; }
+function gate(){ if(!isAuthed()){ toast('🔐 구글 로그인 후 편집할 수 있어요.'); return false; } if(isLocked()){ toast('🔒 편집 잠금 상태'); return false; } return true; }
 async function toggleLock(){ await saveCfg({locked:!CFG.locked}); await audit('편집 '+(CFG.locked?'잠금':'해제'),''); renderLockBtn(); }
 function renderLockBtn(){ const b=$('#axLockBtn'); if(b){ b.textContent = CFG.locked?'🔒 잠금해제':'🔓 편집잠금'; b.classList.toggle('on',CFG.locked);} }
 
@@ -312,6 +316,7 @@ function _wrapFn(name, auditLabel){
   const orig = window[name];
   if(typeof orig !== 'function' || orig.__axWrapped) return;
   const w = function(){
+    if(!isAuthed()){ toast('🔐 구글 로그인 후 편집할 수 있어요.'); return; }
     if(isLocked()){ toast('🔒 편집이 잠겨 있어요. 콘솔에서 잠금을 해제하세요.'); return; }
     const ret = orig.apply(this, arguments);
     if(auditLabel){ try{ Promise.resolve(ret).then(()=>{ audit(auditLabel, ''); }).catch(()=>{}); }catch(e){} }
@@ -329,7 +334,8 @@ function wrapHostMutations(){
   [['deleteRow','행 삭제'],['deleteSelected','행 삭제'],['addWbsNode','과제 추가'],['insertRow','행 삽입'],
    ['pasteRow','행 붙여넣기'],['moveRowBlock','행 이동'],['addColumn','열 추가'],['deleteColumn','열 삭제'],
    ['removeColumn','열 삭제'],['insertColumn','열 삽입'],['clearColumnData','열 비우기'],['_applyWbsImport','WBS 가져오기'],
-   ['setMileStatus','마일스톤 상태변경'],['addMeeting','회의 추가'],['deleteMeeting','회의 삭제'],
+   ['setMileStatus','마일스톤 상태변경'],['kanDrop','보드 상태변경'],['saveMile','마일스톤 일정수정'],['resetMile','마일스톤 초기화'],
+   ['addMeeting','회의 추가'],['deleteMeeting','회의 삭제'],
    ['addAction','액션 추가'],['deleteAction','액션 삭제']].forEach(([n,l])=>_wrapFn(n,l));
 }
 
