@@ -29,11 +29,14 @@
     if(document.getElementById('axWbsCss'))return;
     const st=document.createElement('style'); st.id='axWbsCss';
     st.textContent=[
-      '.sw-modal{max-width:min(1920px,97vw)!important}',
+      '.sw-modal{max-width:min(2200px,98vw)!important;width:98vw!important}',
+      '.sw-overlay,#swOverlay{padding:10px!important}',
       '#axDateOnlyBtn.on{background:#0e8c86!important;color:#fff!important;border-color:#0e8c86!important}',
-      '.sw-table tr.wbs-grp .ax-ghandle{display:inline-block;cursor:grab;user-select:none;',
-      '  font-size:.9rem;line-height:1;margin-right:4px;color:#a07814;opacity:.65;vertical-align:middle}',
-      '.sw-table tr.wbs-grp .ax-ghandle:hover{opacity:1}',
+      '.sw-table tr.wbs-grp .ax-ghandle{display:inline-flex;align-items:center;gap:3px;cursor:grab;user-select:none;',
+      '  font-size:.68rem;font-weight:800;line-height:1;margin-right:7px;padding:2px 7px;border-radius:11px;',
+      '  color:#7a5c00;background:#fbe6a8;border:1px solid #e6c766;vertical-align:middle}',
+      '.sw-table tr.wbs-grp .ax-ghandle:hover{background:#f5d97a;color:#5c4500}',
+      '.sw-table tr.wbs-grp .ax-ghandle:active{cursor:grabbing}',
       '.sw-table tr.wbs-grp.ax-gdrag td{opacity:.5}',
       '.sw-table tr.wbs-grp.ax-gdrop td{box-shadow:inset 0 3px 0 #0e8c86}'
     ].join('\n');
@@ -119,7 +122,7 @@
       const nameEl=lab.querySelector('.wbs-gname'); const phase=nameEl?nameEl.textContent.trim():'';
       tr.dataset.axPhase=phase;
       if(canEdit && !lab.querySelector('.ax-ghandle')){
-        const h=document.createElement('span'); h.className='ax-ghandle'; h.textContent='⠿'; h.title='드래그하여 대과제 전체 이동'; h.draggable=true;
+        const h=document.createElement('span'); h.className='ax-ghandle'; h.innerHTML='⠿ 이동'; h.title='이 손잡이를 잡고 다른 대과제 위로 끌면 대과제 전체가 이동합니다'; h.draggable=true;
         h.addEventListener('dragstart',function(e){ _gDrag=phase; tr.classList.add('ax-gdrag'); try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','grp:'+phase);}catch(_){} e.stopPropagation(); });
         h.addEventListener('dragend',function(){ _gDrag=null; tbl.querySelectorAll('.ax-gdrag,.ax-gdrop').forEach(function(x){x.classList.remove('ax-gdrag','ax-gdrop');}); });
         lab.insertBefore(h, lab.firstChild);
