@@ -97,9 +97,19 @@
     const block=rows.filter(function(r){return pm[r.id]===srcPhase;});
     const rest=rows.filter(function(r){return pm[r.id]!==srcPhase;});
     if(!block.length)return;
-    // dst 그룹의 마지막 위치 뒤에 block 을 끼워넣는다
-    let insAt=rest.length;
-    for(let i=rest.length-1;i>=0;i--){ if(pm[rest[i].id]===dstPhase){ insAt=i+1; break; } }
+    // 그룹 순서를 구해 드래그 방향을 판단한다
+    const order=[]; rows.forEach(function(r){ const p=pm[r.id]; if(order[order.length-1]!==p) order.push(p); });
+    const si=order.indexOf(srcPhase), di=order.indexOf(dstPhase);
+    let insAt;
+    if(si<di){
+      // 아래로 이동 → dst 그룹 "뒤"에 넣는다
+      insAt=rest.length;
+      for(let i=rest.length-1;i>=0;i--){ if(pm[rest[i].id]===dstPhase){ insAt=i+1; break; } }
+    } else {
+      // 위로 이동 → dst 그룹 "앞"에 넣는다
+      insAt=0;
+      for(let i=0;i<rest.length;i++){ if(pm[rest[i].id]===dstPhase){ insAt=i; break; } }
+    }
     const merged=rest.slice(0,insAt).concat(block, rest.slice(insAt));
     const before=rows.map(function(r){return {id:r.id,so:r.sort_order};});
     const upd=[]; merged.forEach(function(r,i){ const so=(i+1)*10; if(r.sort_order!==so){ r.sort_order=so; upd.push({id:r.id,so:so}); } });
