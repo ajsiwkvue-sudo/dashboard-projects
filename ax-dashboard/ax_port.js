@@ -378,3 +378,11 @@ window.axPort = { init:axPortInit, CFG, isLocked, gate, toggleLock, audit,
   s.onerror=function(){ console.warn('[ax] ax_presence.js 로드 실패'); };
   document.head.appendChild(s);
 })();
+
+/* ── 세부계획(WBS) 표 강화 모듈 로더 ────────────────────────────────── */
+(function(){
+  if([].slice.call(document.scripts).some(function(s){return (s.src||'').indexOf('ax_wbs.js')>=0;})) return;
+  var s=document.createElement('script'); s.src='ax_wbs.js';
+  s.onerror=function(){ console.warn('[ax] ax_wbs.js 로드 실패'); };
+  document.head.appendChild(s);
+})();
