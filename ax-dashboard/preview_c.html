@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>개요 시안 C · 와이드 에디토리얼</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#3d5a98;--teal:#0e8c86;--amber:#c1791d;--card:#fff;--bg:#f7f8fa;--text:#1a222e;--muted:#6c7d8e;--border:#e6e9ee;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);padding:24px;line-height:1.5}
+.wrap{max-width:1480px;margin:0 auto}
+.style-tag{display:inline-block;background:#111827;color:#fff;font-size:12px;font-weight:700;padding:5px 12px;border-radius:20px;margin-bottom:14px}
+.hero{background:var(--blue);color:#fff;border-radius:20px;padding:30px 34px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;box-shadow:0 8px 24px rgba(61,90,152,.24)}
+.hero .l .tag{background:rgba(255,255,255,.2);font-size:12px;font-weight:800;letter-spacing:.5px;padding:5px 14px;border-radius:20px}
+.hero .l .txt{font-size:1.7rem;font-weight:900;letter-spacing:-.5px;margin-top:10px}
+.hero .stats{display:flex;gap:26px}.hero .st{text-align:center}.hero .st .v{font-size:1.8rem;font-weight:900;line-height:1}.hero .st .l2{font-size:.72rem;opacity:.85;margin-top:4px}
+.top{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;margin-bottom:16px}
+.card{background:var(--card);border-radius:var(--radius);padding:20px 24px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.card h3{font-size:1rem;font-weight:800;margin-bottom:16px}.card h3 small{font-weight:400;font-size:.78rem;color:var(--muted)}
+.gauge{display:flex;align-items:center;gap:14px}.gbar{flex:1;height:18px;background:var(--bg);border-radius:20px;overflow:hidden}.gfill{height:100%;background:var(--blue);border-radius:20px}.gpct{font-size:1.9rem;font-weight:900}
+.gleg{font-size:.78rem;color:var(--muted);margin-top:12px}
+.goalrow{display:flex;align-items:center;gap:12px;margin-bottom:13px}.goalrow:last-child{margin-bottom:0}
+.goalrow .gl{width:110px;font-size:.82rem;color:var(--muted)}.goalrow .gt{flex:1;height:18px;background:var(--bg);border-radius:6px;overflow:hidden}.goalrow .gtf{height:100%;border-radius:6px}.goalrow .gp{width:38px;text-align:right;font-weight:700;font-size:.85rem}
+.cycbig{display:grid;grid-template-columns:minmax(0,460px) 1fr;gap:36px;align-items:center;margin-bottom:16px}
+.ring{position:relative;width:100%;max-width:440px;aspect-ratio:1;margin:0 auto;background:radial-gradient(120% 120% at 50% 0%,#f6f9fc,#e6edf4);border:1px solid var(--border);border-radius:18px;display:grid;place-items:center}
+.ring svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}.ring .ctr{position:relative;text-align:center}.ring .c1{font-size:2.6rem;font-weight:900;line-height:1}.ring .c2{font-size:.76rem;color:var(--muted);letter-spacing:.09em;margin-top:5px}
+.node text{font-size:7.5px;font-weight:700;font-family:'Noto Sans KR'}
+.node .lab{font-size:7px;fill:#3a4a5a;font-weight:700}
+.eyebrow{font-size:.74rem;font-weight:800;letter-spacing:.11em;text-transform:uppercase;color:var(--teal);margin-bottom:5px}
+.lede{font-size:.95rem;color:#39485a;line-height:1.7;margin-bottom:16px}
+.handoff{border-left:3px solid var(--teal);padding:12px 16px;background:#f2faf8;border-radius:0 10px 10px 0;margin-bottom:14px}
+.handoff .hl{font-weight:800;color:var(--teal);font-size:.8rem;margin-bottom:4px}.handoff .ht{font-size:.9rem}
+.wstrip{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 22px}
+.wrow{display:flex;align-items:center;gap:9px;font-size:.8rem}
+.wrow .wid{width:28px;font-weight:700;color:var(--muted)}.wrow .wtt{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#3a4a5a}
+.wrow .wbar{width:60px;height:8px;background:var(--bg);border-radius:5px;overflow:hidden}.wrow .wbf{height:100%;background:var(--blue);border-radius:5px}
+.wrow .wdiff{width:30px;text-align:right;font-weight:700}.neg{color:#c0492f}.pos{color:#2e8b57}
+.foot{text-align:center;color:var(--muted);font-size:.78rem;margin-top:20px}
+@media(max-width:900px){.top,.cycbig{grid-template-columns:1fr}.wstrip{grid-template-columns:1fr}.hero{flex-direction:column;align-items:flex-start}}
+</style></head>
+<body><div class="wrap">
+<span class="style-tag">시안 C · 와이드 에디토리얼 (성장사이클 크게 · WBS 요약 스트립)</span>
+<div class="hero">
+<div class="l"><span class="tag">VISION · 비전</span><div class="txt">대한민국 공공의료를 선도하는 AX 플랫폼병원</div></div>
+<div class="stats">
+<div class="st"><div class="v">12</div><div class="l2">전략과제</div></div>
+<div class="st"><div class="v">154</div><div class="l2">세부계획</div></div>
+<div class="st"><div class="v">3</div><div class="l2">완료</div></div>
+<div class="st"><div class="v">12</div><div class="l2">진행중</div></div>
+<div class="st"><div class="v">3%</div><div class="l2">종합 진척</div></div>
+</div>
+</div>
+<div class="top">
+<div class="card"><h3>📊 전체 사업 진척률 <small>· WBS 롤업</small></h3>
+<div class="gauge"><div class="gbar"><div class="gfill" style="width:3%"></div></div><div class="gpct">3%</div></div>
+<div class="gleg">완료 3 · 진행중 12 · 예정 139 · 지연 0 · 세부과제 154개</div></div>
+<div class="card"><h3>🎯 핵심목표별 진척도 <small>· WBS 롤업</small></h3>
+<div class="goalrow"><span class="gl">목표1 거버넌스</span><div class="gt"><div class="gtf" style="width:2%;background:var(--blue)"></div></div><span class="gp">0%</span></div>
+<div class="goalrow"><span class="gl">목표2 프로세스</span><div class="gt"><div class="gtf" style="width:5%;background:var(--teal)"></div></div><span class="gp">5%</span></div>
+<div class="goalrow"><span class="gl">목표3 문화</span><div class="gt"><div class="gtf" style="width:2%;background:var(--amber)"></div></div><span class="gp">2%</span></div>
+</div></div>
+<div class="card">
+<div class="eyebrow">Growth Cycle · 성장 사이클</div>
+<h3 style="margin-bottom:8px">AX 추진 성장 사이클 <small>· 거버넌스 → 프로세스 → 문화 순환</small></h3>
+<div class="cycbig">
+<div class="ring">
+<svg viewBox="0 0 220 220">
+<circle cx="110" cy="110" r="82" fill="none" stroke="#c3ccd6" stroke-width="1.5" stroke-dasharray="2 8"/>
+<g class="node"><circle cx="110" cy="30" r="11" fill="#3d5a98"/><text x="110" y="33.5" text-anchor="middle" fill="#fff">1-1</text><text class="lab" x="110" y="16" text-anchor="middle">전략수립</text></g>
+<g class="node"><circle cx="180" cy="70" r="11" fill="#3d5a98"/><text x="180" y="73.5" text-anchor="middle" fill="#fff">1-4</text><text class="lab" x="197" y="72" text-anchor="start">국가사업</text></g>
+<g class="node"><circle cx="180" cy="150" r="11" fill="#0e8c86"/><text x="180" y="153.5" text-anchor="middle" fill="#fff">2-1</text><text class="lab" x="197" y="152" text-anchor="start">인프라</text></g>
+<g class="node"><circle cx="110" cy="190" r="11" fill="#0e8c86"/><text x="110" y="193.5" text-anchor="middle" fill="#fff">2-4</text><text class="lab" x="110" y="208" text-anchor="middle">테스트베드</text></g>
+<g class="node"><circle cx="40" cy="150" r="11" fill="#c1791d"/><text x="40" y="153.5" text-anchor="middle" fill="#fff">3-1</text><text class="lab" x="23" y="152" text-anchor="end">과제발굴</text></g>
+<g class="node"><circle cx="40" cy="70" r="11" fill="#c1791d"/><text x="40" y="73.5" text-anchor="middle" fill="#fff">3-3</text><text class="lab" x="23" y="72" text-anchor="end">가치창출</text></g>
+</svg>
+<div class="ctr"><div class="c1">3%</div><div class="c2">종합 진척률</div></div>
+</div>
+<div>
+<p class="lede">거버넌스 → 프로세스 → 문화, 3대 축이 순환하며 병원의 AX 역량을 단계적으로 키우는 구조입니다. 링의 각 노드는 12개 전략과제로 연결되며, 클릭하면 해당 과제의 진척률과 다음 할 일이 상세로 펼쳐집니다.</p>
+<div class="handoff"><div class="hl">지금 단계</div><div class="ht">착수·현황진단·수요조사가 진행 중이며, 8월부터 AI 실증·에이전트 개발·논문 연구로 이어집니다.</div></div>
+<div class="wstrip">
+<div class="wrow"><span class="wid">2-4</span><span class="wtt">테스트베드</span><div class="wbar"><div class="wbf" style="width:13%"></div></div><span class="wdiff neg">-17</span></div>
+<div class="wrow"><span class="wid">2-3</span><span class="wtt">AI 에이전트</span><div class="wbar"><div class="wbf" style="width:0%"></div></div><span class="wdiff neg">-12</span></div>
+<div class="wrow"><span class="wid">3-1</span><span class="wtt">과제 발굴</span><div class="wbar"><div class="wbf" style="width:8%"></div></div><span class="wdiff neg">-11</span></div>
+<div class="wrow"><span class="wid">2-1</span><span class="wtt">인프라</span><div class="wbar"><div class="wbf" style="width:8%"></div></div><span class="wdiff pos">+5</span></div>
+<div class="wrow"><span class="wid">1-1</span><span class="wtt">전략 수립</span><div class="wbar"><div class="wbf" style="width:0%"></div></div><span class="wdiff neg">-7</span></div>
+<div class="wrow"><span class="wid">3-3</span><span class="wtt">가치창출</span><div class="wbar"><div class="wbf" style="width:0%"></div></div><span class="wdiff neg">-2</span></div>
+</div>
+</div>
+</div></div>
+<div class="foot">시안 C — 성장사이클을 크게 앞세우고, 과제별 계획대비 차이는 그 옆 요약 스트립으로 압축. (숫자는 실제 데이터 기준)</div>
+</div></body></html>
