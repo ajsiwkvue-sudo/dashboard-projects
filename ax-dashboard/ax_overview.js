@@ -24,9 +24,10 @@
     if(document.getElementById('axOvCss')) return;
     var st=document.createElement('style'); st.id='axOvCss';
     st.textContent=[
-      '#axTopRow{display:grid;grid-template-columns:minmax(240px,330px) 1fr;gap:12px;margin-bottom:14px;align-items:stretch}',
-      '#axTopRow .vision-hero{margin-bottom:0}',
-      '#axTopRow #kpiGrid{margin-bottom:0}',
+      '#axTopRow{display:grid;grid-template-columns:minmax(340px,430px) 1fr;gap:12px;margin-bottom:14px;align-items:stretch}',
+      '#axTopRow .vision-hero{margin-bottom:0;padding:16px 22px}',
+      '#axTopRow .vision-hero .vh-txt{font-size:1.2rem;line-height:1.32}',
+      '#axTopRow #kpiGrid{margin-bottom:0;align-self:center}',
       '#axMainRow{display:grid;grid-template-columns:320px 1fr;gap:14px;align-items:start}',
       '#axRightCol{display:flex;flex-direction:column;gap:16px;min-width:0}',
       '#axRightCol>.card{margin:0 !important}',
