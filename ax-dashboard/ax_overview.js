@@ -49,6 +49,12 @@
       '.ax-it .ax-dd.urg{color:#c0492f}.ax-it .ax-dd.soon{color:#d98324}.ax-it .ax-dd.far{color:var(--muted)}.ax-it .ax-dd.done{color:#2e8b57}',
       '.ax-it.done .ax-nm{color:var(--muted);text-decoration:line-through}',
       '.ax-td-empty{font-size:.8rem;color:var(--muted);padding:8px 2px}',
+      '.ax-goalbars{display:flex;flex-direction:column;gap:12px;padding:6px 0}',
+      '.ax-goalbars .ax-gr{display:flex;align-items:center;gap:11px}',
+      '.ax-goalbars .ax-gl{width:118px;font-size:.82rem;color:var(--muted);flex-shrink:0}',
+      '.ax-goalbars .ax-gt{flex:1;height:16px;background:rgba(120,132,150,.16);border-radius:6px;overflow:hidden}',
+      '.ax-goalbars .ax-gf{display:block;height:100%;border-radius:6px}',
+      '.ax-goalbars .ax-gp{width:44px;text-align:right;font-weight:800;font-size:.86rem}',
       '@media(max-width:900px){#axTopRow{grid-template-columns:1fr}#axMainRow{grid-template-columns:1fr}#axTodo{max-height:60vh}}'
     ].join('\n');
     document.head.appendChild(st);
@@ -192,10 +198,49 @@
     if(h>200) todo.style.height=h+'px';
   }
 
+  /* ── 핵심목표별 진척도: 세로 차트 → 가로 막대(높이 절약) ── */
+  function installGoalBars(){
+    if(typeof window.drawGoalChart==='function' && window.drawGoalChart.__axBars) return;
+    var w=function(){
+      try{
+        var cv=document.getElementById('goalChart'); if(!cv) return;
+        var box=cv.parentNode; if(!box) return;
+        cv.style.display='none'; box.style.height='auto';
+        var bars=box.querySelector('.ax-goalbars');
+        if(!bars){ bars=document.createElement('div'); bars.className='ax-goalbars'; box.appendChild(bars); }
+        var gs=(typeof goals!=='undefined')?goals:[];
+        var colors=['#3d5a98','#0e8c86','#c1791d'];
+        bars.innerHTML=gs.map(function(g,i){
+          var gt=TASKS_().filter(function(t){return t.goal===g.id;});
+          var p=gt.length?Math.round(gt.reduce(function(s,t){return s+taskProgress(t);},0)/gt.length):0;
+          return '<div class="ax-gr"><span class="ax-gl">목표'+g.id+' '+esc(g.axis)+'</span>'+
+                 '<span class="ax-gt"><span class="ax-gf" style="width:'+p+'%;background:'+colors[i%3]+'"></span></span>'+
+                 '<span class="ax-gp">'+p+'%</span></div>';
+        }).join('');
+      }catch(e){ console.warn('[ax-ov] goalbars',e&&e.message); }
+    };
+    w.__axBars=true; window.drawGoalChart=w;
+  }
+
+  /* ── 전체 진척률 범례를 간결 형식으로 ── */
+  function updateLegend(){
+    try{
+      var leg=document.getElementById('ovLegend'); if(!leg) return;
+      var totLeaf=0, done=0, over=0;
+      TASKS_().forEach(function(t){ leaves_(CACHE_()[t.id]||[]).forEach(function(r){ totLeaf++; var s=''; try{s=wbsStatus(r);}catch(e){} if(s==='완료')done++; else if(s==='지연')over++; }); });
+      var inRange=collect().length;
+      var plan=Math.max(0, totLeaf - inRange - done - over);
+      leg.innerHTML='오늘 진행 '+inRange+' · 완료 '+done+' · 예정 '+plan+' · 지연 '+over+' · 세부과제 '+totLeaf+'개';
+    }catch(e){ console.warn('[ax-ov] legend',e&&e.message); }
+  }
+
   function apply(){
     if(!buildLayout()) return;
     initFilter();
     renderList();
+    installGoalBars();
+    try{ window.drawGoalChart(); }catch(e){}
+    updateLegend();
     syncHeight();
   }
 
