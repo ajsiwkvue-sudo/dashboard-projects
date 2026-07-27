@@ -16,7 +16,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .kpi{background:var(--card);border-radius:var(--radius);padding:11px 8px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.04);display:flex;flex-direction:column;justify-content:center}
 .kpi .v{font-size:1.4rem;font-weight:800;line-height:1}.kpi .l{font-size:.72rem;color:var(--muted);margin-top:4px}
 .kpi.done .v{color:#2e8b57}.kpi.prog .v{color:#d98324}
-.layout{display:grid;grid-template-columns:320px 1fr;gap:14px;align-items:stretch}
+.layout{display:grid;grid-template-columns:320px 1fr;gap:14px;align-items:start}
 .card{background:var(--card);border-radius:var(--radius);padding:15px 16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .todo{display:flex;flex-direction:column;min-height:0}
 .todo h3{font-size:.95rem;font-weight:800;display:flex;align-items:center;gap:6px}
@@ -39,9 +39,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .gleg{font-size:.74rem;color:var(--muted);margin-top:9px}
 .goalrow{display:flex;align-items:center;gap:9px;margin-bottom:10px}.goalrow:last-child{margin-bottom:0}
 .goalrow .gl{width:92px;font-size:.76rem;color:var(--muted)}.goalrow .gt{flex:1;height:14px;background:var(--bg);border-radius:5px;overflow:hidden}.goalrow .gtf{height:100%;border-radius:5px}.goalrow .gp{width:30px;text-align:right;font-weight:700;font-size:.78rem}
-.cycard{flex:1;display:flex;flex-direction:column}
+.cycard{display:flex;flex-direction:column}
 .eyebrow{font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin-bottom:3px}
-.cyc{display:grid;grid-template-columns:minmax(0,300px) 1fr;gap:24px;align-items:center;flex:1}
+.cyc{display:grid;grid-template-columns:minmax(0,300px) 1fr;gap:24px;align-items:center}
 .ring{position:relative;width:100%;max-width:280px;aspect-ratio:1;margin:0 auto;background:radial-gradient(120% 120% at 50% 0%,#f6f9fc,#e9eff5);border:1px solid var(--border);border-radius:14px;display:grid;place-items:center}
 .ring svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}.ring .ctr{position:relative;text-align:center}.ring .c1{font-size:1.7rem;font-weight:800}.ring .c2{font-size:.68rem;color:var(--muted);margin-top:3px}
 .note{font-size:.75rem;color:var(--muted);background:#fff7ec;border:1px dashed #e0b96b;border-radius:8px;padding:8px 11px;margin-top:10px}
@@ -172,6 +172,15 @@ function render(){
 }
 sel.addEventListener('change',render);
 render();
+// 왼쪽 할 일 박스 높이를 오른쪽(성장사이클 하단)에 맞추고, 넘치면 박스 안에서 스크롤
+function syncHeight(){
+  if(window.innerWidth<=900){document.querySelector('.todo').style.height='';return;}
+  const m=document.querySelector('.main'),t=document.querySelector('.todo');
+  if(m&&t){t.style.height=m.offsetHeight+'px';}
+}
+window.addEventListener('resize',syncHeight);
+window.addEventListener('load',syncHeight);
+setTimeout(syncHeight,100);syncHeight();
 document.getElementById('foot').textContent='시안 D — 비전 축소+KPI 나란히 · 왼쪽 할일은 오른쪽 높이에 맞춰 스크롤 · 완료(100%)는 회색 · 성장사이클/지표는 기존 컴포넌트 그대로. 데이터: 실제 DB (오늘 '+TODAY+')';
 </script>
 </body></html>
