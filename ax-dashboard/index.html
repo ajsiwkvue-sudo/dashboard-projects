@@ -938,19 +938,6 @@ input[type="color"]{-webkit-appearance:none;appearance:none}
 <!-- 개요 -->
 <section class="view active" id="v-overview"><div class="wrap">
   <div class="vision-hero"><span class="vh-tag">VISION · 비전</span><span class="vh-txt">대한민국 공공의료를 선도하는 AX 플랫폼병원</span></div>
-  <div class="help-card" id="helpCard">
-    <h3>👋 이 대시보드는 무엇인가요? <button class="help-toggle" id="helpToggle">접기</button></h3>
-    <div id="helpBody">
-      <p><b>AX(AI Transformation)</b>는 병원 업무 전반에 AI를 도입해 일하는 방식을 근본적으로 바꾸는 것을 뜻합니다. 이 대시보드는 일산병원이 <b>‘대한민국 공공의료를 선도하는 AX 플랫폼병원’</b> 비전 아래 추진하는 AX 전략을 한눈에 따라가기 위한 도구예요. 사업은 <b>거버넌스·프로세스·문화</b> 3대 축의 <b>3대 핵심목표 → 12개 전략과제 → <span id="mileCountTxt">--</span>개 세부 마일스톤(할 일)</b>으로 이루어져 있고, 각 할 일의 진행 상태를 색으로 표시합니다. 이 전략은 <b>2026년 추진기반 구축·AI 실증</b>을 시작으로 <b>2027년 전사 확산, 2028년 이후 표준모델·지역 공공의료 확산</b>까지 이어지는 <b>다개년(multi-year) 로드맵</b>이에요(2026년 단일 사업이 아닙니다). 상단 탭에서 전략과제 현황·담당팀별 분석·사업 타임라인·타 병원 벤치마크·AI 비서를 확인할 수 있습니다.</p>
-      <div class="help-legend">
-        <span style="font-weight:700;font-size:.82rem">진행 상태 색상:</span>
-        <span class="li"><span class="dot done"></span><b>완료</b> <small>끝난 일</small></span>
-        <span class="li"><span class="dot prog"></span><b>진행중</b> <small>이번 달 진행</small></span>
-        <span class="li"><span class="dot plan"></span><b>예정</b> <small>앞으로 할 일</small></span>
-        <span class="li"><span class="dot over"></span><b>지연</b> <small>기한 지남</small></span>
-      </div>
-    </div>
-  </div>
   <div class="kpi-grid" id="kpiGrid"></div>
   <div class="card" style="margin-bottom:16px">
     <h3>📊 전체 사업 진척률 <span style="font-weight:400;font-size:.78rem;color:var(--muted)">(세부계획 WBS 롤업 기준 · 작성된 과제만 반영)</span></h3>
@@ -2903,10 +2890,6 @@ document.addEventListener('keydown', e => {
   // 새로고침해도 열려 있던 세부계획(WBS) 다시 열기
   try{const os=localStorage.getItem('ax_opensched');if(os&&TASKS.some(t=>t.id===os))openSchedule(os);}catch(_){}
   if('serviceWorker' in navigator && location.protocol.indexOf('http')===0){navigator.serviceWorker.register('sw.js').catch(()=>{});}
-  // help card toggle (기억)
-  const hb=document.getElementById('helpBody'),ht=document.getElementById('helpToggle');
-  if(localStorage.getItem('ax_help')==='closed'){hb.style.display='none';ht.textContent='도움말 보기';}
-  ht.onclick=()=>{const closed=hb.style.display==='none';hb.style.display=closed?'block':'none';ht.textContent=closed?'접기':'도움말 보기';localStorage.setItem('ax_help',closed?'open':'closed');};
 })();
 </script>
   <!-- 마인드맵 오버레이 -->
