@@ -114,7 +114,7 @@
       });
       html+='</div>';
     });
-    list.innerHTML=html||'<div class="ax-td-empty">'+(curOwner?'해당 담당자의 ':'')+'오늘 진행중인 세부계획이 없습니다.</div>';
+    list.innerHTML=html||'<div class="ax-td-empty">'+(curOwner?'해당 담당자의 ':'')+'오늘 일정 세부계획이 없습니다.</div>';
     // 헤더 카운트/날짜
     var sub=document.getElementById('axTodoSub');
     if(sub){ var d=new Date(); sub.textContent=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)+' 기준 · WBS 일자에 걸린 세부과제 '+all.length+'건'; }
@@ -137,7 +137,7 @@
   function buildTodoShell(){
     var d=document.createElement('div'); d.id='axTodo'; d.className='card';
     d.innerHTML=
-      '<div class="ax-td-h">📅 오늘 진행중인 세부계획</div>'+
+      '<div class="ax-td-h">📅 오늘 일정 세부계획</div>'+
       '<div class="ax-td-sub" id="axTodoSub"></div>'+
       '<select id="axTodoFilter"><option value="">담당자 전체</option></select>'+
       '<div class="ax-td-cnt" id="axTodoCnt"></div>'+
