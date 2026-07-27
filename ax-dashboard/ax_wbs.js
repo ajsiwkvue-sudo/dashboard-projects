@@ -431,3 +431,104 @@
   var t=setInterval(function(){ injectCellCss(); wrapCellKey(); if(++n>120) clearInterval(t); },500);
   wrapCellKey();
 })();
+
+/* =========================================================================
+ * ⑨ Weight 제거 + 계획률 집계 정합화 + 실제종료일 자동 100% + 개요 도움말 카드 제거
+ *  (가) Weight 열 제거 : colDefsAll() 결과에서 weight 컬럼을 걸러내 표·그룹행·
+ *       엑셀내보내기·롤업표시 어디에도 나타나지 않게 한다. (DB 컬럼은 휴면 상태로 둠)
+ *  (나) 계획률 집계 일치 : 세부계획 창 상단 요약이 쓰는 wbsRollup 은 가중치가
+ *       없을 때 계획률 폴백이 빠져 항상 0% 로 나와 개요(taskPlanned)와 어긋났다.
+ *       가중치를 안 쓰기로 했으므로 wbsRollup 을 '단순평균'으로 재정의해
+ *       개요·대과제 그룹행과 값이 일치하게 한다. 요약줄의 '· 가중치합 …' 문구도 제거.
+ *  (다) 실제종료일을 입력하면 실제완료율(progress)을 자동 100% 로 세팅.
+ *       updateSchedField 를 감싸 actual_end 저장 직후 progress=100 을 이어서 저장.
+ * =======================================================================*/
+(function(){
+  'use strict';
+
+  /* (가) weight 컬럼 숨김 */
+  function wrapColDefs(){
+    if(typeof window.colDefsAll!=='function' || window.colDefsAll.__axNoWeight) return;
+    var orig=window.colDefsAll;
+    var w=function(){
+      var d=orig.apply(this,arguments);
+      try{ if(d&&d.right) d.right=d.right.filter(function(c){ return c && c.f!=='weight'; }); }catch(_){}
+      return d;
+    };
+    w.__axNoWeight=true; window.colDefsAll=w;
+  }
+
+  /* (나) wbsRollup 단순평균 재정의 — 개요와 동일한 계획률 산출 */
+  function wrapRollup(){
+    if(typeof window.wbsRollup!=='function' || window.wbsRollup.__axSimple) return;
+    var w=function(rows){
+      rows=rows||[];
+      var leaves=(typeof window._wbsLeaves==='function')?window._wbsLeaves(rows):rows;
+      var n=0, sp=0, spl=0;
+      leaves.forEach(function(r){
+        var pr=Math.max(0,Math.min(100,+r.progress||0));
+        var pl=0; try{ pl=window.plannedPct(r); }catch(_){ pl=0; }
+        n++; sp+=pr; spl+=pl;
+      });
+      var prog=n?Math.round(sp/n):0, planned=n?Math.round(spl/n):0;
+      var spi=planned>0?(prog/planned).toFixed(2):'-';
+      return {prog:prog, planned:planned, spi:spi, weighted:true, wsum:0};
+    };
+    w.__axSimple=true; window.wbsRollup=w;
+  }
+
+  /* 요약줄에서 '· 가중치합 …' 꼬리 제거 → '계획 N%' 만 남긴다 */
+  function cleanMeta(){
+    var m=document.querySelector('.wbs-sum-meta'); if(!m) return;
+    var mt=String(m.textContent||'').match(/계획\s*-?\d+%/);
+    var want=mt?mt[0]:m.textContent;
+    if(m.textContent!==want) m.textContent=want;
+  }
+  function wrapOptimistic(){
+    if(typeof window.updateOptimisticRollup!=='function' || window.updateOptimisticRollup.__axMeta) return;
+    var orig=window.updateOptimisticRollup;
+    var w=function(){ var r=orig.apply(this,arguments); try{ cleanMeta(); }catch(_){} return r; };
+    w.__axMeta=true; window.updateOptimisticRollup=w;
+  }
+
+  /* (다) 실제종료일 입력 시 실제완료율 자동 100% */
+  function wrapUpdateField(){
+    if(typeof window.updateSchedField!=='function' || window.updateSchedField.__axAuto100) return;
+    var orig=window.updateSchedField;
+    var w=async function(id,f,value,skipUndo){
+      var r=await orig.apply(this,arguments);
+      try{
+        if(f==='actual_end' && value){
+          var tid=(typeof currentSchedTask!=='undefined')?currentSchedTask:null;
+          var rows=(typeof schedCache!=='undefined' && tid)?(schedCache[tid]||[]):[];
+          var row=rows.filter(function(x){ return x.id===id; })[0];
+          if(row && Math.round(+row.progress||0)!==100){
+            await orig.call(this, id, 'progress', 100, true);   // 자동 100% (undo 스택 제외)
+          }
+        }
+      }catch(e){ console.warn('[ax] auto-100:', e&&e.message); }
+      return r;
+    };
+    w.__axAuto100=true; window.updateSchedField=w;
+  }
+
+  /* (라) 개요 상단 도움말 카드 제거 */
+  function removeHelpCard(){
+    var hc=document.getElementById('helpCard');
+    if(hc && hc.parentNode) hc.parentNode.removeChild(hc);
+  }
+
+  function applyAll(){ wrapColDefs(); wrapRollup(); wrapOptimistic(); wrapUpdateField(); cleanMeta(); removeHelpCard(); }
+
+  applyAll();
+  var forced=false;
+  var m=0;
+  var tm=setInterval(function(){
+    applyAll();
+    // 오버라이드 설치 후 이미 열려 있던 WBS 표를 한 번 다시 그려 weight 열을 즉시 제거
+    if(!forced && document.querySelector('.sw-table') && typeof renderSchedule==='function' && typeof currentSchedTask!=='undefined' && currentSchedTask){
+      forced=true; try{ renderSchedule(currentSchedTask); }catch(_){}
+    }
+    if(++m>120) clearInterval(tm);
+  },500);
+})();
