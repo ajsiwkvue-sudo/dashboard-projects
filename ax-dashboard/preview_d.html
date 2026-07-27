@@ -8,15 +8,23 @@
 body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);padding:22px;line-height:1.45}
 .wrap{max-width:1480px;margin:0 auto}
 .style-tag{display:inline-block;background:#111827;color:#fff;font-size:12px;font-weight:700;padding:5px 12px;border-radius:20px;margin-bottom:12px}
-.hero{background:var(--blue);color:#fff;border-radius:12px;padding:13px 20px;margin-bottom:14px;display:flex;align-items:center;gap:12px}
-.hero .tag{background:rgba(255,255,255,.2);font-size:11px;font-weight:800;letter-spacing:.5px;padding:4px 12px;border-radius:20px}
-.hero .txt{font-size:1.15rem;font-weight:800}
-.layout{display:grid;grid-template-columns:320px 1fr;gap:14px;align-items:start}
+.top{display:grid;grid-template-columns:minmax(240px,330px) 1fr;gap:12px;margin-bottom:12px;align-items:stretch}
+.vision{background:var(--blue);color:#fff;border-radius:var(--radius);padding:14px 18px;display:flex;flex-direction:column;justify-content:center}
+.vision .tag{background:rgba(255,255,255,.2);font-size:11px;font-weight:800;letter-spacing:.5px;padding:4px 12px;border-radius:20px;width:fit-content;margin-bottom:8px}
+.vision .txt{font-size:1.05rem;font-weight:800;line-height:1.35}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.kpi{background:var(--card);border-radius:var(--radius);padding:11px 8px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.04);display:flex;flex-direction:column;justify-content:center}
+.kpi .v{font-size:1.4rem;font-weight:800;line-height:1}.kpi .l{font-size:.72rem;color:var(--muted);margin-top:4px}
+.kpi.done .v{color:#2e8b57}.kpi.prog .v{color:#d98324}
+.layout{display:grid;grid-template-columns:320px 1fr;gap:14px;align-items:stretch}
 .card{background:var(--card);border-radius:var(--radius);padding:15px 16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.todo{display:flex;flex-direction:column;min-height:0}
 .todo h3{font-size:.95rem;font-weight:800;display:flex;align-items:center;gap:6px}
-.todo .sub{font-size:.72rem;color:var(--muted);margin:3px 0 10px}
-.todo .flt{width:100%;font-size:.82rem;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);margin-bottom:12px;font-family:inherit}
-.grp{border-left:3px solid var(--blue);padding-left:9px;margin-bottom:13px}
+.todo .sub{font-size:.72rem;color:var(--muted);margin:3px 0 8px}
+.todo .flt{width:100%;font-size:.82rem;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);margin-bottom:8px;font-family:inherit}
+.todo .cnt{font-size:.74rem;color:var(--muted);margin-bottom:8px}
+.todo .list{overflow-y:auto;flex:1;min-height:0;padding-right:4px}
+.grp{border-left:3px solid var(--blue);padding-left:9px;margin-bottom:12px}
 .grp.g1{border-color:var(--blue)}.grp.g2{border-color:var(--teal)}.grp.g3{border-color:var(--amber)}
 .grp .tt{font-size:.8rem;font-weight:700}
 .grp .ph{font-size:.72rem;color:var(--muted);margin:4px 0 1px}
@@ -24,19 +32,16 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .grp .it .d{color:var(--muted);white-space:nowrap;font-size:.72rem}
 .grp .it.done .nm{color:var(--muted);text-decoration:line-through}
 .grp .it.done .d{color:#9aa4b2}
-.cnt{font-size:.74rem;color:var(--muted);margin-bottom:8px}
-.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:12px}
-.kpi{background:var(--card);border-radius:var(--radius);padding:11px 13px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
-.kpi .v{font-size:1.5rem;font-weight:800;line-height:1}.kpi .l{font-size:.72rem;color:var(--muted);margin-top:3px}
-.kpi.done .v{color:#2e8b57}.kpi.prog .v{color:#d98324}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.main{display:flex;flex-direction:column;gap:12px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .card h4{font-size:.9rem;font-weight:800;margin-bottom:12px}.card h4 small{font-weight:400;font-size:.72rem;color:var(--muted)}
 .gauge{display:flex;align-items:center;gap:11px}.gbar{flex:1;height:13px;background:var(--bg);border-radius:20px;overflow:hidden}.gfill{height:100%;background:var(--blue);border-radius:20px}.gpct{font-size:1.4rem;font-weight:800}
 .gleg{font-size:.74rem;color:var(--muted);margin-top:9px}
 .goalrow{display:flex;align-items:center;gap:9px;margin-bottom:10px}.goalrow:last-child{margin-bottom:0}
 .goalrow .gl{width:92px;font-size:.76rem;color:var(--muted)}.goalrow .gt{flex:1;height:14px;background:var(--bg);border-radius:5px;overflow:hidden}.goalrow .gtf{height:100%;border-radius:5px}.goalrow .gp{width:30px;text-align:right;font-weight:700;font-size:.78rem}
+.cycard{flex:1;display:flex;flex-direction:column}
 .eyebrow{font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin-bottom:3px}
-.cyc{display:grid;grid-template-columns:minmax(0,300px) 1fr;gap:24px;align-items:center}
+.cyc{display:grid;grid-template-columns:minmax(0,300px) 1fr;gap:24px;align-items:center;flex:1}
 .ring{position:relative;width:100%;max-width:280px;aspect-ratio:1;margin:0 auto;background:radial-gradient(120% 120% at 50% 0%,#f6f9fc,#e9eff5);border:1px solid var(--border);border-radius:14px;display:grid;place-items:center}
 .ring svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}.ring .ctr{position:relative;text-align:center}.ring .c1{font-size:1.7rem;font-weight:800}.ring .c2{font-size:.68rem;color:var(--muted);margin-top:3px}
 .note{font-size:.75rem;color:var(--muted);background:#fff7ec;border:1px dashed #e0b96b;border-radius:8px;padding:8px 11px;margin-top:10px}
@@ -44,28 +49,32 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .handoff{border-left:3px solid var(--teal);padding:9px 13px;background:#f2faf8;border-radius:0 8px 8px 0}
 .handoff .hl{font-weight:800;color:var(--teal);font-size:.76rem;margin-bottom:3px}.handoff .ht{font-size:.82rem}
 .foot{text-align:center;color:var(--muted);font-size:.76rem;margin-top:18px}
-@media(max-width:900px){.layout{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(3,1fr)}.row,.cyc{grid-template-columns:1fr}}
+@media(max-width:900px){.top{grid-template-columns:1fr}.layout{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(3,1fr)}.row,.cyc{grid-template-columns:1fr}.todo{max-height:420px}}
 </style></head>
 <body><div class="wrap">
-<span class="style-tag">시안 D · 왼쪽 오늘자 세부계획 + 담당자 필터 / 오른쪽 대시보드</span>
-<div class="hero"><span class="tag">VISION · 비전</span><span class="txt">대한민국 공공의료를 선도하는 AX 플랫폼병원</span></div>
+<span class="style-tag">시안 D · 비전 축소+KPI / 좌 할일(높이맞춤·스크롤) / 우 대시보드</span>
+
+<div class="top">
+  <div class="vision"><span class="tag">VISION · 비전</span><span class="txt">대한민국 공공의료를 선도하는 AX 플랫폼병원</span></div>
+  <div class="kpis">
+    <div class="kpi"><div class="v">3</div><div class="l">핵심목표</div></div>
+    <div class="kpi"><div class="v">12</div><div class="l">전략과제</div></div>
+    <div class="kpi"><div class="v">154</div><div class="l">세부계획</div></div>
+    <div class="kpi done"><div class="v">3</div><div class="l">완료</div></div>
+    <div class="kpi prog"><div class="v" id="kprog">24</div><div class="l">오늘 진행</div></div>
+    <div class="kpi"><div class="v">0</div><div class="l">지연</div></div>
+  </div>
+</div>
+
 <div class="layout">
   <div class="card todo">
     <h3><span>📅</span> 오늘 진행중인 세부계획</h3>
     <div class="sub" id="today"></div>
     <select class="flt" id="ownerFilter"><option value="">담당자 전체</option></select>
     <div class="cnt" id="cnt"></div>
-    <div id="todoList"></div>
+    <div class="list" id="todoList"></div>
   </div>
-  <div>
-    <div class="kpis">
-      <div class="kpi"><div class="v">3</div><div class="l">핵심목표</div></div>
-      <div class="kpi"><div class="v">12</div><div class="l">전략과제</div></div>
-      <div class="kpi"><div class="v">154</div><div class="l">세부계획</div></div>
-      <div class="kpi done"><div class="v">3</div><div class="l">완료</div></div>
-      <div class="kpi prog"><div class="v" id="kprog">24</div><div class="l">오늘 진행</div></div>
-      <div class="kpi"><div class="v">0</div><div class="l">지연</div></div>
-    </div>
+  <div class="main">
     <div class="row">
       <div class="card"><h4>📊 전체 사업 진척률 <small>· WBS 롤업</small></h4>
         <div class="gauge"><div class="gbar"><div class="gfill" style="width:3%"></div></div><div class="gpct">3%</div></div>
@@ -76,8 +85,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
         <div class="goalrow"><span class="gl">목표3 문화</span><div class="gt"><div class="gtf" style="width:2%;background:var(--amber)"></div></div><span class="gp">2%</span></div>
       </div>
     </div>
-    <div class="card">
-      <div class="eyebrow">Growth Cycle · 성장 사이클</div>
+    <div class="card cycard">
+      <div class="eyebrow">Growth Cycle · 성장 사이클 <span style="color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400">(기존 인터랙티브 컴포넌트 그대로)</span></div>
       <h4 style="margin-bottom:8px">AX 추진 성장 사이클 <small>· 거버넌스 → 프로세스 → 문화 순환</small></h4>
       <div class="cyc">
         <div class="ring">
@@ -163,6 +172,6 @@ function render(){
 }
 sel.addEventListener('change',render);
 render();
-document.getElementById('foot').textContent='시안 D — 왼쪽 담당자 필터로 좁힘(기본 전체) · 완료(100%)는 회색 · 오른쪽 성장사이클은 실제 인터랙티브 박스로 대체. 데이터: 실제 DB (오늘 '+TODAY+')';
+document.getElementById('foot').textContent='시안 D — 비전 축소+KPI 나란히 · 왼쪽 할일은 오른쪽 높이에 맞춰 스크롤 · 완료(100%)는 회색 · 성장사이클/지표는 기존 컴포넌트 그대로. 데이터: 실제 DB (오늘 '+TODAY+')';
 </script>
 </body></html>
