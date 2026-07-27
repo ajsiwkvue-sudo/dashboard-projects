@@ -386,3 +386,11 @@ window.axPort = { init:axPortInit, CFG, isLocked, gate, toggleLock, audit,
   s.onerror=function(){ console.warn('[ax] ax_wbs.js 로드 실패'); };
   document.head.appendChild(s);
 })();
+
+/* ── 개요 재구성 모듈 로더 ──────────────────────────────────────────── */
+(function(){
+  if([].slice.call(document.scripts).some(function(s){return (s.src||'').indexOf('ax_overview.js')>=0;})) return;
+  var s=document.createElement('script'); s.src='ax_overview.js';
+  s.onerror=function(){ console.warn('[ax] ax_overview.js 로드 실패'); };
+  document.head.appendChild(s);
+})();

@@ -512,10 +512,10 @@
     w.__axAuto100=true; window.updateSchedField=w;
   }
 
-  /* (라) 개요 상단 도움말 카드 제거 */
+  /* (라) 개요 상단 도움말 카드 숨김 — 노드는 남겨 mileCountTxt 참조 오류 방지 */
   function removeHelpCard(){
     var hc=document.getElementById('helpCard');
-    if(hc && hc.parentNode) hc.parentNode.removeChild(hc);
+    if(hc && hc.style.display!=='none') hc.style.display='none';
   }
 
   function applyAll(){ wrapColDefs(); wrapRollup(); wrapOptimistic(); wrapUpdateField(); cleanMeta(); removeHelpCard(); }
