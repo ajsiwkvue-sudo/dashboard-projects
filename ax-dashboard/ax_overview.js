@@ -279,8 +279,15 @@
     try{ if(typeof window.renderTasks==='function') window.renderTasks(); }catch(e){}
   }
 
+  /* 진척분석 탭 '협력부서 참여 빈도' 박스 숨김 */
+  function hideDeptChart(){
+    var dc=document.getElementById('deptChart');
+    if(dc){ var c=dc.closest('.card'); if(c && c.style.display!=='none') c.style.display='none'; }
+  }
+
   function apply(){
     installCompactGallery();
+    hideDeptChart();
     if(!buildLayout()) return;
     initFilter();
     renderList();
