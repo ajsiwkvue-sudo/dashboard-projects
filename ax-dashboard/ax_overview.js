@@ -53,6 +53,11 @@
       '.ax-it.done .ax-nm{color:var(--muted);text-decoration:line-through}',
       '.ax-td-empty{font-size:.8rem;color:var(--muted);padding:8px 2px}',
       '#mainScroll>.footer{display:none !important}',
+      '.nz-card .nz-cover{height:14px !important}',
+      '.nz-card .nz-cbody{padding:11px 13px 12px !important}',
+      '.nz-card .nz-prog{margin-bottom:0 !important;flex-wrap:wrap;row-gap:6px}',
+      '.nz-card .nz-prog .nz-stats{margin-left:auto}',
+      '.nz-card .nz-owner{margin:-1px 0 8px !important}',
       '.ax-goalbars{display:flex;flex-direction:column;gap:12px;padding:6px 0}',
       '.ax-goalbars .ax-gr{display:flex;align-items:center;gap:11px}',
       '.ax-goalbars .ax-gl{width:118px;font-size:.82rem;color:var(--muted);flex-shrink:0}',
@@ -239,7 +244,43 @@
     }catch(e){ console.warn('[ax-ov] legend',e&&e.message); }
   }
 
+  /* ── 전략과제 갤러리 카드 컴팩트화(상태 점을 진척률 줄로 이동) ── */
+  function installCompactGallery(){
+    if(typeof window.renderGallery!=='function' || window.renderGallery.__axCompact) return;
+    var orig=window.renderGallery;
+    var w=function(){
+      try{
+        var list=(typeof window.taskList==='function')?window.taskList():[];
+        var grid=document.getElementById('taskGrid'); var cnt=document.getElementById('taskCount');
+        if(cnt) cnt.textContent=list.length+' / '+TASKS_().length+' 과제';
+        if(!list.length){ if(grid) grid.innerHTML='<div class="hint">조건에 맞는 과제가 없습니다.</div>'; return; }
+        var gs=(typeof goals!=='undefined')?goals:[];
+        var card=function(t){
+          var p=window.taskProgress(t), c=window.taskStatusSummary(t), ow=OWNERS_()[t.id];
+          var own=ow?('<div class="nz-owner"><span class="nz-ow"><b>정</b> '+esc(ow.main)+'</span>'+(ow.sub?'<span class="nz-ow sub"><b>부</b> '+esc(ow.sub)+'</span>':'')+'</div>'):'';
+          return '<div class="nz-card g'+t.goal+'" onclick="openTask(\''+t.id+'\')"><div class="nz-cover g'+t.goal+'"></div><div class="nz-cbody">'+
+            '<div class="nz-cno">'+esc(t.id)+' · 목표'+t.goal+'</div>'+
+            '<div class="nz-ctitle">'+esc(t.title)+'</div>'+
+            '<div class="nz-ctags"><span class="nz-tag">'+esc(t.team)+'</span><span class="nz-tag ghost">협업 '+(t.coop?t.coop.length:0)+'</span></div>'+
+            own+
+            '<div class="nz-prog"><div class="nz-bar"><i style="width:'+p+'%;background:'+window.progColor(p)+'"></i></div><span>'+p+'%</span>'+window.statChips(c)+'</div>'+
+            '</div></div>';
+        };
+        var html='';
+        gs.forEach(function(g){
+          var gt=list.filter(function(t){return t.goal===g.id;});
+          if(!gt.length) return;
+          html+='<div class="nz-gsection"><div class="nz-ghead g'+g.id+'"><span class="gdot"></span>목표'+g.id+' · '+esc(g.name)+'<span class="gcount">'+gt.length+'개 과제</span></div><div class="nz-gallery">'+gt.map(card).join('')+'</div></div>';
+        });
+        if(grid) grid.innerHTML=html;
+      }catch(e){ console.warn('[ax-ov] gallery',e&&e.message); return orig.apply(this,arguments); }
+    };
+    w.__axCompact=true; window.renderGallery=w;
+    try{ if(typeof window.renderTasks==='function') window.renderTasks(); }catch(e){}
+  }
+
   function apply(){
+    installCompactGallery();
     if(!buildLayout()) return;
     initFilter();
     renderList();
