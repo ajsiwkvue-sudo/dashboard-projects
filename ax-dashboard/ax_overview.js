@@ -10,6 +10,7 @@
  * =======================================================================*/
 (function(){
   'use strict';
+  /* build: 2026-07-28b (가로막대·간결범례) */
   var OV='#v-overview';
   function q(s,r){ return (r||document).querySelector(s); }
   function TASKS_(){ try{ if(typeof TASKS!=='undefined') return TASKS; }catch(e){} return []; }
