@@ -33,6 +33,8 @@
       '#axMainRow{display:grid;grid-template-columns:320px 1fr;gap:14px;align-items:start}',
       '#axRightCol{display:flex;flex-direction:column;gap:16px;min-width:0}',
       '#axRightCol>.card{margin:0 !important}',
+      '#axMetricsRow{display:grid;grid-template-columns:1fr 1fr;gap:16px}',
+      '#axMetricsRow>.card{margin:0 !important;min-width:0}',
       '#axTodo{display:flex;flex-direction:column;min-height:0}',
       '#axTodo .ax-td-h{font-size:1rem;font-weight:800;display:flex;align-items:center;gap:6px}',
       '#axTodo .ax-td-sub{font-size:.72rem;color:var(--muted);margin:3px 0 8px}',
@@ -56,7 +58,7 @@
       '.ax-goalbars .ax-gt{flex:1;height:16px;background:rgba(120,132,150,.16);border-radius:6px;overflow:hidden}',
       '.ax-goalbars .ax-gf{display:block;height:100%;border-radius:6px}',
       '.ax-goalbars .ax-gp{width:44px;text-align:right;font-weight:800;font-size:.86rem}',
-      '@media(max-width:900px){#axTopRow{grid-template-columns:1fr}#axMainRow{grid-template-columns:1fr}#axTodo{max-height:60vh}}'
+      '@media(max-width:900px){#axTopRow{grid-template-columns:1fr}#axMainRow{grid-template-columns:1fr}#axMetricsRow{grid-template-columns:1fr}#axTodo{max-height:60vh}}'
     ].join('\n');
     document.head.appendChild(st);
   }
@@ -182,8 +184,11 @@
     }
     var rc=document.getElementById('axRightCol');
     var grid2=goalCard.closest('.grid2');
-    if(gauge.parentNode!==rc) rc.appendChild(gauge);
-    if(goalCard.parentNode!==rc) rc.appendChild(goalCard);
+    // 전체 진척률 + 핵심목표별 진척도를 2열로 나란히
+    var mrow=document.getElementById('axMetricsRow');
+    if(!mrow){ mrow=document.createElement('div'); mrow.id='axMetricsRow'; rc.insertBefore(mrow, rc.firstChild); }
+    if(gauge.parentNode!==mrow) mrow.appendChild(gauge);
+    if(goalCard.parentNode!==mrow) mrow.appendChild(goalCard);
     if(growth && growth.parentNode!==rc) rc.appendChild(growth);
     if(grid2) grid2.style.display='none';
     return true;
