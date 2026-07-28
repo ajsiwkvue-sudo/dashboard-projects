@@ -113,8 +113,7 @@
             var d=Math.round((i.end - t0)/86400000);
             var cls=d<=7?'urg':(d<=30?'soon':'far');
             var md=(i.end.getMonth()+1);var dd=i.end.getDate();
-            var ds=(md<10?'0':'')+md+'.'+(dd<10?'0':'')+dd;
-            badge='<span class="ax-dd '+cls+'" title="마감 '+ds+'">D-'+d+'</span>';
+            badge='<span class="ax-dd '+cls+'" title="마감일">~'+md+'.'+dd+'</span>';
           }
           html+='<div class="ax-it'+(done?' done':'')+'" onclick="openSchedule(\''+esc(t)+'\')" title="세부계획 열기">'+
                 '<span class="ax-nm">'+esc(i.name)+'</span>'+badge+'</div>';
