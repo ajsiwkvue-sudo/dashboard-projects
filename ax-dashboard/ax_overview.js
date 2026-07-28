@@ -52,6 +52,7 @@
       '.ax-it .ax-dd.urg{color:#c0492f}.ax-it .ax-dd.soon{color:#d98324}.ax-it .ax-dd.far{color:var(--muted)}.ax-it .ax-dd.done{color:#2e8b57}',
       '.ax-it.done .ax-nm{color:var(--muted);text-decoration:line-through}',
       '.ax-td-empty{font-size:.8rem;color:var(--muted);padding:8px 2px}',
+      '#mainScroll>.footer{display:none !important}',
       '.ax-goalbars{display:flex;flex-direction:column;gap:12px;padding:6px 0}',
       '.ax-goalbars .ax-gr{display:flex;align-items:center;gap:11px}',
       '.ax-goalbars .ax-gl{width:118px;font-size:.82rem;color:var(--muted);flex-shrink:0}',
