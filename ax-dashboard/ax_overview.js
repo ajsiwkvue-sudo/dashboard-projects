@@ -116,9 +116,8 @@
             var ds=(md<10?'0':'')+md+'.'+(dd<10?'0':'')+dd;
             badge='<span class="ax-dd '+cls+'" title="마감 '+ds+'">D-'+d+'</span>';
           }
-          var pct=(i.prog>0&&i.prog<100)?' <span style="color:#3d5a98">'+i.prog+'%</span>':'';
           html+='<div class="ax-it'+(done?' done':'')+'" onclick="openSchedule(\''+esc(t)+'\')" title="세부계획 열기">'+
-                '<span class="ax-nm">'+esc(i.name)+pct+'</span>'+badge+'</div>';
+                '<span class="ax-nm">'+esc(i.name)+'</span>'+badge+'</div>';
         });
       });
       html+='</div>';
