@@ -163,7 +163,16 @@
       '#archStage .cn .cn-h b{font-family:"Noto Sans KR"}',
       '#archStage .cn .cn-s{font-family:"Noto Sans KR"}',
       '#archStage .agrp-title{font-family:"Noto Sans KR"}',
-      '#archStage .aihos-bd-lb{font-family:"Noto Sans KR"}'
+      '#archStage .aihos-bd-lb{font-family:"Noto Sans KR"}',
+      /* ── 목표칩이 본문 텍스트를 가리지 않도록 우상단 코너로 재배치 ── */
+      '#archStage .cn{padding-top:9px !important}',
+      '#archStage .cn .schip{top:5px !important;right:6px !important;bottom:auto !important;font-size:7.5px !important;padding:1px 5px !important;line-height:1.35}',
+      '#archStage .cn .cn-h{padding-right:34px}',
+      '#archStage .cn.hub .cn-h{padding-right:46px}',
+      '#archStage .cn .rb{padding-right:2px}',
+      '#archStage .cn.circ .schip{top:auto !important;bottom:9px !important;right:auto !important;left:50% !important;transform:translateX(-50%)}',
+      '#archStage .cn.circ .cn-h{padding-right:0}',
+      '#archStage .cn .cn-s{padding-right:2px}'
     ].join('\n');
     document.head.appendChild(st);
   }
