@@ -17,7 +17,7 @@
 .mode-tabs button.sel{background:var(--ink);color:#fff;border-color:var(--ink)}
 .arch-timeline{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:2px 0 14px}
 .atl-track{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
-.atl-seg{position:relative;background:var(--surface);border:0;border-right:1px solid var(--line-2);padding:8px 18px 19px;
+.atl-seg{position:relative;background:var(--surface);border:0;border-right:1px solid var(--line-2);padding:8px 18px 19px;cursor:pointer;font:600 12.5px var(--sans);color:var(--ink-2)}
 .atl-seg:last-child{border-right:0}
 .atl-seg:hover{background:var(--surface-2)}
 .atl-seg .cnt{position:absolute;bottom:4px;left:0;right:0;font-family:var(--mono);font-size:9px;color:var(--ink-3);font-weight:600}
