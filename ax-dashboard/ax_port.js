@@ -394,3 +394,11 @@ window.axPort = { init:axPortInit, CFG, isLocked, gate, toggleLock, audit,
   s.onerror=function(){ console.warn('[ax] ax_overview.js 로드 실패'); };
   document.head.appendChild(s);
 })();
+
+/* ── AI-HOS 아키텍처 탭 모듈 로더 ───────────────────────────────────── */
+(function(){
+  if([].slice.call(document.scripts).some(function(s){return (s.src||'').indexOf('ax_arch.js')>=0;})) return;
+  var s=document.createElement('script'); s.src='ax_arch.js';
+  s.onerror=function(){ console.warn('[ax] ax_arch.js 로드 실패'); };
+  document.head.appendChild(s);
+})();
