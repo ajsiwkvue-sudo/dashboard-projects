@@ -25,23 +25,8 @@
   function archCloseDrawer(){ var d=document.getElementById('drawer'); if(d) d.classList.remove('open'); window.drawerCode=null; }
 
   function archOpenNode(code){
-    var d=document.getElementById('drawer'), head=document.getElementById('drawerHead'), body=document.getElementById('drawerBody');
-    if(!d||!head||!body) return;
-    if(window.drawerCode===code && d.classList.contains('open')){ archCloseDrawer(); return; }
-    var g=archGoalOf(code), t=task(code), own=OWNERS_()[code]||{};
-    var p=0; try{ if(t&&typeof taskProgress==='function') p=taskProgress(t); }catch(e){}
-    var nx=''; try{ if(t&&typeof nextMile==='function') nx=nextMile(t)||''; }catch(e){}
-    head.innerHTML='<span class="chip '+g.cls+'">'+g.no+' '+esc(g.name)+'</span>'+
-      '<h3 style="margin:8px 0 2px;font-size:16px"><span style="font-family:var(--mono);color:'+g.hex+'">'+esc(code)+'</span> '+esc(t?t.title:code)+'</h3>'+
-      '<div style="font-size:12px;color:var(--ink-3)">담당 '+esc(own.main||'-')+(own.sub?' · 부 '+esc(own.sub):'')+'</div>';
-    body.innerHTML='<div class="dsec">진행률</div>'+
-      '<div style="font-family:var(--mono);font-size:30px;font-weight:700;color:'+g.hex+'">'+p+'<span style="font-size:15px;color:var(--ink-3)">%</span></div>'+
-      '<div class="ad-bar"><i style="width:'+p+'%;background:'+g.hex+'"></i></div>'+
-      (t&&t.obj?'<div class="dsec">목표</div><p>'+esc(t.obj)+'</p>':'')+
-      (t&&t.outcome?'<div class="dsec">기대 산출물</div><p>'+esc(t.outcome)+'</p>':'')+
-      (nx?'<div class="dsec">다음 할 일</div><p>'+esc(nx)+'</p>':'')+
-      (t?'<div style="margin-top:16px"><button class="ad-link" onclick="openSchedule(\''+esc(code)+'\')">세부계획(WBS) 열기 →</button></div>':'');
-    window.drawerCode=code; d.classList.add('open');
+    // 다른 탭과 동일한 중앙 모달(과제 상세)로 통일
+    if(typeof window.openTask==='function' && task(code)){ try{ window.openTask(code); return; }catch(e){} }
   }
 
   function _titleOf(el){ var b=el.querySelector('.cn-h b'); return b?b.textContent:''; }
@@ -144,7 +129,41 @@
       '#archStage .cn.done-past{opacity:.92}',
       '#archStage .cn.future{opacity:.3;filter:grayscale(.4)}',
       '#archStage .zoom-hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(18,38,58,.82);color:#fff;font-size:12px;padding:5px 12px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:40}',
-      '#archStage .zoom-hint.show{opacity:1}'
+      '#archStage .zoom-hint.show{opacity:1}',
+      /* ── 데이터 흐름 애니메이션 ── */
+      '@keyframes axflow{to{stroke-dashoffset:-160}}',
+      '#archStage .aw polyline.awln{stroke-dasharray:3 8;animation:axflow 5.5s linear infinite}',
+      '#archStage .aw polyline.flow{stroke-dasharray:6 6;animation:axflow 1s linear infinite}',
+      '#archStage .aw polyline.edim{opacity:.1;animation:none}',
+      /* ── 컨셉 톤 정리(베이지 제거·화이트 카드) + 영역 침범 방지 ── */
+      '#v-arch .arch-wrap{background:#fff !important;border:1px solid #e6ecf2 !important;box-shadow:0 6px 22px rgba(18,38,58,.06) !important;padding:12px !important}',
+      '#v-arch .arch-vp{background:radial-gradient(120% 120% at 15% 0%,#f7fafd,#eef3f8) !important;border-color:#e2e9f1 !important}',
+      '#v-arch h2{font-size:22px;letter-spacing:-.3px}',
+      '#v-arch .eyebrow{color:#0e8c86}',
+      '#v-arch .arch-timeline{margin:2px 0 18px !important}',
+      '#v-arch .rpal-legend{margin-top:18px}',
+      '#archStage .aihos-bd{background:transparent}',
+      '#archStage .agrp{background:rgba(120,132,150,.045)}',
+      /* ── 컨셉 통일: 폰트·타임라인(월)·전체보기·순환 ── */
+      '#v-arch{font-family:"Noto Sans KR",system-ui,sans-serif}',
+      '#v-arch .lede{font-family:"Noto Sans KR",system-ui,sans-serif}',
+      '#v-arch .atl-track{border:1px solid #e6e9ee;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.04);overflow:hidden}',
+      '#v-arch .atl-seg{background:#fff;color:#6c7d8e;font:700 13px "Noto Sans KR";border-right:1px solid #eef1f5}',
+      '#v-arch .atl-seg .cnt{color:#9aa4b2;font-family:"Noto Sans KR";font-weight:600}',
+      '#v-arch .atl-seg:hover{background:#f4f6f9}',
+      '#v-arch .atl-seg.sel{background:#3d5a98;color:#fff}',
+      '#v-arch .atl-seg.sel .cnt{color:#cfe0f5}',
+      '#v-arch .atl-seg.past{background:#eef3f8}',
+      '#v-arch .atl-all{background:#fff;border:1px solid #e6e9ee;border-radius:10px;color:#3a4a5a;font:600 12.5px "Noto Sans KR";box-shadow:0 1px 3px rgba(0,0,0,.04)}',
+      '#v-arch .atl-all:hover{border-color:#3d5a98;color:#3d5a98}',
+      '#v-arch .atl-loops-lb{color:#9aa4b2;font-family:"Noto Sans KR"}',
+      '#v-arch .atl-loop{background:#fff;border:1px solid #e6e9ee;border-radius:10px;font-family:"Noto Sans KR"}',
+      '#v-arch .atl-loop .lp{font-family:"Noto Sans KR";color:#9aa4b2}',
+      '#v-arch .atl-cap{color:#9aa4b2;font-family:"Noto Sans KR"}',
+      '#archStage .cn .cn-h b{font-family:"Noto Sans KR"}',
+      '#archStage .cn .cn-s{font-family:"Noto Sans KR"}',
+      '#archStage .agrp-title{font-family:"Noto Sans KR"}',
+      '#archStage .aihos-bd-lb{font-family:"Noto Sans KR"}'
     ].join('\n');
     document.head.appendChild(st);
   }
@@ -174,7 +193,13 @@
     if(rendered){ var st=document.getElementById('archStage'); if(st&&st._fit) setTimeout(st._fit,40); return; }
     if(typeof renderArch!=='function') return;
     var root=document.getElementById('view'); if(!root) return;
-    try{ installOverrides(); renderArch(root); rendered=true; }
+    try{
+      installOverrides(); renderArch(root); rendered=true;
+      // RPAL 부연설명 + 하단 정합표(컴포넌트↔전략과제) 제거
+      var rl=root.querySelector('.rpal-legend');
+      if(rl){ var n=rl.nextElementSibling; while(n){ var nx=n.nextElementSibling; if(n.parentNode)n.parentNode.removeChild(n); n=nx; } rl.parentNode.removeChild(rl); }
+      else { var hr=root.querySelector('hr.section-rule'); if(hr){ var m=hr.nextElementSibling; while(m){ var mx=m.nextElementSibling; m.parentNode.removeChild(m); m=mx; } hr.parentNode.removeChild(hr); } }
+    }
     catch(e){ console.warn('[ax-arch] render:',e&&e.message); }
   }
 
