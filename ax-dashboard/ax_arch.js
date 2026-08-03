@@ -218,6 +218,9 @@
       var rl=root.querySelector('.rpal-legend');
       if(rl){ var n=rl.nextElementSibling; while(n){ var nx=n.nextElementSibling; if(n.parentNode)n.parentNode.removeChild(n); n=nx; } rl.parentNode.removeChild(rl); }
       else { var hr=root.querySelector('hr.section-rule'); if(hr){ var m=hr.nextElementSibling; while(m){ var mx=m.nextElementSibling; m.parentNode.removeChild(m); m=mx; } hr.parentNode.removeChild(hr); } }
+      // 강제 개행(<br>) 제거 → 한 줄 (부제=구분점, 제목=공백)
+      root.querySelectorAll('#archStage .cn .cn-s').forEach(function(s){ s.innerHTML=s.innerHTML.replace(/\s*<br\s*\/?>\s*/gi,'·').replace(/·{2,}/g,'·'); });
+      root.querySelectorAll('#archStage .cn .cn-h b').forEach(function(b){ b.innerHTML=b.innerHTML.replace(/\s*<br\s*\/?>\s*/gi,' ').replace(/\s{2,}/g,' '); });
     }
     catch(e){ console.warn('[ax-arch] render:',e&&e.message); }
   }
