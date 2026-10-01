@@ -11,7 +11,7 @@
   if(window.axArch) return;
 
   /* ───────────── 기본 데이터 ───────────── */
-  var CW=2000, CH=1000;
+  var CW=2310, CH=1040;
   var GOAL_HEX={1:'#3d5a98',2:'#0e8c86',3:'#c1791d'};
 
   // 그룹(영역) - 원본 콘솔의 영역 코드·이름 그대로. 박스는 소속 노드 범위에서 자동 계산
@@ -26,54 +26,54 @@
 
   // 노드: 제목·부제·연결 과제(maps)는 원본 콘솔 그대로 (부제의 줄바꿈만 '·'로 이어 한 줄)
   var N={
-    source:{x:14,y:300,w:176,h:72,out:1,ic:'server',c:'#6c7d8e',title:'원천 데이터',sub:'EMR·OCS·PACS·LIS·IoMT',lp:'data'},
-    users:{x:14,y:780,w:176,h:78,out:1,ic:'users',c:'#2f9e6a',title:'현업 · Key Player',sub:'과제발굴·L3+ 30명',maps:['3-1']},
-    llm:{x:1830,y:300,w:160,h:110,out:1,ic:'bolt',c:'#c1791d',title:'On-prem LLM',sub:'의료특화 FM',maps:['2-1','1-4'],lp:'perso model'},
-    gpu:{x:1830,y:470,w:160,h:72,out:1,ic:'chip',c:'#c0492f',title:'GPU 하드웨어',sub:'AI 컴퓨팅 인프라',maps:['2-1']},
+    source:{x:14,y:300,w:150,h:72,out:1,ic:'server',c:'#6c7d8e',title:'원천 데이터',sub:'EMR·OCS·PACS·LIS·IoMT',lp:'data'},
+    users:{x:14,y:764,w:176,h:72,out:1,ic:'users',c:'#2f9e6a',title:'현업 · Key Player',sub:'과제발굴·L3+ 30명',maps:['3-1']},
+    llm:{x:2140,y:300,w:150,h:100,out:1,ic:'bolt',c:'#c1791d',title:'On-prem LLM',sub:'의료특화 FM',maps:['2-1','1-4'],lp:'perso model'},
+    gpu:{x:2140,y:460,w:150,h:72,out:1,ic:'chip',c:'#c0492f',title:'GPU 하드웨어',sub:'AI 컴퓨팅 인프라',maps:['2-1']},
 
-    gov1:{x:260,y:86,w:176,h:64,grp:'GOV',ic:'board',c:'#3d5a98',title:'전략·이행관리',sub:'AX 추진전략',maps:['1-1']},
-    gov2:{x:452,y:86,w:176,h:64,grp:'GOV',ic:'shield',c:'#3d5a98',title:'표준·윤리·안전',sub:'가이드라인',maps:['1-2']},
-    gov3:{x:644,y:86,w:176,h:64,grp:'GOV',ic:'gear',c:'#3d5a98',title:'KPI·성과·보상',sub:'12지표·보상',maps:['1-3']},
-    gov4:{x:836,y:86,w:176,h:64,grp:'GOV',ic:'result',c:'#3d5a98',title:'검증·테스트베드',sub:'FM 실증·검증',maps:['2-4']},
-    gov5:{x:1028,y:86,w:176,h:64,grp:'GOV',ic:'shield',c:'#3d5a98',title:'IAM·보안·감사·버전',sub:'Control Plane',maps:['2-4']},
+    gov1:{x:260,y:86,w:176,h:72,grp:'GOV',ic:'board',c:'#3d5a98',title:'전략·이행관리',sub:'AX 추진전략',maps:['1-1']},
+    gov2:{x:452,y:86,w:176,h:72,grp:'GOV',ic:'shield',c:'#3d5a98',title:'표준·윤리·안전',sub:'가이드라인',maps:['1-2']},
+    gov3:{x:644,y:86,w:176,h:72,grp:'GOV',ic:'gear',c:'#3d5a98',title:'KPI·성과·보상',sub:'12지표·보상',maps:['1-3']},
+    gov4:{x:836,y:86,w:176,h:72,grp:'GOV',ic:'result',c:'#3d5a98',title:'검증·테스트베드',sub:'FM 실증·검증',maps:['2-4']},
+    gov5:{x:1028,y:86,w:176,h:72,grp:'GOV',ic:'shield',c:'#3d5a98',title:'IAM·보안·감사·버전',sub:'Control Plane',maps:['2-4']},
 
-    hub:{x:280,y:300,w:170,h:64,ic:'hub',c:'#0e8c86',title:'Connector Hub',sub:'Event Bus·수집',maps:['2-2'],lp:'data'},
-    binder:{x:306,y:414,w:118,h:118,circ:1,ic:'data',c:'#0e8c86',title:'데이터 바인더',sub:'Semantic Fabric',maps:['2-2'],lp:'data'},
-    catalog:{x:280,y:592,w:170,h:64,ic:'tag',c:'#0e8c86',title:'데이터 카탈로그',sub:'Provenance·품질',maps:['2-2'],lp:'data'},
+    hub:{x:260,y:300,w:176,h:72,ic:'hub',c:'#0e8c86',title:'Connector Hub',sub:'Event Bus·수집',maps:['2-2'],lp:'data'},
+    binder:{x:290,y:416,w:124,h:124,circ:1,ic:'data',c:'#0e8c86',title:'데이터 바인더',sub:'Semantic Fabric',maps:['2-2'],lp:'data'},
+    catalog:{x:260,y:584,w:176,h:72,ic:'tag',c:'#0e8c86',title:'데이터 카탈로그',sub:'Provenance·품질',maps:['2-2'],lp:'data'},
 
-    kb:{x:500,y:300,w:180,h:64,ic:'book',c:'#0e8c86',title:'Enterprise KB',sub:'지침·규정·SOP·심사',maps:['2-2'],lp:'data'},
-    pctx:{x:500,y:420,w:180,h:64,ic:'data',c:'#0e8c86',title:'Patient Context',sub:'환자 실시간·조립',maps:['2-2'],lp:'data'},
-    mcp_read:{x:500,y:540,w:180,h:64,ic:'plug',c:'#6c4bd8',title:'Read Gateway',sub:'EMR·PACS 조회',maps:['2-3'],lp:'data'},
+    kb:{x:530,y:554,w:160,h:72,ic:'book',c:'#0e8c86',title:'Enterprise KB',sub:'지침·규정·SOP·심사',maps:['2-2'],lp:'data'},
+    pctx:{x:530,y:404,w:160,h:72,ic:'data',c:'#0e8c86',title:'Patient Context',sub:'환자 실시간·조립',maps:['2-2'],lp:'data'},
+    mcp_read:{x:530,y:300,w:160,h:72,ic:'plug',c:'#6c4bd8',title:'Read Gateway',sub:'EMR·PACS 조회',maps:['2-3'],lp:'data'},
 
-    cab:{x:730,y:288,w:166,h:58,grp:'CAP',ic:'loop',c:'#0b6e6b',title:'CAB',sub:'Agent Builder',maps:['2-3']},
-    cal:{x:908,y:288,w:166,h:58,grp:'CAP',ic:'board',c:'#0e8c86',title:'CAL',sub:'Library·30종',maps:['2-3']},
-    rt_router:{x:730,y:352,w:166,h:58,grp:'CAP',ic:'fsm',c:'#3d5a98',title:'Router·Planner',sub:'요청 배정',maps:['2-3']},
-    rt_flow:{x:908,y:352,w:166,h:58,grp:'CAP',ic:'loop',c:'#3d5a98',title:'Workflow·State',sub:'순서·재시도',maps:['2-3']},
-    rt_policy:{x:730,y:416,w:166,h:58,grp:'CAP',ic:'shield',c:'#3d5a98',title:'Policy·IAM',sub:'권한 통제',maps:['2-3']},
-    rt_valid:{x:908,y:416,w:166,h:58,grp:'CAP',ic:'result',c:'#3d5a98',title:'Validator',sub:'정확·안전 검증',maps:['2-3']},
-    mwp:{x:730,y:502,w:344,h:84,grp:'CAP',hub:1,ic:'ui',c:'#0b6e6b',title:'MWP · My Workplace',sub:'개인 맞춤 업무환경 · CAP 중심',maps:['2-3']},
+    cab:{x:800,y:300,w:166,h:72,grp:'CAP',ic:'loop',c:'#0b6e6b',title:'CAB',sub:'Agent Builder',maps:['2-3']},
+    cal:{x:982,y:300,w:166,h:72,grp:'CAP',ic:'board',c:'#0e8c86',title:'CAL',sub:'Library·30종',maps:['2-3']},
+    rt_router:{x:800,y:384,w:166,h:72,grp:'CAP',ic:'fsm',c:'#3d5a98',title:'Router·Planner',sub:'요청 배정',maps:['2-3']},
+    rt_flow:{x:982,y:384,w:166,h:72,grp:'CAP',ic:'loop',c:'#3d5a98',title:'Workflow·State',sub:'순서·재시도',maps:['2-3']},
+    rt_policy:{x:800,y:468,w:166,h:72,grp:'CAP',ic:'shield',c:'#3d5a98',title:'Policy·IAM',sub:'권한 통제',maps:['2-3']},
+    rt_valid:{x:982,y:468,w:166,h:72,grp:'CAP',ic:'result',c:'#3d5a98',title:'Validator',sub:'정확·안전 검증',maps:['2-3']},
+    mwp:{x:800,y:564,w:348,h:84,grp:'CAP',hub:1,ic:'ui',c:'#0b6e6b',title:'MWP · My Workplace',sub:'개인 맞춤 업무환경 · CAP 중심',maps:['2-3']},
 
-    magent:{x:500,y:690,w:200,h:64,ic:'spawn',c:'#0e8c86',title:'멀티에이전트',sub:'Orchestrator·Worker·Validator·A2A',maps:['2-3']},
+    magent:{x:800,y:688,w:240,h:72,grp:'CAP',ic:'spawn',c:'#0e8c86',title:'멀티에이전트',sub:'Orchestrator·Worker·Validator·A2A',maps:['2-3']},
 
-    output:{x:908,y:690,w:166,h:60,grp:'WB',ic:'result',c:'#2f9e6a',title:'아웃풋',sub:'Agent Draft',maps:['3-3']},
-    happroval:{x:908,y:786,w:166,h:60,grp:'WB',ic:'shield',c:'#c0492f',title:'Human Approval',sub:'의료진 검토·서명',maps:['2-3']},
-    mcp_write:{x:908,y:882,w:166,h:60,grp:'WB',ic:'plug',c:'#6c4bd8',title:'Write-back Ctrl',sub:'의무기록·오더·처방',maps:['2-3']},
-    audit:{x:660,y:884,w:160,h:58,grp:'WB',ic:'board',c:'#3d5a98',title:'Audit·Version',sub:'감사·버전 기록',maps:['2-4']},
+    output:{x:982,y:816,w:166,h:72,grp:'WB',ic:'result',c:'#2f9e6a',title:'아웃풋',sub:'Agent Draft',maps:['3-3']},
+    happroval:{x:982,y:920,w:166,h:72,grp:'WB',ic:'shield',c:'#c0492f',title:'Human Approval',sub:'의료진 검토·서명',maps:['2-3']},
+    mcp_write:{x:730,y:920,w:166,h:72,grp:'WB',ic:'plug',c:'#6c4bd8',title:'Write-back Ctrl',sub:'의무기록·오더·처방',maps:['2-3']},
+    audit:{x:440,y:920,w:166,h:72,grp:'WB',ic:'board',c:'#3d5a98',title:'Audit·Version',sub:'감사·버전 기록',maps:['2-4']},
 
-    rag:{x:1180,y:262,w:116,h:56,grp:'RPA',ic:'graph',c:'#c1791d',title:'RAG',sub:'KB 검색',maps:['2-2'],tag:'R'},
-    pref:{x:1306,y:262,w:116,h:56,grp:'RPA',ic:'gear',c:'#6c4bd8',title:'PREF',sub:'선호',maps:['2-2'],tag:'P'},
-    agent:{x:1432,y:262,w:116,h:56,grp:'RPA',ic:'brain',c:'#6c4bd8',title:'AGENT',sub:'Memory',maps:['2-2'],tag:'A'},
-    OE:{x:1180,y:362,w:210,h:64,ic:'mine',c:'#6c7d8e',title:'운영지능 (OE)',sub:'Event Log·Process Mining',maps:['3-3']},
+    rag:{x:1410,y:300,w:126,h:72,grp:'RPA',ic:'graph',c:'#c1791d',title:'RAG',sub:'KB 검색',maps:['2-2'],tag:'R'},
+    pref:{x:1560,y:300,w:126,h:72,grp:'RPA',ic:'gear',c:'#6c4bd8',title:'PREF',sub:'선호',maps:['2-2'],tag:'P'},
+    agent:{x:1710,y:300,w:126,h:72,grp:'RPA',ic:'brain',c:'#6c4bd8',title:'AGENT',sub:'Memory',maps:['2-2'],tag:'A'},
+    OE:{x:1410,y:412,w:210,h:72,ic:'mine',c:'#6c7d8e',title:'운영지능 (OE)',sub:'Event Log·Process Mining',maps:['3-3']},
 
-    pipe:{x:1180,y:478,w:180,h:68,grp:'MODEL',ic:'gauge',c:'#c0492f',title:'학습 파이프라인',sub:'선별·비식별·라벨링·Gold',maps:['2-1']},
-    lora:{x:1466,y:462,w:100,h:100,grp:'MODEL',circ:1,ic:'gear',c:'#6c4bd8',title:'LoRA',sub:'Adapter 학습',maps:['2-1'],tag:'L'},
-    registry:{x:1640,y:478,w:160,h:68,grp:'MODEL',ic:'book',c:'#c0492f',title:'Model Registry',sub:'평가·버전·승인',maps:['2-4']},
+    pipe:{x:1410,y:524,w:180,h:72,grp:'MODEL',ic:'gauge',c:'#c0492f',title:'학습 파이프라인',sub:'선별·비식별·라벨링·Gold',maps:['2-1']},
+    lora:{x:1720,y:498,w:124,h:124,grp:'MODEL',circ:1,ic:'gear',c:'#6c4bd8',title:'LoRA',sub:'Adapter 학습',maps:['2-1'],tag:'L'},
+    registry:{x:1930,y:524,w:160,h:72,grp:'MODEL',ic:'book',c:'#c0492f',title:'Model Registry',sub:'평가·버전·승인',maps:['2-4']},
 
-    ooe:{x:1180,y:660,w:210,h:64,grp:'OPT',ic:'gauge',c:'#c1791d',title:'업무 최적화 엔진',sub:'로그 모니터링·최적화',maps:['3-3']},
-    opt_wait:{x:1180,y:764,w:130,h:64,grp:'OPT',ic:'gauge',c:'#c1791d',title:'대기시간',sub:'외래·검사',maps:['3-3']},
-    opt_res:{x:1320,y:764,w:130,h:64,grp:'OPT',ic:'users',c:'#c1791d',title:'자원배분',sub:'인력·장비',maps:['3-3']},
-    opt_bed:{x:1460,y:764,w:130,h:64,grp:'OPT',ic:'board',c:'#c1791d',title:'병상·스케줄',sub:'회전',maps:['3-3']},
-    opt_proc:{x:1600,y:764,w:130,h:64,grp:'OPT',ic:'fsm',c:'#c1791d',title:'프로세스',sub:'병목',maps:['3-3']}
+    ooe:{x:1410,y:700,w:210,h:72,grp:'OPT',ic:'gauge',c:'#c1791d',title:'업무 최적화 엔진',sub:'로그 모니터링·최적화',maps:['3-3']},
+    opt_wait:{x:1410,y:812,w:130,h:72,grp:'OPT',ic:'gauge',c:'#c1791d',title:'대기시간',sub:'외래·검사',maps:['3-3']},
+    opt_res:{x:1564,y:812,w:130,h:72,grp:'OPT',ic:'users',c:'#c1791d',title:'자원배분',sub:'인력·장비',maps:['3-3']},
+    opt_bed:{x:1718,y:812,w:130,h:72,grp:'OPT',ic:'board',c:'#c1791d',title:'병상·스케줄',sub:'회전',maps:['3-3']},
+    opt_proc:{x:1872,y:812,w:130,h:72,grp:'OPT',ic:'fsm',c:'#c1791d',title:'프로세스',sub:'병목',maps:['3-3']}
   };
 
   // 완성 목표 월(2026) - 원본 그대로
@@ -84,41 +84,41 @@
   var EDGES=[
     {a:'source',as:'r',b:'hub',bs:'l',t:'solid',l:'수집·연계',lp:'data'},
     {a:'hub',as:'b',b:'binder',bs:'t',t:'solid',l:'정규화',lp:'data'},
-    {a:'hub',as:'r',b:'mcp_read',bs:'l',t:'solid',l:'실시간 조회',lp:'data',mx:470},
-    {a:'binder',as:'r',b:'kb',bs:'l',t:'solid',l:'지식화',lp:'data',mx:485},
+    {a:'hub',as:'r',b:'mcp_read',bs:'l',t:'solid',l:'실시간 조회',lp:'data'},
+    {a:'binder',as:'r',b:'kb',bs:'l',t:'solid',l:'지식화',lseg:'src',lp:'data',mx:490},
     {a:'binder',as:'b',b:'catalog',bs:'t',t:'solid',l:'품질·계보',lp:'data'},
-    {a:'mcp_read',as:'t',b:'pctx',bs:'b',t:'solid',l:'환자 컨텍스트',lp:'data'},
-    {a:'kb',as:'r',b:'mwp',bs:'l',t:'solid',l:'지식 참조',lp:'data',mx:698,bo:-20},
-    {a:'pctx',as:'r',b:'mwp',bs:'l',t:'solid',l:'환자 사실',lp:'data',mx:714,bo:16},
-    {a:'mwp',as:'b',b:'output',bs:'t',t:'solid',l:'임상 Draft',lp:'data',ao:89},
+    {a:'mcp_read',as:'b',b:'pctx',bs:'t',t:'solid',l:'환자 컨텍스트',lp:'data'},
+    {a:'kb',as:'r',b:'mwp',bs:'l',t:'solid',l:'지식 참조',lp:'data',bo:-16},
+    {a:'pctx',as:'r',b:'mwp',bs:'l',t:'solid',l:'환자 사실',lseg:'src',lp:'data',mx:770,bo:-24},
+    {a:'mwp',as:'b',b:'output',bs:'t',t:'solid',l:'임상 Draft',lp:'data',ao:91},
     {a:'output',as:'b',b:'happroval',bs:'t',t:'solid',l:'검토 요청',lp:'data'},
-    {a:'happroval',as:'b',b:'mcp_write',bs:'t',t:'gate',l:'승인',lp:'data'},
-    {a:'mcp_write',b:'source',t:'solid',l:'write-back',lp:'data',route:'writeback'},
+    {a:'happroval',as:'l',b:'mcp_write',bs:'r',t:'gate',l:'승인',lp:'data'},
+    {a:'mcp_write',b:'source',t:'solid',l:'write-back',lseg:2,lp:'data',route:'writeback'},
     {a:'mcp_write',as:'l',b:'audit',bs:'r',t:'feed',l:'감사 기록',lp:'data'},
-    {a:'gov5',as:'b',b:'happroval',bs:'r',t:'gate',l:'권한·감사',ao:-26},
-    {a:'mwp',as:'r',b:'OE',bs:'l',t:'feed',l:'사용 로그',lp:'perso opt model',mx:1164,ao:30},
-    {a:'OE',as:'t',b:'rag',bs:'b',t:'fb',l:'색인 갱신',lp:'perso',ao:-47},
-    {a:'rag',as:'l',b:'mwp',bs:'r',t:'feed',l:'검색 증강',lp:'perso',mx:1110,bo:-34},
-    {a:'pref',as:'b',b:'mwp',bs:'r',t:'feed',l:'개인화',lp:'perso',via:[[1364,336],[1122,336]],bo:-22},
-    {a:'agent',as:'b',b:'mwp',bs:'r',t:'feed',l:'메모리',lp:'perso',via:[[1490,346],[1134,346]],bo:-10},
-    {a:'llm',as:'l',b:'mwp',bs:'r',t:'solid',l:'추론 응답',lp:'perso model',mx:1146,ao:-30,bo:2},
-    {a:'OE',as:'b',b:'pipe',bs:'t',t:'fb',l:'학습 후보',lp:'model',ao:-15},
+    {a:'gov5',as:'b',b:'happroval',bs:'r',t:'gate',l:'권한·감사',lseg:'dst',ao:60},
+    {a:'mwp',as:'r',b:'OE',bs:'l',t:'feed',l:'사용 로그',lseg:'dst',lp:'perso opt model',mx:1336,ao:24},
+    {a:'OE',as:'t',b:'rag',bs:'b',t:'fb',l:'색인 갱신',lseg:0,lp:'perso',ao:-42},
+    {a:'rag',as:'l',b:'mwp',bs:'r',t:'feed',l:'검색 증강',lseg:'src',lp:'perso',mx:1250,bo:-30},
+    {a:'pref',as:'b',b:'mwp',bs:'r',t:'feed',l:'개인화',lseg:'src',lp:'perso',via:[[1623,382],[1276,382]],bo:-20},
+    {a:'agent',as:'b',b:'mwp',bs:'r',t:'feed',l:'메모리',lseg:'src',lp:'perso',via:[[1773,394],[1302,394]],bo:-10},
+    {a:'llm',as:'t',b:'mwp',bs:'r',t:'solid',l:'추론 응답',lseg:1,lp:'perso model',bo:0,via:[[2215,240],[1200,240]]},
+    {a:'OE',as:'b',b:'pipe',bs:'t',t:'fb',l:'학습 후보',lseg:0,lp:'model',ao:-15},
     {a:'pipe',as:'r',b:'lora',bs:'l',t:'fb',l:'Gold DS 학습',lp:'model'},
     {a:'lora',as:'r',b:'registry',bs:'l',t:'solid',l:'평가·등록',lp:'model'},
-    {a:'registry',as:'r',b:'llm',bs:'l',t:'solid',l:'검증 배포',lp:'model',mx:1815,bo:30},
+    {a:'registry',as:'r',b:'llm',bs:'l',t:'solid',l:'검증 배포',lseg:'src',lp:'model',mx:2115,bo:30},
     {a:'gpu',as:'t',b:'llm',bs:'b',t:'solid',l:'GPU'},
-    {a:'gov4',as:'b',b:'registry',bs:'t',t:'gate',l:'모델 승인',my:200,bo:40},
-    {a:'OE',as:'l',b:'ooe',bs:'l',t:'feed',l:'이벤트 마이닝',lp:'opt',mx:1170,ao:20,bo:-14},
-    {a:'ooe',as:'b',b:'opt_wait',bs:'t',t:'fb',lp:'opt',my:744},
-    {a:'ooe',as:'b',b:'opt_res',bs:'t',t:'fb',lp:'opt',my:744},
-    {a:'ooe',as:'b',b:'opt_bed',bs:'t',t:'fb',lp:'opt',my:744},
-    {a:'ooe',as:'b',b:'opt_proc',bs:'t',t:'fb',lp:'opt',my:744},
-    {a:'ooe',as:'l',b:'mwp',bs:'r',t:'solid',l:'최적화 반영',lp:'opt',mx:1098,ao:14,bo:24},
-    {a:'gov2',as:'b',b:'cab',bs:'l',t:'gate',l:'거버넌스 게이트',via:[[540,221],[714,221]]},
+    {a:'gov4',as:'b',b:'registry',bs:'t',t:'gate',l:'모델 승인',lseg:1,my:200},
+    {a:'OE',as:'l',b:'ooe',bs:'l',t:'feed',l:'이벤트 마이닝',lseg:'dst',lp:'opt',mx:1372,ao:20,bo:-14},
+    {a:'ooe',as:'b',b:'opt_wait',bs:'t',t:'fb',lp:'opt',my:792},
+    {a:'ooe',as:'b',b:'opt_res',bs:'t',t:'fb',lp:'opt',my:792},
+    {a:'ooe',as:'b',b:'opt_bed',bs:'t',t:'fb',lp:'opt',my:792},
+    {a:'ooe',as:'b',b:'opt_proc',bs:'t',t:'fb',lp:'opt',my:792},
+    {a:'ooe',as:'l',b:'mwp',bs:'r',t:'solid',l:'최적화 반영',lseg:'src',lp:'opt',mx:1224,ao:14,bo:34},
+    {a:'gov2',as:'b',b:'cab',bs:'l',t:'gate',l:'거버넌스 게이트',lseg:1,via:[[540,221],[784,221]]},
     {a:'cab',as:'r',b:'cal',bs:'l',t:'solid'},
     {a:'cal',as:'b',b:'rt_flow',bs:'t',t:'solid'},
-    {a:'rt_valid',as:'b',b:'mwp',bs:'t',t:'solid',bo:89},
-    {a:'mwp',as:'b',b:'magent',bs:'t',t:'solid',l:'실행',ao:-122}
+    {a:'rt_valid',as:'b',b:'mwp',bs:'t',t:'solid',bo:91},
+    {a:'mwp',as:'b',b:'magent',bs:'t',t:'solid',l:'실행',lseg:1,ao:-54}
   ];
 
   // 순환 - 원본 문구 그대로. 흐름(flow)만 단계로 나눠 보여준다
@@ -229,27 +229,39 @@
       return res; }
 
     var wires='', labels='', LBLPX=12.5;
+    // 1단계 : 모든 선 경로 계산
+    var PTS=EDGES.map(function(e){
+      var A=N[e.a], B=N[e.b];
+      if(e.route==='writeback'){ var bx=A.x+A.w/2, low=CH-22, sx=B.x, sy=B.y+B.h/2;
+        return [{x:bx,y:A.y+A.h},{x:bx,y:low},{x:6,y:low},{x:6,y:sy},{x:sx,y:sy}]; }
+      if(e.via){ var pa=anchor(A,e.as,e.ao), pb=anchor(B,e.bs,e.bo);
+        return [{x:pa.x,y:pa.y}].concat(e.via.map(function(v){return {x:v[0],y:v[1]};})).concat([{x:e.via[e.via.length-1][0],y:pb.y},{x:pb.x,y:pb.y}]); }
+      return ortho(anchor(A,e.as,e.ao),anchor(B,e.bs,e.bo),e);
+    });
+    // 화살촉 자리 : 라벨이 화살촉을 가리지 않게
+    PTS.forEach(function(pts){ var q=pts[pts.length-1]; obst.push({x:q.x-12,y:q.y-12,w:24,h:24}); });
+    function segRects(skip){ var out=[]; PTS.forEach(function(pts,i){ if(i===skip) return; for(var k=0;k<pts.length-1;k++){ var a=pts[k],c=pts[k+1]; out.push({x:Math.min(a.x,c.x)-2,y:Math.min(a.y,c.y)-2,w:Math.abs(a.x-c.x)+4,h:Math.abs(a.y-c.y)+4}); } }); return out; }
+    function hitR(r,extra){ if(hit(r)) return true; for(var i=0;i<extra.length;i++){ var o=extra[i]; if(r.x<o.x+o.w&&r.x+r.w>o.x&&r.y<o.y+o.h&&r.y+r.h>o.y) return true; } return false; }
+    // 2단계 : 선 그리기 + 라벨 자리 찾기 (노드·그룹 제목·화살촉·다른 라벨, 가능하면 다른 선까지 피함)
     EDGES.forEach(function(e,ei){
-      var A=N[e.a], B=N[e.b], pts;
-      if(e.route==='writeback'){ var y0=A.y+A.h/2, low=CH-22, sx=B.x, sy=B.y+B.h/2;
-        pts=[{x:A.x,y:y0},{x:A.x-18,y:y0},{x:A.x-18,y:low},{x:8,y:low},{x:8,y:sy},{x:sx,y:sy}]; }
-      else if(e.via){ var pa=anchor(A,e.as,e.ao), pb=anchor(B,e.bs,e.bo);
-        pts=[{x:pa.x,y:pa.y}].concat(e.via.map(function(v){return {x:v[0],y:v[1]};})).concat([{x:e.via[e.via.length-1][0],y:pb.y},{x:pb.x,y:pb.y}]); }
-      else pts=ortho(anchor(A,e.as,e.ao),anchor(B,e.bs,e.bo),e);
-      var lp=e.lp||'', am=Math.max(DONE[e.a]||0,DONE[e.b]||0);
+      var pts=PTS[ei], lp=e.lp||'', am=Math.max(DONE[e.a]||0,DONE[e.b]||0);
       wires+='<polyline class="axa-w t-'+e.t+'" data-a="'+e.a+'" data-b="'+e.b+'" data-am="'+am+'" data-lp="'+lp+'" points="'+pts.map(function(o){return o.x.toFixed(0)+','+o.y.toFixed(0);}).join(' ')+'" marker-end="url(#axa-m-'+e.t+')"/>';
       if(!e.l) return;
-      // 라벨 자리 찾기: 긴 구간부터, 구간 위 여러 지점 → 선 위/옆으로 비켜서
       var lw=textW(e.l,LBLPX)+14, lh=20, segs=[];
-      for(var i=0;i<pts.length-1;i++){ var a=pts[i],c=pts[i+1]; segs.push({a:a,c:c,len:Math.abs(a.x-c.x)+Math.abs(a.y-c.y),h:Math.abs(a.y-c.y)<.5}); }
-      segs.sort(function(s1,s2){return s2.len-s1.len;});
-      var spot=null, ts=[.5,.35,.65,.2,.8];
-      for(var si=0;si<segs.length&&!spot;si++){ var sg=segs[si];
-        for(var ti=0;ti<ts.length&&!spot;ti++){ var mx=sg.a.x+(sg.c.x-sg.a.x)*ts[ti], my=sg.a.y+(sg.c.y-sg.a.y)*ts[ti];
-          var cands=sg.h? [[0,0],[0,-15],[0,15]] : [[0,0],[lw/2+6,0],[-lw/2-6,0]];
+      for(var i=0;i<pts.length-1;i++){ var a=pts[i],c=pts[i+1]; segs.push({i:i,a:a,c:c,len:Math.abs(a.x-c.x)+Math.abs(a.y-c.y),h:Math.abs(a.y-c.y)<.5}); }
+      // 라벨은 정해 둔 구간(lseg : 'src' 출발 구간, 'dst' 도착 구간, 숫자 = 구간 번호)에 우선 붙인다. 없으면 가장 긴 구간
+      var pref=(e.lseg==='src')?0:(e.lseg==='dst')?segs.length-1:(typeof e.lseg==='number'?e.lseg:-1);
+      segs.sort(function(s1,s2){ if(s1.i===pref) return -1; if(s2.i===pref) return 1; return s2.len-s1.len; });
+      // 후보 자리마다 '다른 선을 몇 개 가리는지' 점수를 매겨 가장 적게 가리는 자리를 고른다
+      var spot=null, best=1e9, others=segRects(ei), ts=[.5,.4,.6,.3,.7,.2,.8,.1,.9];
+      function cost(r){ var c=0; for(var i=0;i<others.length;i++){ var o=others[i]; if(r.x<o.x+o.w&&r.x+r.w>o.x&&r.y<o.y+o.h&&r.y+r.h>o.y) c++; } return c; }
+      for(var si=0;si<segs.length;si++){ var sg=segs[si];
+        for(var ti=0;ti<ts.length;ti++){ var mx=sg.a.x+(sg.c.x-sg.a.x)*ts[ti], my=sg.a.y+(sg.c.y-sg.a.y)*ts[ti];
+          var cands=sg.h? [[0,0],[0,-15],[0,15]] : [[0,0],[lw/2+5,0],[-lw/2-5,0]];
           for(var k=0;k<cands.length;k++){ var r={x:mx+cands[k][0]-lw/2,y:my+cands[k][1]-lh/2,w:lw,h:lh};
-            if(sg.h&&r.w>sg.len-10&&k===0) continue;
-            if(!hit(r)){ spot=r; break; } } } }
+            if(sg.h&&k===0&&r.w>sg.len-10) continue;
+            if(hit(r)) continue;
+            var c=cost(r)*10+(pref<0?si:(sg.i===pref?0:100+si))+(k?1:0)+(ti?.5:0); if(c<best){ best=c; spot=r; } } } }
       if(!spot){ var s0=segs[0]; var mx0=(s0.a.x+s0.c.x)/2,my0=(s0.a.y+s0.c.y)/2; spot={x:mx0-lw/2,y:my0-lh/2,w:lw,h:lh}; }
       obst.push(spot);
       labels+='<g class="axa-lb" data-a="'+e.a+'" data-b="'+e.b+'" data-am="'+am+'" data-lp="'+lp+'" data-r="'+[spot.x,spot.y,lw,lh].map(function(v){return v.toFixed(0);}).join(',')+'"><rect x="'+spot.x.toFixed(0)+'" y="'+spot.y.toFixed(0)+'" width="'+lw.toFixed(0)+'" height="'+lh+'" rx="5"/><text x="'+(spot.x+lw/2).toFixed(0)+'" y="'+(spot.y+14).toFixed(0)+'" text-anchor="middle">'+esc(e.l)+'</text></g>';
@@ -284,11 +296,11 @@
     '<div class="axa-root'+(state.dark?' dark':'')+'" id="axaRoot">'+
       '<div class="axa-head">'+
         '<div class="axa-tt"><div class="axa-eyebrow">Narrative · 05 / AI Hospital Operating System</div><h2>AI-HOS 아키텍처</h2>'+
-          '<p class="axa-lede"><b>AI-HOS 경계</b> 안에 거버넌스·데이터 계층·<b>CAP + Runtime</b>·<b>Context Engineering</b>(개인화·RPA)·<b>Continual Learning</b>(모델·오프라인)·<b>Process Intelligence</b>(운영)가 배치되고, 외부로 원천데이터·현업·On-prem LLM·GPU가 연결됩니다.</p></div>'+
+          '<p class="axa-lede"><span class="ln"><b>AI-HOS 경계</b> 안에 거버넌스·<wbr>데이터 계층·<wbr><b>CAP + Runtime</b>·<wbr><b>Context Engineering</b>(개인화·RPA)·<wbr><b>Continual Learning</b>(모델·오프라인)·<wbr><b>Process Intelligence</b>(운영)가 배치되고,</span> <span class="ln">외부로 원천데이터·현업·On-prem LLM·GPU가 연결됩니다.</span></p></div>'+
         '<div class="axa-bar">'+
           '<div class="axa-seg-g"><div class="axa-track">'+MONTHS.map(function(m){return '<button type="button" class="axa-seg" data-m="'+m+'">'+m+'월<span>'+(cnt[m]||0)+'개</span></button>';}).join('')+'</div>'+
             '<button type="button" class="axa-all">전체 보기</button></div>'+
-          '<div class="axa-seg-g"><span class="axa-lbl">순환</span>'+Object.keys(LOOPS).map(function(k){var L=LOOPS[k];return '<button type="button" class="axa-loop" data-loop="'+k+'" style="--lc:'+L.c+'"><b>'+esc(L.en)+'</b><span>'+esc(L.lp)+'</span></button>';}).join('')+'</div>'+
+          '<div class="axa-seg-g axa-loops"><span class="axa-lbl">순환</span>'+Object.keys(LOOPS).map(function(k){var L=LOOPS[k];return '<button type="button" class="axa-loop" data-loop="'+k+'" style="--lc:'+L.c+'"><b>'+esc(L.en)+'</b><span>'+esc(L.lp)+'</span></button>';}).join('')+'</div>'+
           '<div class="axa-tools"><button type="button" class="axa-tool axa-dark-btn" title="어둡게 보기 (발표용)">'+(state.dark?'☀ 밝게':'☾ 어둡게')+'</button><button type="button" class="axa-tool axa-fs-btn" title="전체화면 (F)">⛶ 전체화면</button></div>'+
         '</div>'+
       '</div>'+
@@ -326,8 +338,7 @@
   function visibleSet(){
     var m=state.month, L=state.loop, v={};
     Object.keys(N).forEach(function(id){
-      if(m!==null) v[id]=(DONE[id]===m);
-      else if(L) v[id]=(' '+(N[id].lp||'')+' ').indexOf(' '+L+' ')>=0;
+      if(L) v[id]=(' '+(N[id].lp||'')+' ').indexOf(' '+L+' ')>=0;
       else v[id]=true; });
     return v;
   }
@@ -337,32 +348,25 @@
     return true; }
   function applyFilter(){
     var st=document.getElementById('axaStage'); if(!st) return;
-    var m=state.month, L=state.loop, act=(m!==null||!!L), v=visibleSet(), grpOn={};
-    st.classList.toggle('filtering',act);
-    st.querySelectorAll('.axa-n').forEach(function(el){ var on=v[el.dataset.id]; el.classList.toggle('hide',!on); el.classList.toggle('sel',act&&on); if(on&&N[el.dataset.id].grp) grpOn[N[el.dataset.id].grp]=1; });
-    st.querySelectorAll('.axa-w,.axa-lb').forEach(function(el){ var on=edgeOn(el,v); el.classList.toggle('hide',!on); el.classList.toggle('lit',act&&on); });
-    st.querySelectorAll('.axa-grp,.axa-grp-t').forEach(function(el){ el.classList.toggle('hide',act&&!grpOn[el.dataset.g]); });
+    var m=state.month, L=state.loop, v=visibleSet(), grpOn={};
+    st.classList.toggle('lfilter',!!L); st.classList.toggle('mfilter',m!==null);
+    // 시점(월) : 원래 효과 그대로 - 이번 달 강조 · 지난 달 유지 · 이후 흐리게 · 선은 해당 월까지만 흐름
+    st.querySelectorAll('.axa-n').forEach(function(el){ var d=+el.dataset.done;
+      el.classList.remove('due','done-past','future');
+      if(m!==null) el.classList.add(d===m?'due':(d<m?'done-past':'future')); });
+    st.querySelectorAll('.axa-w,.axa-lb').forEach(function(el){ el.classList.remove('flow','edim');
+      if(m!==null) el.classList.add(+el.dataset.am<=m?'flow':'edim'); });
+    // 순환 : 원래 효과 그대로 - 전체 도식 위에서 참여 박스·선만 강조, 나머지는 흐리게
+    st.querySelectorAll('.axa-n').forEach(function(el){ el.classList.remove('loop-on','loop-off'); if(L) el.classList.add(v[el.dataset.id]?'loop-on':'loop-off'); });
+    st.querySelectorAll('.axa-w,.axa-lb').forEach(function(el){ el.classList.remove('lflow','ledim'); if(L) el.classList.add(edgeOn(el,v)?'lflow':'ledim'); });
     if(L) st.style.setProperty('--loopc',LOOPS[L].c); else st.style.setProperty('--loopc','#3d5a98');
     var root=document.getElementById('axaRoot'); if(!root) return;
-    root.querySelectorAll('.axa-seg').forEach(function(s){ s.classList.toggle('sel',m===+s.dataset.m); });
+    root.querySelectorAll('.axa-seg').forEach(function(s){ var mm=+s.dataset.m; s.classList.toggle('sel',m===mm); s.classList.toggle('past',m!==null&&mm<m); });
     root.querySelectorAll('.axa-loop').forEach(function(b){ b.classList.toggle('sel',b.dataset.loop===L); });
-    root.querySelector('.axa-all').classList.toggle('sel',!act);
+    root.querySelector('.axa-all').classList.toggle('sel',m===null&&!L);
   }
-  // 보이는 도식 범위(박스+라벨)에 맞춰 확대
-  function fitVisible(){
-    var st=document.getElementById('axaStage'); if(!st) return fit();
-    if(state.month===null&&!state.loop) return fit();
-    var b={x1:1e9,y1:1e9,x2:-1e9,y2:-1e9}, any=false;
-    function add(x,y,w,h){ any=true; b.x1=Math.min(b.x1,x); b.y1=Math.min(b.y1,y); b.x2=Math.max(b.x2,x+w); b.y2=Math.max(b.y2,y+h); }
-    st.querySelectorAll('.axa-n:not(.hide)').forEach(function(el){ var n=N[el.dataset.id]; add(n.x,n.y-12,n.w,n.h+24); });
-    st.querySelectorAll('.axa-lb:not(.hide)').forEach(function(el){ var r=el.dataset.r.split(',').map(Number); add(r[0],r[1],r[2],r[3]); });
-    if(!any) return fit();
-    // 선이 박스 밖으로 돌아가는 경우(기록 반영 등)까지 포함
-    st.querySelectorAll('.axa-w:not(.hide)').forEach(function(el){ el.getAttribute('points').split(' ').forEach(function(pt){ var q=pt.split(',').map(Number); add(q[0],q[1],0,0); }); });
-    sizeVp(); var vp=document.getElementById('axaVp'); if(!vp||!vp.clientWidth) return;
-    var pad=48, bw=b.x2-b.x1+pad*2, bh=b.y2-b.y1+pad*2, vw=vp.clientWidth-60, vh=vp.clientHeight-8;
-    view.s=clampS(Math.min(vw/bw,vh/bh,1.25)); view.tx=(vw-bw*view.s)/2-(b.x1-pad)*view.s; view.ty=(vh-bh*view.s)/2-(b.y1-pad)*view.s; applyT();
-  }
+  // 확대는 하지 않는다 - 패널이 열려도 전체 도식을 남은 공간에 그대로 맞춘다
+  function fitVisible(){ fit(); }
   function selectMonth(m){ state.loop=null; state.month=(state.month===m)?null:m; applyFilter(); if(state.month===null) closeDrawer(); else openMonthDrawer(m); refit(); }
   function selectLoop(k){ state.month=null; state.loop=(state.loop===k)?null:k; applyFilter(); if(!state.loop) closeDrawer(); else openLoopDrawer(k); refit(); }
   function refit(){ fitVisible(); setTimeout(fitVisible,300); }
@@ -506,9 +510,9 @@
       '.axa-tt{flex:0 0 auto}',
       '.axa-eyebrow{font-size:11px;font-weight:800;letter-spacing:.08em;color:#0e8c86;text-transform:uppercase}',
       '.axa-root h2{margin:0;font-size:21px;font-weight:800;letter-spacing:-.015em;color:var(--ink)}',
-      '.axa-lede{margin:4px 0 0;font-size:13px;line-height:1.6;color:var(--ink2);max-width:980px;text-wrap:pretty}',
-      '.axa-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;flex:1 1 auto;justify-content:flex-end}',
-      '.axa-seg-g{display:flex;align-items:center;gap:6px}',
+      '.axa-lede{margin:4px 0 0;font-size:13px;line-height:1.6;color:var(--ink2);overflow-wrap:normal}','.axa-lede .ln{display:inline-block}','.axa-lede b{white-space:nowrap}',
+      '.axa-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;flex:1 1 auto;justify-content:flex-start}',
+      '.axa-seg-g{display:flex;align-items:center;gap:6px}','.axa-bar .axa-loops{margin-left:auto}',
       '.axa-lbl{font-size:12px;font-weight:700;color:var(--ink3);margin-right:2px}',
       '.axa-track{display:flex;border:1px solid var(--line2);border-radius:10px;overflow:hidden}',
       '.axa-seg{background:var(--card);border:0;border-right:1px solid var(--line2);padding:6px 12px;cursor:pointer;font:700 13px var(--font,"Noto Sans KR");color:var(--ink2);display:flex;flex-direction:column;align-items:center;line-height:1.2}',
@@ -535,11 +539,11 @@
       '.axa-w{stroke-dasharray:3 8;animation:axabase 11s linear infinite}',
       '.mk-solid{fill:var(--w-solid)}.mk-feed{fill:var(--w-feed)}.mk-fb{fill:var(--w-fb)}.mk-gate{fill:var(--w-gate)}',
       '@keyframes axaflow{to{stroke-dashoffset:-160}}',
-      '.axa-stage.filtering .axa-w.lit{animation:axaflow 3.4s linear infinite;stroke-dasharray:6 6}',
-      '.axa-stage.filtering .axa-w.lit{stroke:var(--loopc)}','.axa-stage.filtering .mk-solid,.axa-stage.filtering .mk-feed,.axa-stage.filtering .mk-fb,.axa-stage.filtering .mk-gate{fill:var(--loopc)}',
-      '.axa-stage.filtering .axa-grp,.axa-stage.filtering .axa-grp-t,.axa-stage.filtering .axa-bd,.axa-stage.filtering .axa-bd-lb{opacity:0;visibility:hidden}',
+      ,
       'body.axa-dr-on .axa-lede,body.axa-dr-on .axa-eyebrow{display:none}',
-      '.axa-stage .hide{opacity:0!important;visibility:hidden;pointer-events:none;transition:opacity .2s,visibility 0s .2s}','.axa-n,.axa-w,.axa-lb,.axa-grp,.axa-grp-t{transition:opacity .2s}','.axa-n.sel{box-shadow:0 0 0 3px var(--loopc),0 8px 20px rgba(0,0,0,.18);z-index:6}',
+      '.axa-n.loop-on{box-shadow:0 0 0 2px var(--loopc),0 6px 16px rgba(0,0,0,.18);border-color:var(--loopc);z-index:6}','.axa-n.loop-off{opacity:.14;filter:grayscale(.55)}','.axa-stage.lfilter .axa-w.lflow{stroke:var(--loopc);stroke-dasharray:6 6;animation:axaflow 3.4s linear infinite}','.axa-w.ledim,.axa-lb.ledim{opacity:.1;animation:none}',
+      '.axa-n.due{box-shadow:0 0 0 2px #3d5a98,0 6px 16px rgba(61,90,152,.25);z-index:6}','.axa-n.done-past{opacity:.92}','.axa-n.future{opacity:.3;filter:grayscale(.4)}','.axa-stage.mfilter .axa-w.flow{stroke-dasharray:6 6;animation:axaflow 3.4s linear infinite}','.axa-w.edim,.axa-lb.edim{opacity:.1;animation:none}',
+      '.axa-n,.axa-w,.axa-lb,.axa-grp,.axa-grp-t{transition:opacity .2s}',,
       '.axa-lb rect{fill:var(--lb-bg);stroke:var(--lb-bd);stroke-width:1}',
       '.axa-lb text{fill:var(--lb-tx);font:600 12.5px var(--font,"Noto Sans KR",sans-serif)}',
       '.axa-bd{position:absolute;border:2px dashed var(--bd);border-radius:22px;z-index:1}',
@@ -551,7 +555,7 @@
       '.axa-n.click{cursor:pointer}.axa-n.click:hover,.axa-n.click:focus-visible{border-color:#3d5a98;box-shadow:0 0 0 2px rgba(61,90,152,.35),0 6px 18px rgba(15,33,51,.18);outline:none}',
       '.axa-n.hub{border-width:2.5px;border-color:#0b6e6b}.axa-n.rpal{border-style:dashed}.axa-n.out{border-style:solid;border-color:var(--ink3)}',
       '.axa-n.circ{border-radius:50%;align-items:center;text-align:center;padding:6px}',
-      '.axa-nh{display:flex;align-items:center;gap:7px;min-width:0}',
+      '.axa-nh{display:flex;align-items:center;gap:7px;min-width:0}','.axa-n:not(.circ){padding-top:20px!important;padding-bottom:6px!important}','.axa-n.circ .axa-tag{left:50%;transform:translateX(-50%);top:8px}',
       '.axa-n.circ .axa-nh{flex-direction:column;gap:3px}',
       '.axa-ic{flex:none;display:grid;place-items:center;width:25px;height:25px;border-radius:7px;background:var(--line2)}',
       '.axa-ic svg{width:16px;height:16px}',
@@ -559,11 +563,11 @@
       '.axa-n.hub .axa-nh b{font-size:17px}',
       '.axa-ns{font-size:11px;line-height:1.25;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       '.axa-n.hub .axa-ns{font-size:12.5px;color:var(--ink2)}',
-      '.axa-chips{position:absolute;top:-9px;right:8px;display:flex;gap:3px}',
-      '.axa-n.circ .axa-chips{top:auto;bottom:-9px;right:auto;left:50%;transform:translateX(-50%)}',
+      '.axa-chips{position:absolute;top:6px;right:7px;display:flex;gap:3px}',
+      '.axa-n.circ .axa-chips{top:auto;bottom:10px;right:auto;left:50%;transform:translateX(-50%)}',
       '.axa-chip{font:700 10.5px/1 var(--font,"Noto Sans KR");color:#fff;border:0;border-radius:6px;padding:3px 6px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.18)}',
       '.axa-chip.g1{background:#3d5a98}.axa-chip.g2{background:#0e8c86}.axa-chip.g3{background:#c1791d}.axa-chip:hover{filter:brightness(1.12)}',
-      '.axa-tag{position:absolute;top:-9px;left:8px;font:800 9.5px/1 var(--font,"Noto Sans KR");color:#fff;background:#6c4bd8;border-radius:5px;padding:3px 5px}',
+      '.axa-tag{position:absolute;top:6px;left:8px;font:800 9.5px/1 var(--font,"Noto Sans KR");color:#fff;background:#6c4bd8;border-radius:5px;padding:3px 5px}',
       '@keyframes axapulse{0%{box-shadow:0 0 0 0 rgba(61,90,152,.7)}100%{box-shadow:0 0 0 18px rgba(61,90,152,0)}}',
       '.axa-n.pulse{animation:axapulse 1s ease-out 2}',
       '.axa-zoom{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;gap:6px;z-index:20}',
