@@ -182,7 +182,6 @@
   function taskOf(code){ return TASKS_().filter(function(t){return t.id===code;})[0]||null; }
   function openTaskSafe(code){
     if(!taskOf(code)) return;
-    closeDrawer();
     try{ if(typeof window.openTask==='function') window.openTask(code); }catch(e){ console.warn('[ax-arch] openTask',e&&e.message); }
   }
   function textW(s,px){ // 라벨 폭 추정 (한글은 글자 크기만큼, 영문·기호는 0.6배)
@@ -238,7 +237,7 @@
         pts=[{x:pa.x,y:pa.y}].concat(e.via.map(function(v){return {x:v[0],y:v[1]};})).concat([{x:e.via[e.via.length-1][0],y:pb.y},{x:pb.x,y:pb.y}]); }
       else pts=ortho(anchor(A,e.as,e.ao),anchor(B,e.bs,e.bo),e);
       var lp=e.lp||'', am=Math.max(DONE[e.a]||0,DONE[e.b]||0);
-      wires+='<polyline class="axa-w t-'+e.t+'" data-am="'+am+'" data-lp="'+lp+'" points="'+pts.map(function(o){return o.x.toFixed(0)+','+o.y.toFixed(0);}).join(' ')+'" marker-end="url(#axa-m-'+e.t+')"/>';
+      wires+='<polyline class="axa-w t-'+e.t+'" data-a="'+e.a+'" data-b="'+e.b+'" data-am="'+am+'" data-lp="'+lp+'" points="'+pts.map(function(o){return o.x.toFixed(0)+','+o.y.toFixed(0);}).join(' ')+'" marker-end="url(#axa-m-'+e.t+')"/>';
       if(!e.l) return;
       // 라벨 자리 찾기: 긴 구간부터, 구간 위 여러 지점 → 선 위/옆으로 비켜서
       var lw=textW(e.l,LBLPX)+14, lh=20, segs=[];
@@ -253,14 +252,14 @@
             if(!hit(r)){ spot=r; break; } } } }
       if(!spot){ var s0=segs[0]; var mx0=(s0.a.x+s0.c.x)/2,my0=(s0.a.y+s0.c.y)/2; spot={x:mx0-lw/2,y:my0-lh/2,w:lw,h:lh}; }
       obst.push(spot);
-      labels+='<g class="axa-lb" data-am="'+am+'" data-lp="'+lp+'"><rect x="'+spot.x.toFixed(0)+'" y="'+spot.y.toFixed(0)+'" width="'+lw.toFixed(0)+'" height="'+lh+'" rx="5"/><text x="'+(spot.x+lw/2).toFixed(0)+'" y="'+(spot.y+14).toFixed(0)+'" text-anchor="middle">'+esc(e.l)+'</text></g>';
+      labels+='<g class="axa-lb" data-a="'+e.a+'" data-b="'+e.b+'" data-am="'+am+'" data-lp="'+lp+'" data-r="'+[spot.x,spot.y,lw,lh].map(function(v){return v.toFixed(0);}).join(',')+'"><rect x="'+spot.x.toFixed(0)+'" y="'+spot.y.toFixed(0)+'" width="'+lw.toFixed(0)+'" height="'+lh+'" rx="5"/><text x="'+(spot.x+lw/2).toFixed(0)+'" y="'+(spot.y+14).toFixed(0)+'" text-anchor="middle">'+esc(e.l)+'</text></g>';
     });
     var defs='<defs>'+['solid','feed','fb','gate'].map(function(k){return '<marker id="axa-m-'+k+'" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path class="mk-'+k+'" d="M0,0 L5,2.5 L0,5 Z"/></marker>';}).join('')+'</defs>';
 
     var html='<div class="axa-bd" style="left:'+BD.x+'px;top:'+BD.y+'px;width:'+BD.w+'px;height:'+BD.h+'px"></div><div class="axa-bd-lb" style="left:'+(BD.x+BD.w-104)+'px;top:'+(BD.y+8)+'px">AI-HOS</div>';
     groups.forEach(function(g){
-      html+='<div class="axa-grp" style="left:'+g.x+'px;top:'+g.y+'px;width:'+g.w+'px;height:'+g.h+'px"></div>'+
-        '<div class="axa-grp-t" style="left:'+(g.x+12)+'px;top:'+(g.pos==='b'?g.y+g.h-22:g.y+6)+'px">'+esc(g.t)+'</div>';
+      html+='<div class="axa-grp" data-g="'+g.k+'" style="left:'+g.x+'px;top:'+g.y+'px;width:'+g.w+'px;height:'+g.h+'px"></div>'+
+        '<div class="axa-grp-t" data-g="'+g.k+'" style="left:'+(g.x+12)+'px;top:'+(g.pos==='b'?g.y+g.h-22:g.y+6)+'px">'+esc(g.t)+'</div>';
     });
     Object.keys(N).forEach(function(id){ var n=N[id], maps=n.maps||[];
       html+='<div class="axa-n'+(n.hub?' hub':'')+(n.circ?' circ':'')+(n.tag?' rpal':'')+(n.out?' out':'')+(maps.length?' click':'')+'" data-id="'+id+'" data-done="'+DONE[id]+'" data-lp="'+(n.lp||'')+'"'+
@@ -319,35 +318,55 @@
     window.addEventListener('mouseup',function(){ drag=false; });
     vp.addEventListener('click',function(e){ if(moved){ e.stopPropagation(); e.preventDefault(); moved=false; } },true);
     vp.querySelector('.axa-zoom').addEventListener('click',function(e){ var bt=e.target.closest('button'); if(!bt) return;
-      if(bt.dataset.z==='fit'){ fit(); return; } zoomAt(vp.clientWidth/2,vp.clientHeight/2,view.s*(bt.dataset.z==='in'?1.2:.83)); });
+      if(bt.dataset.z==='fit'){ fitVisible(); return; } zoomAt(vp.clientWidth/2,vp.clientHeight/2,view.s*(bt.dataset.z==='in'?1.2:.83)); });
   }
 
   /* ───────────── 시점·순환 강조 ───────────── */
+  // 선택한 시점·순환에 해당하는 도식만 남기고 나머지(박스·선·라벨·그룹 제목)는 숨긴다
+  function visibleSet(){
+    var m=state.month, L=state.loop, v={};
+    Object.keys(N).forEach(function(id){
+      if(m!==null) v[id]=(DONE[id]===m);
+      else if(L) v[id]=(' '+(N[id].lp||'')+' ').indexOf(' '+L+' ')>=0;
+      else v[id]=true; });
+    return v;
+  }
+  function edgeOn(el,v){ var L=state.loop;
+    if(!v[el.dataset.a]||!v[el.dataset.b]) return false;
+    if(L) return (' '+el.dataset.lp+' ').indexOf(' '+L+' ')>=0;
+    return true; }
   function applyFilter(){
     var st=document.getElementById('axaStage'); if(!st) return;
-    var m=state.month, L=state.loop;
-    st.classList.toggle('filtering',m!==null||L!==null);
-    st.querySelectorAll('.axa-n').forEach(function(el){
-      el.classList.remove('due','past','future','on','off');
-      if(m!==null){ var d=+el.dataset.done; el.classList.add(d===m?'due':(d<m?'past':'future')); }
-      else if(L){ el.classList.add((' '+el.dataset.lp+' ').indexOf(' '+L+' ')>=0?'on':'off'); }
-    });
-    st.querySelectorAll('.axa-w,.axa-lb').forEach(function(el){
-      var on=true;
-      if(m!==null) on=(+el.dataset.am<=m);
-      else if(L) on=(' '+el.dataset.lp+' ').indexOf(' '+L+' ')>=0;
-      el.classList.toggle('dim',!on); el.classList.toggle('lit',(m!==null)?(+el.dataset.am===m):(on&&!!L));
-      el.classList.toggle('faint',m!==null&&on&&+el.dataset.am<m);
-    });
-    if(L) st.style.setProperty('--loopc',LOOPS[L].c); else st.style.removeProperty('--loopc');
+    var m=state.month, L=state.loop, act=(m!==null||!!L), v=visibleSet(), grpOn={};
+    st.classList.toggle('filtering',act);
+    st.querySelectorAll('.axa-n').forEach(function(el){ var on=v[el.dataset.id]; el.classList.toggle('hide',!on); el.classList.toggle('sel',act&&on); if(on&&N[el.dataset.id].grp) grpOn[N[el.dataset.id].grp]=1; });
+    st.querySelectorAll('.axa-w,.axa-lb').forEach(function(el){ var on=edgeOn(el,v); el.classList.toggle('hide',!on); el.classList.toggle('lit',act&&on); });
+    st.querySelectorAll('.axa-grp,.axa-grp-t').forEach(function(el){ el.classList.toggle('hide',act&&!grpOn[el.dataset.g]); });
+    if(L) st.style.setProperty('--loopc',LOOPS[L].c); else st.style.setProperty('--loopc','#3d5a98');
     var root=document.getElementById('axaRoot'); if(!root) return;
-    root.querySelectorAll('.axa-seg').forEach(function(s){ var mm=+s.dataset.m; s.classList.toggle('sel',m===mm); s.classList.toggle('past',m!==null&&mm<m); });
+    root.querySelectorAll('.axa-seg').forEach(function(s){ s.classList.toggle('sel',m===+s.dataset.m); });
     root.querySelectorAll('.axa-loop').forEach(function(b){ b.classList.toggle('sel',b.dataset.loop===L); });
-    root.querySelector('.axa-all').classList.toggle('sel',m===null&&!L);
+    root.querySelector('.axa-all').classList.toggle('sel',!act);
   }
-  function selectMonth(m){ state.loop=null; state.month=(state.month===m)?null:m; applyFilter(); if(state.month===null) closeDrawer(); else openMonthDrawer(m); }
-  function selectLoop(k){ state.month=null; state.loop=(state.loop===k)?null:k; applyFilter(); if(!state.loop) closeDrawer(); else openLoopDrawer(k); }
-  function clearAll(){ state.month=null; state.loop=null; applyFilter(); closeDrawer(); }
+  // 보이는 도식 범위(박스+라벨)에 맞춰 확대
+  function fitVisible(){
+    var st=document.getElementById('axaStage'); if(!st) return fit();
+    if(state.month===null&&!state.loop) return fit();
+    var b={x1:1e9,y1:1e9,x2:-1e9,y2:-1e9}, any=false;
+    function add(x,y,w,h){ any=true; b.x1=Math.min(b.x1,x); b.y1=Math.min(b.y1,y); b.x2=Math.max(b.x2,x+w); b.y2=Math.max(b.y2,y+h); }
+    st.querySelectorAll('.axa-n:not(.hide)').forEach(function(el){ var n=N[el.dataset.id]; add(n.x,n.y-12,n.w,n.h+24); });
+    st.querySelectorAll('.axa-lb:not(.hide)').forEach(function(el){ var r=el.dataset.r.split(',').map(Number); add(r[0],r[1],r[2],r[3]); });
+    if(!any) return fit();
+    // 선이 박스 밖으로 돌아가는 경우(기록 반영 등)까지 포함
+    st.querySelectorAll('.axa-w:not(.hide)').forEach(function(el){ el.getAttribute('points').split(' ').forEach(function(pt){ var q=pt.split(',').map(Number); add(q[0],q[1],0,0); }); });
+    sizeVp(); var vp=document.getElementById('axaVp'); if(!vp||!vp.clientWidth) return;
+    var pad=48, bw=b.x2-b.x1+pad*2, bh=b.y2-b.y1+pad*2, vw=vp.clientWidth-60, vh=vp.clientHeight-8;
+    view.s=clampS(Math.min(vw/bw,vh/bh,1.25)); view.tx=(vw-bw*view.s)/2-(b.x1-pad)*view.s; view.ty=(vh-bh*view.s)/2-(b.y1-pad)*view.s; applyT();
+  }
+  function selectMonth(m){ state.loop=null; state.month=(state.month===m)?null:m; applyFilter(); if(state.month===null) closeDrawer(); else openMonthDrawer(m); refit(); }
+  function selectLoop(k){ state.month=null; state.loop=(state.loop===k)?null:k; applyFilter(); if(!state.loop) closeDrawer(); else openLoopDrawer(k); refit(); }
+  function refit(){ fitVisible(); setTimeout(fitVisible,300); }
+  function clearAll(){ state.month=null; state.loop=null; applyFilter(); closeDrawer(); refit(); }
 
   /* ───────────── 사이드 패널 ───────────── */
   function drawerEl(){
@@ -365,7 +384,7 @@
   function openDrawer(head,body){ var d=drawerEl(); d.querySelector('.axa-dhead').innerHTML=head; d.querySelector('.axa-dbody').innerHTML=body; d.scrollTop=0; d.classList.add('open'); d.setAttribute('aria-hidden','false'); setDrOn(true); }
   function closeDrawer(){ var d=document.getElementById('axaDrawer'); if(d){ d.classList.remove('open'); d.setAttribute('aria-hidden','true'); } setDrOn(false); }
   // 패널이 열리면 도구줄·그림이 패널 밑에 깔리지 않게 오른쪽 자리를 비우고 다시 맞춘다
-  function setDrOn(on){ if(document.body.classList.contains('axa-dr-on')===on) return; document.body.classList.toggle('axa-dr-on',on); setTimeout(fit,280); }
+  function setDrOn(on){ if(document.body.classList.contains('axa-dr-on')===on) return; document.body.classList.toggle('axa-dr-on',on); }
   function pulse(ids){ var st=document.getElementById('axaStage'); if(!st) return;
     ids.forEach(function(id){ var el=st.querySelector('.axa-n[data-id="'+id+'"]'); if(!el) return; el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse'); }); }
 
@@ -377,28 +396,27 @@
   }
   function grpName(id){ var n=N[id]; if(n.grp) return GMETA[n.grp].t; if(n.out) return 'AI-HOS 밖'; if(/^(hub|binder|catalog|kb|pctx|mcp_read)$/.test(id)) return '데이터 계층'; return '기타'; }
 
+  // 사이드 패널 공통 틀 : 머리(구분·제목·요약 수치) → 개요 → 본문 → 과제
+  function dHead(kind,color,title,stats){
+    return '<div class="axa-dk" style="--k:'+color+'">'+esc(kind)+'</div><h3>'+title+'</h3>'+
+      '<div class="axa-stats">'+stats.map(function(x){ return '<div><b>'+x[1]+'</b><span>'+esc(x[0])+'</span></div>'; }).join('')+'</div>'; }
   function openMonthDrawer(m){
-    var ids=Object.keys(DONE), due=ids.filter(function(i){return DONE[i]===m;}), cum=ids.filter(function(i){return DONE[i]<=m;}), fut=ids.filter(function(i){return DONE[i]>m;});
-    var pct=Math.round(cum.length/ids.length*100);
-    function byGroup(list,cls){ var g={}; list.forEach(function(id){ (g[grpName(id)]=g[grpName(id)]||[]).push(id); });
-      return Object.keys(g).map(function(k){ return '<div class="axa-gl">'+esc(k)+'</div><div class="axa-items">'+g[k].map(function(id){ return '<button type="button" class="axa-item'+(cls?' '+cls:'')+'" data-focus="'+id+'">'+esc(N[id].title)+'</button>'; }).join('')+'</div>'; }).join(''); }
-    var head='<span class="axa-dk" style="--k:#3d5a98">시점 · TIMELINE</span><h3>2026 · '+m+'월 마일스톤</h3>'+
-      '<div class="axa-prog"><div class="bar"><i style="width:'+pct+'%"></i></div><span>누적 <b>'+cum.length+'</b> / 전체 '+ids.length+' · 이번 달 '+due.length+'개</span></div>';
+    var ids=Object.keys(DONE), due=ids.filter(function(i){return DONE[i]===m;}), cum=ids.filter(function(i){return DONE[i]<=m;});
+    var g={}; due.forEach(function(id){ (g[grpName(id)]=g[grpName(id)]||[]).push(id); });
+    var codes=codesOf(due);
+    var head=dHead('시점 · TIMELINE','#3d5a98','2026 · '+m+'월 마일스톤',[['이번 달',due.length+'개'],['누적',cum.length+' / '+ids.length],['관련 과제',codes.length+'개']]);
     var body='<section><h4>이번 달 개요</h4><p>'+esc(MONTHNOTE[m]||'')+'</p></section>'+
-      '<section><h4>이번 달 완성 <em>'+due.length+'</em></h4>'+(due.length?byGroup(due):'<p class="axa-muted">해당 없음</p>')+'</section>'+
-      '<section><h4>이번 달 완성 과제 <em>'+codesOf(due).length+'</em></h4>'+taskRows(codesOf(due))+'</section>'+
-      '<section><h4>누적 완성 <em>'+cum.length+'</em></h4>'+byGroup(cum,'ghost')+'</section>'+
-      '<section><h4>예정 <em>'+fut.length+'</em></h4>'+(fut.length?byGroup(fut,'ghost'):'<p class="axa-muted">모두 완료</p>')+'</section>';
+      '<section><h4>이번 달 완성</h4>'+Object.keys(g).map(function(k){ return '<div class="axa-grow"><div class="axa-gl">'+esc(k)+'</div><div class="axa-items">'+g[k].map(function(id){ return '<button type="button" class="axa-item" data-focus="'+id+'">'+esc(N[id].title)+'</button>'; }).join('')+'</div></div>'; }).join('')+'</section>'+
+      '<section><h4>관련 과제</h4>'+taskRows(codes)+'</section>';
     openDrawer(head,body);
   }
   function openLoopDrawer(k){
-    var L=LOOPS[k], ids=Object.keys(N).filter(function(id){ return (' '+(N[id].lp||'')+' ').indexOf(' '+k+' ')>=0; });
-    var head='<span class="axa-dk" style="--k:'+L.c+'">순환 · LOOP</span><h3><span style="color:'+L.c+'">'+esc(L.en)+'</span> · '+esc(L.ko)+'</h3><div class="axa-dsub">참여 컴포넌트 '+ids.length+'개</div>';
+    var L=LOOPS[k], ids=Object.keys(N).filter(function(id){ return (' '+(N[id].lp||'')+' ').indexOf(' '+k+' ')>=0; }), codes=codesOf(ids), steps=L.flow.split(' → ');
+    var head=dHead('순환 · LOOP',L.c,'<span style="color:'+L.c+'">'+esc(L.en)+'</span> · '+esc(L.ko),[['단계',steps.length+'개'],['참여 컴포넌트',ids.length+'개'],['포함 과제',codes.length+'개']]);
     var body='<section><h4>개요</h4><p>'+esc(L.desc)+'</p></section>'+
-      '<section><h4>순환 흐름</h4><ol class="axa-steps" style="--k:'+L.c+'">'+L.flow.split(' → ').map(function(s){ return '<li><b>'+esc(s)+'</b></li>'; }).join('')+'</ol></section>'+
+      '<section><h4>순환 흐름</h4><ol class="axa-steps" style="--k:'+L.c+'">'+steps.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ol></section>'+
       '<section class="axa-rule" style="--k:'+L.c+'"><h4>핵심 통제</h4><p>'+esc(L.note)+'</p></section>'+
-      '<section><h4>참여 컴포넌트 <em>'+ids.length+'</em></h4><div class="axa-items">'+ids.map(function(id){ return '<button type="button" class="axa-item" data-focus="'+id+'">'+esc(N[id].title)+'</button>'; }).join('')+'</div></section>'+
-      '<section><h4>포함 과제 <em>'+codesOf(ids).length+'</em></h4>'+taskRows(codesOf(ids))+'</section>';
+      '<section><h4>포함 과제</h4>'+taskRows(codes)+'</section>';
     openDrawer(head,body);
   }
 
@@ -413,9 +431,9 @@
       if(on&&!document.fullscreenElement&&document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(function(){});
       if(!on&&document.fullscreenElement&&document.exitFullscreen) document.exitFullscreen().catch(function(){});
     }catch(e){}
-    setTimeout(fit,80);
+    setTimeout(fitVisible,80);
   }
-  document.addEventListener('fullscreenchange',function(){ if(!document.fullscreenElement&&isFs()) setFs(false); else setTimeout(fit,80); });
+  document.addEventListener('fullscreenchange',function(){ if(!document.fullscreenElement&&isFs()) setFs(false); else setTimeout(fitVisible,80); });
   document.addEventListener('keydown',function(e){
     var v=document.getElementById('v-arch'); if(!v||!v.classList.contains('active')) return;
     var tg=e.target; if(tg&&(/^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName)||tg.isContentEditable)) return;
@@ -423,7 +441,7 @@
     if((e.key==='f'||e.key==='F')&&!e.metaKey&&!e.ctrlKey&&!e.altKey){ e.preventDefault(); setFs(!isFs()); }
     else if(e.key==='Escape'){ var d=document.getElementById('axaDrawer'); if(d&&d.classList.contains('open')) clearAll(); else if(isFs()) setFs(false); }
   });
-  window.addEventListener('resize',function(){ var v=document.getElementById('v-arch'); if(v&&v.classList.contains('active')) fit(); });
+  window.addEventListener('resize',function(){ var v=document.getElementById('v-arch'); if(v&&v.classList.contains('active')) fitVisible(); });
 
   function setDark(on){ state.dark=on; try{ localStorage.setItem('ax_arch_dark',on?'1':'0'); }catch(e){}
     var r=document.getElementById('axaRoot'); if(r){ r.classList.toggle('dark',on); var b=r.querySelector('.axa-dark-btn'); if(b) b.textContent=on?'☀ 밝게':'☾ 어둡게'; }
@@ -444,7 +462,13 @@
       root.querySelector('.axa-dark-btn').onclick=function(){ setDark(!state.dark); };
       st.addEventListener('click',function(e){
         var chip=e.target.closest('.axa-chip'); if(chip){ e.stopPropagation(); openTaskSafe(chip.dataset.code); return; }
-        var n=e.target.closest('.axa-n.click'); if(n) openTaskSafe(n.dataset.code);
+        var n=e.target.closest('.axa-n.click:not(.hide)'); if(n){ openTaskSafe(n.dataset.code); return; }
+      });
+      // 바탕(빈 캔버스)을 누르면 사이드 패널을 닫고 전체 도식으로 돌아간다
+      vp.addEventListener('click',function(e){
+        if(e.target.closest('.axa-n:not(.hide),.axa-zoom')) return;
+        if(state.month!==null||state.loop){ clearAll(); return; }
+        var d=document.getElementById('axaDrawer'); if(d&&d.classList.contains('open')) clearAll();
       });
       st.addEventListener('keydown',function(e){ if(e.key!=='Enter'&&e.key!==' ') return; var n=e.target.closest('.axa-n.click'); if(n){ e.preventDefault(); openTaskSafe(n.dataset.code); } });
       rendered=true; applyFilter();
@@ -512,8 +536,10 @@
       '.mk-solid{fill:var(--w-solid)}.mk-feed{fill:var(--w-feed)}.mk-fb{fill:var(--w-fb)}.mk-gate{fill:var(--w-gate)}',
       '@keyframes axaflow{to{stroke-dashoffset:-160}}',
       '.axa-stage.filtering .axa-w.lit{animation:axaflow 3.4s linear infinite;stroke-dasharray:6 6}',
-      '.axa-stage.filtering .axa-w.lit.t-solid,.axa-stage.filtering .axa-w.lit.t-feed,.axa-stage.filtering .axa-w.lit.t-fb{stroke:var(--loopc,#3d5a98)}',
-      '.axa-w.dim,.axa-lb.dim{opacity:.1;animation:none}',
+      '.axa-stage.filtering .axa-w.lit{stroke:var(--loopc)}','.axa-stage.filtering .mk-solid,.axa-stage.filtering .mk-feed,.axa-stage.filtering .mk-fb,.axa-stage.filtering .mk-gate{fill:var(--loopc)}',
+      '.axa-stage.filtering .axa-grp,.axa-stage.filtering .axa-grp-t,.axa-stage.filtering .axa-bd,.axa-stage.filtering .axa-bd-lb{opacity:0;visibility:hidden}',
+      'body.axa-dr-on .axa-lede,body.axa-dr-on .axa-eyebrow{display:none}',
+      '.axa-stage .hide{opacity:0!important;visibility:hidden;pointer-events:none;transition:opacity .2s,visibility 0s .2s}','.axa-n,.axa-w,.axa-lb,.axa-grp,.axa-grp-t{transition:opacity .2s}','.axa-n.sel{box-shadow:0 0 0 3px var(--loopc),0 8px 20px rgba(0,0,0,.18);z-index:6}',
       '.axa-lb rect{fill:var(--lb-bg);stroke:var(--lb-bd);stroke-width:1}',
       '.axa-lb text{fill:var(--lb-tx);font:600 12.5px var(--font,"Noto Sans KR",sans-serif)}',
       '.axa-bd{position:absolute;border:2px dashed var(--bd);border-radius:22px;z-index:1}',
@@ -538,10 +564,6 @@
       '.axa-chip{font:700 10.5px/1 var(--font,"Noto Sans KR");color:#fff;border:0;border-radius:6px;padding:3px 6px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.18)}',
       '.axa-chip.g1{background:#3d5a98}.axa-chip.g2{background:#0e8c86}.axa-chip.g3{background:#c1791d}.axa-chip:hover{filter:brightness(1.12)}',
       '.axa-tag{position:absolute;top:-9px;left:8px;font:800 9.5px/1 var(--font,"Noto Sans KR");color:#fff;background:#6c4bd8;border-radius:5px;padding:3px 5px}',
-      '.axa-n.due{box-shadow:0 0 0 3px #3d5a98,0 8px 20px rgba(61,90,152,.3);z-index:6}',
-      '.axa-n.past{opacity:.5}','.axa-n.future{opacity:.12;filter:grayscale(.6)}','.axa-w.faint,.axa-lb.faint{opacity:.35}','.axa-stage.filtering .axa-w.lit.t-gate{stroke:#3d5a98}',
-      '.axa-n.on{box-shadow:0 0 0 3px var(--loopc),0 8px 20px rgba(0,0,0,.18);z-index:6}',
-      '.axa-n.off{opacity:.16;filter:grayscale(.6)}',
       '@keyframes axapulse{0%{box-shadow:0 0 0 0 rgba(61,90,152,.7)}100%{box-shadow:0 0 0 18px rgba(61,90,152,0)}}',
       '.axa-n.pulse{animation:axapulse 1s ease-out 2}',
       '.axa-zoom{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;gap:6px;z-index:20}',
@@ -550,39 +572,37 @@
       '.axa-legend .sep{color:var(--line)}',
       /* 전체화면: 문서 전체를 쓰고 팝업(z 1000)·패널(z 960)이 위에 뜨도록 z 900 */
       'body.axa-fs-on{overflow:hidden}','body.axa-fs-on #agentFab,body.axa-fs-on #agentWidget{display:none!important}',
-      '@media (min-width:900px){body.axa-dr-on #v-arch .axa-root{margin-right:424px;transition:margin .25s}body.axa-dr-on #v-arch .axa-root.fs{right:420px;margin-right:0}}',
+      '@media (min-width:900px){body.axa-dr-on #v-arch .axa-root{margin-right:404px;transition:margin .25s}body.axa-dr-on #v-arch .axa-root.fs{right:400px;margin-right:0}}',
       '.axa-root.fs{position:fixed;inset:0;z-index:900;display:flex;flex-direction:column;background:var(--canvas);padding:10px 12px}',
       '.axa-root.fs .axa-vp{flex:1 1 auto;height:auto}','.axa-root.fs .axa-head{border-radius:14px 14px 0 0}','.axa-root.fs .axa-tt{display:none}',
       /* 사이드 패널 */
-      '.axa-drawer{--ink:#0f2133;--ink2:#2f4256;--ink3:#5d7083;--line:#d3dde6;--bg:#fff;--soft:#f3f6f9;position:fixed;top:0;right:0;width:420px;max-width:94vw;height:100vh;background:var(--bg);color:var(--ink);box-shadow:-12px 0 36px rgba(15,33,51,.22);transform:translateX(104%);transition:transform .25s ease;z-index:960;overflow:auto;padding:22px 22px 48px;font-family:var(--font,"Noto Sans KR",sans-serif);word-break:keep-all;overflow-wrap:break-word;box-sizing:border-box}',
+      '.axa-drawer{--ink:#0f2133;--ink2:#2f4256;--ink3:#5d7083;--line:#dfe6ed;--bg:#fff;--soft:#f4f7fa;position:fixed;top:0;right:0;width:400px;max-width:94vw;height:100vh;background:var(--bg);color:var(--ink);box-shadow:-12px 0 36px rgba(15,33,51,.22);transform:translateX(104%);transition:transform .25s ease;z-index:960;overflow:auto;padding:20px 20px 40px;font-family:var(--font,"Noto Sans KR",sans-serif);word-break:keep-all;overflow-wrap:break-word;box-sizing:border-box}',
       '.axa-drawer.dark,[data-theme="dark"] .axa-drawer{--ink:#eef3f8;--ink2:#c9d4df;--ink3:#a3b1bf;--line:#2e3a49;--bg:#141b25;--soft:#1b2330}',
       '.axa-drawer.open{transform:translateX(0)}',
       '.axa-dx{position:absolute;top:14px;right:14px;width:32px;height:32px;border:1px solid var(--line);background:var(--bg);color:var(--ink2);border-radius:8px;font-size:18px;cursor:pointer}',
-      '.axa-dk{display:inline-block;font-size:11.5px;font-weight:800;color:#fff;background:var(--k);border-radius:6px;padding:3px 8px}',
-      '.axa-drawer h3{margin:8px 0 4px;font-size:20px;font-weight:800;letter-spacing:-.015em;text-wrap:balance}',
-      '.axa-drawer h3 small{font-size:13px;font-weight:700;margin-left:4px}',
-      '.axa-dsub{font-size:12.5px;color:var(--ink3)}',
-      '.axa-prog{display:flex;align-items:center;gap:10px;margin-top:6px;font-size:12.5px;color:var(--ink2)}',
-      '.axa-prog .bar{flex:1;height:8px;background:var(--soft);border-radius:5px;overflow:hidden}.axa-prog .bar i{display:block;height:100%;background:#3d5a98}',
-      '.axa-dbody section{border-top:1px solid var(--line);padding:12px 0 2px;margin-top:12px}',
-      '.axa-dbody h4{margin:0 0 7px;font-size:13px;font-weight:800;color:var(--ink2)}',
-      '.axa-dbody h4 em{font-style:normal;font-weight:700;color:var(--ink3);margin-left:4px}',
-      '.axa-dbody p{margin:0;font-size:13.5px;line-height:1.7;color:var(--ink2);text-wrap:pretty}',
+      '.axa-dk{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.04em;color:#fff;background:var(--k);border-radius:6px;padding:3px 8px}',
+      '.axa-drawer h3{margin:8px 40px 10px 0;font-size:19px;font-weight:800;letter-spacing:-.015em;line-height:1.35;text-wrap:balance}',
+      '.axa-stats{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:10px;overflow:hidden}',
+      '.axa-stats div{padding:8px 10px;text-align:center;border-right:1px solid var(--line)}.axa-stats div:last-child{border-right:0}',
+      '.axa-stats b{display:block;font-size:16px;font-weight:800;color:var(--ink)}.axa-stats span{font-size:11.5px;color:var(--ink3)}',
+      '.axa-dbody section{margin-top:16px}',
+      '.axa-dbody h4{margin:0 0 6px;font-size:12px;font-weight:800;letter-spacing:.02em;color:var(--ink3)}',
+      '.axa-dbody p{margin:0;font-size:13.5px;line-height:1.65;color:var(--ink2);text-wrap:pretty}',
       '.axa-muted{color:var(--ink3)!important}',
-      '.axa-gl{font-size:11.5px;font-weight:700;color:var(--ink3);margin:6px 0 4px}',
+      '.axa-grow{margin-bottom:8px}',
+      '.axa-gl{font-size:11.5px;font-weight:700;color:var(--ink3);margin:0 0 4px}',
       '.axa-items{display:flex;flex-wrap:wrap;gap:5px}',
       '.axa-item{border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:8px;padding:5px 9px;font:600 12.5px var(--font,"Noto Sans KR");cursor:pointer}',
-      '.axa-item:hover{border-color:#3d5a98}.axa-item.ghost{background:transparent;color:var(--ink2)}',
+      '.axa-item:hover{border-color:#3d5a98}',
       '.axa-trows{display:flex;flex-direction:column;gap:5px}',
       '.axa-trow{display:flex;align-items:center;gap:8px;text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:9px;padding:7px 9px;cursor:pointer;font-family:var(--font,"Noto Sans KR");color:var(--ink)}',
       '.axa-trow:hover{border-color:#3d5a98;background:var(--soft)}',
       '.axa-trow .tt{flex:1;font-size:13px;font-weight:600;line-height:1.4}.axa-trow .go{font-size:12px;color:var(--ink3);white-space:nowrap}',
       '.axa-trow .axa-chip{cursor:pointer;flex:none}',
       '.axa-steps{list-style:none;margin:0;padding:0;counter-reset:st}',
-      '.axa-steps li{position:relative;padding:4px 0 12px 34px;counter-increment:st;min-height:22px}',
-      '.axa-steps li:before{content:counter(st);position:absolute;left:0;top:3px;width:22px;height:22px;border-radius:50%;background:var(--k);color:#fff;font:700 12px/22px var(--font,"Noto Sans KR");text-align:center}',
-      '.axa-steps li:not(:last-child):after{content:"";position:absolute;left:10.5px;top:27px;bottom:0;border-left:2px solid var(--line)}',
-      '.axa-steps b{display:block;font-size:13.5px;color:var(--ink)}.axa-steps span{display:block;font-size:12.5px;color:var(--ink3);line-height:1.5}',
+      '.axa-steps li{position:relative;padding:2px 0 10px 32px;counter-increment:st;font-size:13.5px;font-weight:600;line-height:1.5;color:var(--ink);min-height:22px}',
+      '.axa-steps li:before{content:counter(st);position:absolute;left:0;top:1px;width:22px;height:22px;border-radius:50%;background:var(--k);color:#fff;font:700 12px/22px var(--font,"Noto Sans KR");text-align:center}',
+      '.axa-steps li:not(:last-child):after{content:"";position:absolute;left:10px;top:25px;bottom:1px;border-left:2px solid var(--line)}',
       '.axa-rule p{background:var(--soft);border-left:3px solid var(--k);border-radius:0 8px 8px 0;padding:9px 12px}',
       '@media (max-width:760px){.axa-bar{justify-content:flex-start}.axa-vp{height:560px}}'
     ].join('\n');
