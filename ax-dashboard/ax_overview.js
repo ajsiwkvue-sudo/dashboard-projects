@@ -94,7 +94,7 @@
   }
 
   function esc(s){ try{ if(typeof escH==='function') return escH(s); }catch(e){}
-    return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+    return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 
   function renderList(){
     var list=document.getElementById('axTodoList'); if(!list) return;
