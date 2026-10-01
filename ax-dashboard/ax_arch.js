@@ -11,7 +11,7 @@
   if(window.axArch) return;
 
   /* ───────────── 기본 데이터 ───────────── */
-  var CW=2375, CH=1269;
+  var CW=3010, CH=1497;
   var GOAL_HEX={1:'#3d5a98',2:'#0e8c86',3:'#c1791d'};
 
   // 그룹(영역) - 원본 콘솔의 영역 코드·이름 그대로. 박스는 소속 노드 범위에서 자동 계산
@@ -26,54 +26,54 @@
 
   // 노드: 제목·부제·연결 과제(maps)는 원본 콘솔 그대로 (부제의 줄바꿈만 '·'로 이어 한 줄)
   var N={
-    source:{x:14,y:366,w:150,h:88,out:1,ic:'server',c:'#6c7d8e',title:'원천 데이터',sub:'EMR·OCS·PACS·LIS·IoMT',lp:'data'},
-    users:{x:14,y:932,w:176,h:88,out:1,ic:'users',c:'#2f9e6a',title:'현업 · Key Player',sub:'과제발굴·L3+ 30명',maps:['3-1']},
-    llm:{x:2205,y:366,w:150,h:122,out:1,ic:'bolt',c:'#c1791d',title:'On-prem LLM',sub:'의료특화 FM',maps:['2-1','1-4'],lp:'perso model'},
-    gpu:{x:2205,y:561,w:150,h:88,out:1,ic:'chip',c:'#c0492f',title:'GPU 하드웨어',sub:'AI 컴퓨팅 인프라',maps:['2-1']},
+    source:{x:14,y:432,w:200,h:72,out:1,ic:'server',c:'#6c7d8e',title:'원천 데이터',sub:'EMR·OCS·PACS·LIS·IoMT',lp:'data'},
+    users:{x:14,y:1100,w:228,h:72,out:1,ic:'users',c:'#2f9e6a',title:'현업 · Key Player',sub:'과제발굴·L3+ 30명',maps:['3-1']},
+    llm:{x:2740,y:432,w:245,h:96,out:1,ic:'bolt',c:'#c1791d',title:'On-prem LLM',sub:'의료특화 FM',maps:['2-1','1-4'],lp:'perso model'},
+    gpu:{x:2740,y:662,w:245,h:72,out:1,ic:'chip',c:'#c0492f',title:'GPU 하드웨어',sub:'AI 컴퓨팅 인프라',maps:['2-1']},
 
-    gov1:{x:260,y:105,w:176,h:88,grp:'GOV',ic:'board',c:'#3d5a98',title:'전략·이행관리',sub:'AX 추진전략',maps:['1-1']},
-    gov2:{x:452,y:105,w:176,h:88,grp:'GOV',ic:'shield',c:'#3d5a98',title:'표준·윤리·안전',sub:'가이드라인',maps:['1-2']},
-    gov3:{x:644,y:105,w:176,h:88,grp:'GOV',ic:'gear',c:'#3d5a98',title:'KPI·성과·보상',sub:'12지표·보상',maps:['1-3']},
-    gov4:{x:871,y:105,w:176,h:88,grp:'GOV',ic:'result',c:'#3d5a98',title:'검증·테스트베드',sub:'FM 실증·검증',maps:['2-4']},
-    gov5:{x:1063,y:105,w:176,h:88,grp:'GOV',ic:'shield',c:'#3d5a98',title:'IAM·보안·감사·버전',sub:'Control Plane',maps:['2-4']},
+    gov1:{x:364,y:124,w:234,h:72,grp:'GOV',ic:'board',c:'#3d5a98',title:'전략·이행관리',sub:'AX 추진전략',maps:['1-1']},
+    gov2:{x:614,y:124,w:234,h:72,grp:'GOV',ic:'shield',c:'#3d5a98',title:'표준·윤리·안전',sub:'가이드라인',maps:['1-2']},
+    gov3:{x:864,y:124,w:234,h:72,grp:'GOV',ic:'gear',c:'#3d5a98',title:'KPI·성과·보상',sub:'12지표·보상',maps:['1-3']},
+    gov4:{x:1114,y:124,w:234,h:72,grp:'GOV',ic:'result',c:'#3d5a98',title:'검증·테스트베드',sub:'FM 실증·검증',maps:['2-4']},
+    gov5:{x:1364,y:124,w:234,h:72,grp:'GOV',ic:'shield',c:'#3d5a98',title:'IAM·보안·감사·버전',sub:'Control Plane',maps:['2-4']},
 
-    hub:{x:260,y:366,w:176,h:88,ic:'hub',c:'#0e8c86',title:'Connector Hub',sub:'Event Bus·수집',maps:['2-2'],lp:'data'},
-    binder:{x:282,y:514,w:139,h:139,circ:1,ic:'data',c:'#0e8c86',title:'데이터 바인더',sub:'Semantic Fabric',maps:['2-2'],lp:'data'},
-    catalog:{x:260,y:712,w:176,h:88,ic:'tag',c:'#0e8c86',title:'데이터 카탈로그',sub:'Provenance·품질',maps:['2-2'],lp:'data'},
+    hub:{x:364,y:432,w:220,h:72,ic:'hub',c:'#0e8c86',title:'Connector Hub',sub:'Event Bus·수집',maps:['2-2'],lp:'data'},
+    binder:{x:404,y:619,w:139,h:139,circ:1,ic:'data',c:'#0e8c86',title:'데이터 바인더',sub:'Semantic Fabric',maps:['2-2'],lp:'data'},
+    catalog:{x:364,y:840,w:220,h:72,ic:'tag',c:'#0e8c86',title:'데이터 카탈로그',sub:'Provenance·품질',maps:['2-2'],lp:'data'},
 
-    kb:{x:545,y:676,w:160,h:88,ic:'book',c:'#0e8c86',title:'Enterprise KB',sub:'지침·규정·SOP·심사',maps:['2-2'],lp:'data'},
-    pctx:{x:545,y:493,w:160,h:88,ic:'data',c:'#0e8c86',title:'Patient Context',sub:'환자 실시간·조립',maps:['2-2'],lp:'data'},
-    mcp_read:{x:545,y:366,w:160,h:88,ic:'plug',c:'#6c4bd8',title:'Read Gateway',sub:'EMR·PACS 조회',maps:['2-3'],lp:'data'},
+    kb:{x:744,y:798,w:224,h:72,ic:'book',c:'#0e8c86',title:'Enterprise KB',sub:'지침·규정·SOP·심사',maps:['2-2'],lp:'data'},
+    pctx:{x:744,y:582,w:224,h:72,ic:'data',c:'#0e8c86',title:'Patient Context',sub:'환자 실시간·조립',maps:['2-2'],lp:'data'},
+    mcp_read:{x:744,y:432,w:224,h:72,ic:'plug',c:'#6c4bd8',title:'Read Gateway',sub:'EMR·PACS 조회',maps:['2-3'],lp:'data'},
 
-    cab:{x:835,y:366,w:166,h:88,grp:'CAP',ic:'loop',c:'#0b6e6b',title:'CAB',sub:'Agent Builder',maps:['2-3']},
-    cal:{x:1017,y:366,w:166,h:88,grp:'CAP',ic:'board',c:'#0e8c86',title:'CAL',sub:'Library·30종',maps:['2-3']},
-    rt_router:{x:835,y:468,w:166,h:88,grp:'CAP',ic:'fsm',c:'#3d5a98',title:'Router·Planner',sub:'요청 배정',maps:['2-3']},
-    rt_flow:{x:1017,y:468,w:166,h:88,grp:'CAP',ic:'loop',c:'#3d5a98',title:'Workflow·State',sub:'순서·재시도',maps:['2-3']},
-    rt_policy:{x:835,y:571,w:166,h:88,grp:'CAP',ic:'shield',c:'#3d5a98',title:'Policy·IAM',sub:'권한 통제',maps:['2-3']},
-    rt_valid:{x:1017,y:571,w:166,h:88,grp:'CAP',ic:'result',c:'#3d5a98',title:'Validator',sub:'정확·안전 검증',maps:['2-3']},
-    mwp:{x:835,y:688,w:348,h:102,grp:'CAP',hub:1,ic:'ui',c:'#0b6e6b',title:'MWP · My Workplace',sub:'개인 맞춤 업무환경 · CAP 중심',maps:['2-3']},
+    cab:{x:1098,y:432,w:222,h:72,grp:'CAP',ic:'loop',c:'#0b6e6b',title:'CAB',sub:'Agent Builder',maps:['2-3']},
+    cal:{x:1336,y:432,w:222,h:72,grp:'CAP',ic:'board',c:'#0e8c86',title:'CAL',sub:'Library·30종',maps:['2-3']},
+    rt_router:{x:1098,y:552,w:222,h:72,grp:'CAP',ic:'fsm',c:'#3d5a98',title:'Router·Planner',sub:'요청 배정',maps:['2-3']},
+    rt_flow:{x:1336,y:552,w:222,h:72,grp:'CAP',ic:'loop',c:'#3d5a98',title:'Workflow·State',sub:'순서·재시도',maps:['2-3']},
+    rt_policy:{x:1098,y:674,w:222,h:72,grp:'CAP',ic:'shield',c:'#3d5a98',title:'Policy·IAM',sub:'권한 통제',maps:['2-3']},
+    rt_valid:{x:1336,y:674,w:222,h:72,grp:'CAP',ic:'result',c:'#3d5a98',title:'Validator',sub:'정확·안전 검증',maps:['2-3']},
+    mwp:{x:1098,y:812,w:460,h:86,grp:'CAP',hub:1,ic:'ui',c:'#0b6e6b',title:'MWP · My Workplace',sub:'개인 맞춤 업무환경 · CAP 중심',maps:['2-3']},
 
-    magent:{x:835,y:839,w:240,h:88,grp:'CAP',ic:'spawn',c:'#0e8c86',title:'멀티에이전트',sub:'Orchestrator·Worker·Validator·A2A',maps:['2-3']},
+    magent:{x:1098,y:990,w:240,h:72,grp:'CAP',ic:'spawn',c:'#0e8c86',title:'멀티에이전트',sub:'Orchestrator·Worker·Validator·A2A',maps:['2-3']},
 
-    output:{x:1017,y:996,w:166,h:88,grp:'WB',ic:'result',c:'#2f9e6a',title:'아웃풋',sub:'Agent Draft',maps:['3-3']},
-    happroval:{x:1017,y:1122,w:166,h:88,grp:'WB',ic:'shield',c:'#c0492f',title:'Human Approval',sub:'의료진 검토·서명',maps:['2-3']},
-    mcp_write:{x:730,y:1122,w:166,h:88,grp:'WB',ic:'plug',c:'#6c4bd8',title:'Write-back Ctrl',sub:'의무기록·오더·처방',maps:['2-3']},
-    audit:{x:440,y:1122,w:166,h:88,grp:'WB',ic:'board',c:'#3d5a98',title:'Audit·Version',sub:'감사·버전 기록',maps:['2-4']},
+    output:{x:1325,y:1175,w:233,h:72,grp:'WB',ic:'result',c:'#2f9e6a',title:'아웃풋',sub:'Agent Draft',maps:['3-3']},
+    happroval:{x:1325,y:1324,w:233,h:72,grp:'WB',ic:'shield',c:'#c0492f',title:'Human Approval',sub:'의료진 검토·서명',maps:['2-3']},
+    mcp_write:{x:1006,y:1324,w:219,h:72,grp:'WB',ic:'plug',c:'#6c4bd8',title:'Write-back Ctrl',sub:'의무기록·오더·처방',maps:['2-3']},
+    audit:{x:659,y:1324,w:207,h:72,grp:'WB',ic:'board',c:'#3d5a98',title:'Audit·Version',sub:'감사·버전 기록',maps:['2-4']},
 
-    rag:{x:1445,y:366,w:126,h:88,grp:'RPA',ic:'graph',c:'#c1791d',title:'RAG',sub:'KB 검색',maps:['2-2'],tag:'R'},
-    pref:{x:1595,y:366,w:126,h:88,grp:'RPA',ic:'gear',c:'#6c4bd8',title:'PREF',sub:'선호',maps:['2-2'],tag:'P'},
-    agent:{x:1745,y:366,w:126,h:88,grp:'RPA',ic:'brain',c:'#6c4bd8',title:'AGENT',sub:'Memory',maps:['2-2'],tag:'A'},
-    OE:{x:1445,y:503,w:210,h:88,ic:'mine',c:'#6c7d8e',title:'운영지능 (OE)',sub:'Event Log·Process Mining',maps:['3-3']},
+    rag:{x:1798,y:432,w:150,h:84,grp:'RPA',ic:'graph',c:'#c1791d',title:'RAG',sub:'KB 검색',maps:['2-2'],tag:'R'},
+    pref:{x:1972,y:432,w:150,h:84,grp:'RPA',ic:'gear',c:'#6c4bd8',title:'PREF',sub:'선호',maps:['2-2'],tag:'P'},
+    agent:{x:2146,y:432,w:150,h:84,grp:'RPA',ic:'brain',c:'#6c4bd8',title:'AGENT',sub:'Memory',maps:['2-2'],tag:'A'},
+    OE:{x:1798,y:594,w:213,h:72,ic:'mine',c:'#6c7d8e',title:'운영지능 (OE)',sub:'Event Log·Process Mining',maps:['3-3']},
 
-    pipe:{x:1445,y:639,w:180,h:88,grp:'MODEL',ic:'gauge',c:'#c0492f',title:'학습 파이프라인',sub:'선별·비식별·라벨링·Gold',maps:['2-1']},
-    lora:{x:1770,y:621,w:124,h:124,grp:'MODEL',circ:1,ic:'gear',c:'#6c4bd8',title:'LoRA',sub:'Adapter 학습',maps:['2-1'],tag:'L'},
-    registry:{x:1995,y:639,w:160,h:88,grp:'MODEL',ic:'book',c:'#c0492f',title:'Model Registry',sub:'평가·버전·승인',maps:['2-4']},
+    pipe:{x:1798,y:754,w:208,h:72,grp:'MODEL',ic:'gauge',c:'#c0492f',title:'학습 파이프라인',sub:'선별·비식별·라벨링·Gold',maps:['2-1']},
+    lora:{x:2176,y:728,w:124,h:124,grp:'MODEL',circ:1,ic:'gear',c:'#6c4bd8',title:'LoRA',sub:'Adapter 학습',maps:['2-1'],tag:'L'},
+    registry:{x:2445,y:754,w:218,h:72,grp:'MODEL',ic:'book',c:'#c0492f',title:'Model Registry',sub:'평가·버전·승인',maps:['2-4']},
 
-    ooe:{x:1445,y:854,w:210,h:88,grp:'OPT',ic:'gauge',c:'#c1791d',title:'업무 최적화 엔진',sub:'로그 모니터링·최적화',maps:['3-3']},
-    opt_wait:{x:1445,y:991,w:130,h:88,grp:'OPT',ic:'gauge',c:'#c1791d',title:'대기시간',sub:'외래·검사',maps:['3-3']},
-    opt_res:{x:1599,y:991,w:130,h:88,grp:'OPT',ic:'users',c:'#c1791d',title:'자원배분',sub:'인력·장비',maps:['3-3']},
-    opt_bed:{x:1753,y:991,w:130,h:88,grp:'OPT',ic:'board',c:'#c1791d',title:'병상·스케줄',sub:'회전',maps:['3-3']},
-    opt_proc:{x:1907,y:991,w:130,h:88,grp:'OPT',ic:'fsm',c:'#c1791d',title:'프로세스',sub:'병목',maps:['3-3']}
+    ooe:{x:1798,y:1008,w:213,h:72,grp:'OPT',ic:'gauge',c:'#c1791d',title:'업무 최적화 엔진',sub:'로그 모니터링·최적화',maps:['3-3']},
+    opt_wait:{x:1798,y:1169,w:179,h:72,grp:'OPT',ic:'gauge',c:'#c1791d',title:'대기시간',sub:'외래·검사',maps:['3-3']},
+    opt_res:{x:2001,y:1169,w:179,h:72,grp:'OPT',ic:'users',c:'#c1791d',title:'자원배분',sub:'인력·장비',maps:['3-3']},
+    opt_bed:{x:2204,y:1169,w:179,h:72,grp:'OPT',ic:'board',c:'#c1791d',title:'병상·스케줄',sub:'회전',maps:['3-3']},
+    opt_proc:{x:2407,y:1169,w:179,h:72,grp:'OPT',ic:'fsm',c:'#c1791d',title:'프로세스',sub:'병목',maps:['3-3']}
   };
 
   // 완성 목표 월(2026) - 원본 그대로
@@ -85,40 +85,40 @@
     {a:'source',as:'r',b:'hub',bs:'l',t:'solid',l:'수집·연계',lp:'data'},
     {a:'hub',as:'b',b:'binder',bs:'t',t:'solid',l:'정규화',lp:'data'},
     {a:'hub',as:'r',b:'mcp_read',bs:'l',t:'solid',l:'실시간 조회',lp:'data'},
-    {a:'binder',as:'r',b:'kb',bs:'l',t:'solid',l:'지식화',lseg:'src',lp:'data',mx:490},
+    {a:'binder',as:'r',b:'kb',bs:'l',t:'solid',l:'지식화',lseg:'src',lp:'data',mx:640},
     {a:'binder',as:'b',b:'catalog',bs:'t',t:'solid',l:'품질·계보',lp:'data'},
     {a:'mcp_read',as:'b',b:'pctx',bs:'t',t:'solid',l:'환자 컨텍스트',lp:'data'},
     {a:'kb',as:'r',b:'mwp',bs:'l',t:'solid',l:'지식 참조',lp:'data',bo:-20},
-    {a:'pctx',as:'r',b:'mwp',bs:'l',t:'solid',l:'환자 사실',lseg:'src',lp:'data',mx:805,bo:-29},
-    {a:'mwp',as:'b',b:'output',bs:'t',t:'solid',l:'임상 Draft',lp:'data',ao:91},
+    {a:'pctx',as:'r',b:'mwp',bs:'l',t:'solid',l:'환자 사실',lseg:'src',lp:'data',mx:1030,bo:-29},
+    {a:'mwp',as:'b',b:'output',bs:'t',t:'solid',l:'임상 Draft',lp:'data',ao:113},
     {a:'output',as:'b',b:'happroval',bs:'t',t:'solid',l:'검토 요청',lp:'data'},
     {a:'happroval',as:'l',b:'mcp_write',bs:'r',t:'gate',l:'승인',lp:'data'},
     {a:'mcp_write',b:'source',t:'solid',l:'write-back',lseg:2,lp:'data',route:'writeback'},
     {a:'mcp_write',as:'l',b:'audit',bs:'r',t:'feed',l:'감사 기록',lp:'data'},
-    {a:'gov5',as:'b',b:'happroval',bs:'r',t:'gate',l:'권한·감사',lseg:'dst',ao:60},
-    {a:'mwp',as:'r',b:'OE',bs:'l',t:'feed',l:'사용 로그',lseg:'dst',lp:'perso opt model',mx:1371,ao:29},
-    {a:'OE',as:'t',b:'rag',bs:'b',t:'fb',l:'색인 갱신',lseg:0,lp:'perso',ao:-42},
-    {a:'rag',as:'l',b:'mwp',bs:'r',t:'feed',l:'검색 증강',lseg:'src',lp:'perso',mx:1285,bo:-37},
-    {a:'pref',as:'b',b:'mwp',bs:'r',t:'feed',l:'개인화',lseg:'src',lp:'perso',via:[[1658,466],[1311,466]],bo:-24},
-    {a:'agent',as:'b',b:'mwp',bs:'r',t:'feed',l:'메모리',lseg:'src',lp:'perso',via:[[1808,481],[1337,481]],bo:-12},
-    {a:'llm',as:'t',b:'mwp',bs:'r',t:'solid',l:'추론 응답',lseg:1,lp:'perso model',bo:0,via:[[2280,293],[1235,293]]},
-    {a:'OE',as:'b',b:'pipe',bs:'t',t:'fb',l:'학습 후보',lseg:0,lp:'model',ao:-15},
+    {a:'gov5',as:'b',b:'happroval',bs:'r',t:'gate',l:'권한·감사',lseg:'dst',ao:107},
+    {a:'mwp',as:'r',b:'OE',bs:'l',t:'feed',l:'사용 로그',lseg:'dst',lp:'perso opt model',mx:1718,ao:29},
+    {a:'OE',as:'t',b:'rag',bs:'b',t:'fb',l:'색인 갱신',lseg:0,lp:'perso',ao:-31},
+    {a:'rag',as:'l',b:'mwp',bs:'r',t:'feed',l:'검색 증강',lseg:'src',lp:'perso',mx:1634,bo:-37},
+    {a:'pref',as:'b',b:'mwp',bs:'r',t:'feed',l:'개인화',lseg:'src',lp:'perso',via:[[2047,540],[1658,540]],bo:-24},
+    {a:'agent',as:'b',b:'mwp',bs:'r',t:'feed',l:'메모리',lseg:'src',lp:'perso',via:[[2221,556],[1682,556]],bo:-12},
+    {a:'llm',as:'t',b:'mwp',bs:'r',t:'solid',l:'추론 응답',lseg:1,lp:'perso model',bo:0,via:[[2862,346],[1610,346]]},
+    {a:'OE',as:'b',b:'pipe',bs:'t',t:'fb',l:'학습 후보',lseg:0,lp:'model',ao:-2},
     {a:'pipe',as:'r',b:'lora',bs:'l',t:'fb',l:'Gold DS 학습',lp:'model'},
     {a:'lora',as:'r',b:'registry',bs:'l',t:'solid',l:'평가·등록',lp:'model'},
-    {a:'registry',as:'r',b:'llm',bs:'l',t:'solid',l:'검증 배포',lseg:'src',lp:'model',mx:2180,bo:37},
+    {a:'registry',as:'r',b:'llm',bs:'l',t:'solid',l:'검증 배포',lseg:'src',lp:'model',mx:2700,bo:37},
     {a:'gpu',as:'t',b:'llm',bs:'b',t:'solid',l:'GPU'},
-    {a:'gov4',as:'b',b:'registry',bs:'t',t:'gate',l:'모델 승인',lseg:1,my:244},
-    {a:'OE',as:'l',b:'ooe',bs:'l',t:'feed',l:'이벤트 마이닝',lseg:'dst',lp:'opt',mx:1407,ao:24,bo:-17},
-    {a:'ooe',as:'b',b:'opt_wait',bs:'t',t:'fb',lp:'opt',my:966},
-    {a:'ooe',as:'b',b:'opt_res',bs:'t',t:'fb',lp:'opt',my:966},
-    {a:'ooe',as:'b',b:'opt_bed',bs:'t',t:'fb',lp:'opt',my:966},
-    {a:'ooe',as:'b',b:'opt_proc',bs:'t',t:'fb',lp:'opt',my:966},
-    {a:'ooe',as:'l',b:'mwp',bs:'r',t:'solid',l:'최적화 반영',lseg:'src',lp:'opt',mx:1259,ao:17,bo:41},
-    {a:'gov2',as:'b',b:'cab',bs:'l',t:'gate',l:'거버넌스 게이트',lseg:1,via:[[540,270],[819,270]]},
+    {a:'gov4',as:'b',b:'registry',bs:'t',t:'gate',l:'모델 승인',lseg:1,my:288},
+    {a:'OE',as:'l',b:'ooe',bs:'l',t:'feed',l:'이벤트 마이닝',lseg:'dst',lp:'opt',mx:1754,ao:24,bo:-17},
+    {a:'ooe',as:'b',b:'opt_wait',bs:'t',t:'fb',lp:'opt',my:1140},
+    {a:'ooe',as:'b',b:'opt_res',bs:'t',t:'fb',lp:'opt',my:1140},
+    {a:'ooe',as:'b',b:'opt_bed',bs:'t',t:'fb',lp:'opt',my:1140},
+    {a:'ooe',as:'b',b:'opt_proc',bs:'t',t:'fb',lp:'opt',my:1140},
+    {a:'ooe',as:'l',b:'mwp',bs:'r',t:'solid',l:'최적화 반영',lseg:'src',lp:'opt',mx:1574,ao:17,bo:41},
+    {a:'gov2',as:'b',b:'cab',bs:'l',t:'gate',l:'거버넌스 게이트',lseg:1,via:[[731,319],[1082,319]]},
     {a:'cab',as:'r',b:'cal',bs:'l',t:'solid'},
     {a:'cal',as:'b',b:'rt_flow',bs:'t',t:'solid'},
-    {a:'rt_valid',as:'b',b:'mwp',bs:'t',t:'solid',bo:91},
-    {a:'mwp',as:'b',b:'magent',bs:'t',t:'solid',l:'실행',lseg:1,ao:-54}
+    {a:'rt_valid',as:'b',b:'mwp',bs:'t',t:'solid',bo:119},
+    {a:'mwp',as:'b',b:'magent',bs:'t',t:'solid',l:'실행',lseg:1,ao:-110}
   ];
 
   // 순환 - 원본 문구 그대로. 흐름(flow)만 단계로 나눠 보여준다
@@ -201,7 +201,7 @@
       var g=GB[n.grp]=GB[n.grp]||{x1:1e9,y1:1e9,x2:-1e9,y2:-1e9};
       g.x1=Math.min(g.x1,n.x); g.y1=Math.min(g.y1,n.y); g.x2=Math.max(g.x2,n.x+n.w); g.y2=Math.max(g.y2,n.y+n.h); });
     var groups=Object.keys(GB).map(function(k){ var g=GB[k];
-      var bt=GMETA[k].pos==='b'; return {k:k,t:GMETA[k].t,pos:GMETA[k].pos,x:g.x1-14,y:g.y1-(bt?14:30),w:(g.x2-g.x1)+28,h:(g.y2-g.y1)+(bt?44:44)}; });
+      var bt=GMETA[k].pos==='b'; return {k:k,t:GMETA[k].t,pos:GMETA[k].pos,x:g.x1-14,y:g.y1-(bt?14:38),w:(g.x2-g.x1)+28,h:(g.y2-g.y1)+(bt?52:52)}; });
     // AI-HOS 경계
     var b={x1:1e9,y1:1e9,x2:-1e9,y2:-1e9};
     Object.keys(N).forEach(function(id){ var n=N[id]; if(n.out) return;
@@ -211,7 +211,7 @@
     // 라벨이 피해야 할 영역: 노드 + 그룹 제목
     var obst=[];
     Object.keys(N).forEach(function(id){ var n=N[id]; obst.push({x:n.x-4,y:n.y-4,w:n.w+8,h:n.h+8}); });
-    groups.forEach(function(g){ var tw=textW(g.t,15)+16; obst.push({x:g.x+6,y:g.pos==='b'?g.y+g.h-24:g.y+4,w:tw,h:20}); });
+    groups.forEach(function(g){ var tw=textW(g.t,18)+16; obst.push({x:g.x+6,y:g.pos==='b'?g.y+g.h-30:g.y+4,w:tw,h:26}); });
     obst.push({x:BD.x+BD.w-110,y:BD.y+6,w:100,h:22});
     function hit(r){ for(var i=0;i<obst.length;i++){ var o=obst[i]; if(r.x<o.x+o.w&&r.x+r.w>o.x&&r.y<o.y+o.h&&r.y+r.h>o.y) return true; } return r.x<2||r.y<2||r.x+r.w>CW-2||r.y+r.h>CH-2; }
 
@@ -272,12 +272,12 @@
     var html='<div class="axa-bd" style="left:'+BD.x+'px;top:'+BD.y+'px;width:'+BD.w+'px;height:'+BD.h+'px"></div><div class="axa-bd-lb" style="left:'+(BD.x+BD.w-104)+'px;top:'+(BD.y+8)+'px">AI-HOS</div>';
     groups.forEach(function(g){
       html+='<div class="axa-grp" data-g="'+g.k+'" style="left:'+g.x+'px;top:'+g.y+'px;width:'+g.w+'px;height:'+g.h+'px"></div>'+
-        '<div class="axa-grp-t" data-g="'+g.k+'" style="left:'+(g.x+12)+'px;top:'+(g.pos==='b'?g.y+g.h-22:g.y+6)+'px">'+esc(g.t)+'</div>';
+        '<div class="axa-grp-t" data-g="'+g.k+'" style="left:'+(g.x+12)+'px;top:'+(g.pos==='b'?g.y+g.h-29:g.y+7)+'px">'+esc(g.t)+'</div>';
     });
     Object.keys(N).forEach(function(id){ var n=N[id], maps=n.maps||[];
       html+='<div class="axa-n'+(n.hub?' hub':'')+(n.circ?' circ':'')+(n.tag?' rpal':'')+(n.out?' out':'')+(maps.length?' click':'')+'" data-id="'+id+'" data-done="'+DONE[id]+'" data-lp="'+(n.lp||'')+'"'+
         (maps.length?' data-code="'+maps[0]+'" tabindex="0" role="button" aria-label="'+esc(n.title)+' - 과제 '+maps.join(', ')+' 상세 열기"':'')+
-        ' style="left:'+n.x+'px;top:'+n.y+'px;width:'+n.w+'px;height:'+n.h+'px">'+
+        ' style="left:'+n.x+'px;top:'+n.y+'px;width:'+n.w+'px;height:'+n.h+'px;--cpr:'+(maps.length*38)+'px">'+
         (n.tag?'<span class="axa-tag">RPAL·'+n.tag+'</span>':'')+
         '<div class="axa-nh"><span class="axa-ic"><svg viewBox="0 0 24 24" fill="none" stroke="'+n.c+'" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+(IC[n.ic]||IC.board)+'</svg></span><b>'+wb(n.title)+'</b></div>'+
         '<div class="axa-ns">'+wb(n.sub)+'</div>'+
@@ -321,7 +321,7 @@
     var lg=r.querySelector('.axa-legend'), top=vp.getBoundingClientRect().top+window.scrollY;
     vp.style.height=Math.max(560, window.innerHeight-top-(lg?lg.offsetHeight:0)-18)+'px'; }
   function fit(){ sizeVp(); var vp=document.getElementById('axaVp'); if(!vp||!vp.clientWidth) return;
-    var vw=vp.clientWidth-60, vh=vp.clientHeight-8; view.s=clampS(Math.min(vw/CW,vh/CH)); view.tx=Math.max(4,(vp.clientWidth-CW*view.s)/2); view.ty=Math.max(4,(vh-CH*view.s)/2); applyT(); }
+    var vw=vp.clientWidth-16, vh=vp.clientHeight-8; view.s=clampS(Math.min(vw/CW,vh/CH)); view.tx=Math.max(4,(vp.clientWidth-CW*view.s)/2); view.ty=Math.max(4,(vh-CH*view.s)/2); applyT(); }
   function zoomAt(mx,my,ns){ ns=clampS(ns); view.tx=mx-(mx-view.tx)*(ns/view.s); view.ty=my-(my-view.ty)*(ns/view.s); view.s=ns; applyT(); }
   function bindPanZoom(vp){
     var drag=false,moved=false,lx=0,ly=0;
@@ -553,13 +553,13 @@
       '.axa-bd{position:absolute;border:2px dashed var(--bd);border-radius:22px;z-index:1}',
       '.axa-bd-lb{position:absolute;font:800 15px var(--font,"Noto Sans KR");letter-spacing:.12em;color:var(--bd);z-index:1}',
       '.axa-grp{position:absolute;border:1px solid var(--grpb);border-radius:14px;background:var(--grp);z-index:2}',
-      '.axa-grp-t{position:absolute;font:700 15px var(--font,"Noto Sans KR");color:var(--ink2);z-index:2;white-space:nowrap}',
+      '.axa-grp-t{position:absolute;font:800 18px var(--font,"Noto Sans KR");color:var(--ink2);z-index:2;white-space:nowrap}',
       /* 노드 */
       '.axa-n{position:absolute;box-sizing:border-box;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:7px 10px;box-shadow:0 2px 8px rgba(15,33,51,.10);display:flex;flex-direction:column;justify-content:center;gap:3px;z-index:4;transition:opacity .2s,box-shadow .15s,border-color .15s,filter .2s}',
       '.axa-n.click{cursor:pointer}.axa-n.click:hover,.axa-n.click:focus-visible{border-color:#3d5a98;box-shadow:0 0 0 2px rgba(61,90,152,.35),0 6px 18px rgba(15,33,51,.18);outline:none}',
       '.axa-n.hub{border-width:2.5px;border-color:#0b6e6b}.axa-n.rpal{border-style:dashed}.axa-n.out{border-style:solid;border-color:var(--ink3)}',
       '.axa-n.circ{border-radius:50%;align-items:center;text-align:center;padding:6px}',
-      '.axa-nh{display:flex;align-items:center;gap:7px;min-width:0}','.axa-n:not(.circ){padding-top:24px!important;padding-bottom:8px!important}','.axa-n.circ .axa-tag{left:50%;transform:translateX(-50%);top:8px}',
+      '.axa-nh{display:flex;align-items:center;gap:7px;min-width:0}','.axa-n:not(.circ){padding-top:9px!important;padding-bottom:8px!important;justify-content:flex-start!important}','.axa-n.rpal:not(.circ){padding-top:26px!important}','.axa-n:not(.circ):not(.rpal) .axa-nh{padding-right:var(--cpr,0)}','.axa-n.circ .axa-tag{left:50%;transform:translateX(-50%);top:8px}',
       '.axa-n.circ .axa-nh{flex-direction:column;gap:3px}',
       '.axa-ic{flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--line2)}',
       '.axa-ic svg{width:19px;height:19px}',
