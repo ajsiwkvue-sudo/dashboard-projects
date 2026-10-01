@@ -272,7 +272,7 @@
     var html='<div class="axa-bd" style="left:'+BD.x+'px;top:'+BD.y+'px;width:'+BD.w+'px;height:'+BD.h+'px"></div><div class="axa-bd-lb" style="left:'+(BD.x+BD.w-104)+'px;top:'+(BD.y+8)+'px">AI-HOS</div>';
     groups.forEach(function(g){
       html+='<div class="axa-grp" data-g="'+g.k+'" style="left:'+g.x+'px;top:'+g.y+'px;width:'+g.w+'px;height:'+g.h+'px"></div>'+
-        '<div class="axa-grp-t" data-g="'+g.k+'" style="left:'+(g.x+12)+'px;top:'+(g.pos==='b'?g.y+g.h-29:g.y+7)+'px">'+esc(g.t)+'</div>';
+        '<div class="axa-grp-t" data-g="'+g.k+'" title="눌러서 이 영역 크게 보기 (다시 누르거나 바탕을 누르면 전체)" style="left:'+(g.x+12)+'px;top:'+(g.pos==='b'?g.y+g.h-29:g.y+7)+'px">'+esc(g.t)+'</div>';
     });
     Object.keys(N).forEach(function(id){ var n=N[id], maps=n.maps||[];
       html+='<div class="axa-n'+(n.hub?' hub':'')+(n.circ?' circ':'')+(n.tag?' rpal':'')+(n.out?' out':'')+(maps.length?' click':'')+'" data-id="'+id+'" data-done="'+DONE[id]+'" data-lp="'+(n.lp||'')+'"'+
@@ -288,7 +288,7 @@
   }
 
   /* ───────────── 화면 골격 ───────────── */
-  var state={month:null,loop:null,dark:false};
+  var state={month:null,loop:null,dark:false,zoomG:null};
   try{ state.dark=localStorage.getItem('ax_arch_dark')==='1'; }catch(e){}
 
   function shellHtml(){
@@ -296,8 +296,8 @@
     return ''+
     '<div class="axa-root'+(state.dark?' dark':'')+'" id="axaRoot">'+
       '<div class="axa-head">'+
-        '<div class="axa-tt"><div class="axa-eyebrow">Narrative · 05 / AI Hospital Operating System</div><h2>AI-HOS 아키텍처</h2>'+
-          '<p class="axa-lede"><span class="ln"><b>AI-HOS 경계</b> 안에 거버넌스·<wbr>데이터 계층·<wbr><b>CAP + Runtime</b>·<wbr><b>Context Engineering</b>(개인화·RPA)·<wbr><b>Continual Learning</b>(모델·오프라인)·<wbr><b>Process Intelligence</b>(운영)가 배치되고,</span> <span class="ln">외부로 원천데이터·현업·On-prem LLM·GPU가 연결됩니다.</span></p></div>'+
+        '<div class="axa-tt"><div class="axa-ttl"><h2>AI-HOS 아키텍처</h2><button type="button" class="axa-info-btn" aria-expanded="false" title="설명 보기">ⓘ 설명</button></div><div class="axa-info"><div class="axa-eyebrow">Narrative · 05 / AI Hospital Operating System</div>'+
+          '<p class="axa-lede"><span class="ln"><b>AI-HOS 경계</b> 안에 거버넌스·<wbr>데이터 계층·<wbr><b>CAP + Runtime</b>·<wbr><b>Context Engineering</b>(개인화·RPA)·<wbr><b>Continual Learning</b>(모델·오프라인)·<wbr><b>Process Intelligence</b>(운영)가 배치되고,</span> <span class="ln">외부로 원천데이터·현업·On-prem LLM·GPU가 연결됩니다.</span></p></div></div>'+
         '<div class="axa-bar">'+
           '<div class="axa-seg-g"><div class="axa-track">'+MONTHS.map(function(m){return '<button type="button" class="axa-seg" data-m="'+m+'">'+m+'월<span>'+(cnt[m]||0)+'개</span></button>';}).join('')+'</div>'+
             '<button type="button" class="axa-all">전체 보기</button></div>'+
@@ -331,7 +331,7 @@
     window.addEventListener('mouseup',function(){ drag=false; });
     vp.addEventListener('click',function(e){ if(moved){ e.stopPropagation(); e.preventDefault(); moved=false; } },true);
     vp.querySelector('.axa-zoom').addEventListener('click',function(e){ var bt=e.target.closest('button'); if(!bt) return;
-      if(bt.dataset.z==='fit'){ fitVisible(); return; } zoomAt(vp.clientWidth/2,vp.clientHeight/2,view.s*(bt.dataset.z==='in'?1.2:.83)); });
+      if(bt.dataset.z==='fit'){ if(state.zoomG) unzoom(); else fit(); return; } zoomAt(vp.clientWidth/2,vp.clientHeight/2,view.s*(bt.dataset.z==='in'?1.2:.83)); });
   }
 
   /* ───────────── 시점·순환 강조 ───────────── */
@@ -367,7 +367,20 @@
     root.querySelector('.axa-all').classList.toggle('sel',m===null&&!L);
   }
   // 확대는 하지 않는다 - 패널이 열려도 전체 도식을 남은 공간에 그대로 맞춘다
-  function fitVisible(){ fit(); }
+  // 영역 확대 보기 : 영역(중박스) 제목이나 영역 바탕을 누르면 그 영역이 화면에 꽉 차게
+  function fitVisible(){ if(state.zoomG) return zoomGroup(state.zoomG,true); fit(); }
+  function animT(){ var st=document.getElementById('axaStage'); if(!st) return; st.classList.add('anim'); clearTimeout(st.__an); st.__an=setTimeout(function(){ st.classList.remove('anim'); },420); }
+  function zoomGroup(k,keep){
+    var st=document.getElementById('axaStage'), vp=document.getElementById('axaVp'); if(!st||!vp) return;
+    var g=st.querySelector('.axa-grp[data-g="'+k+'"]'); if(!g) return;
+    var pad=36, x=g.offsetLeft-pad, y=g.offsetTop-pad, w=g.offsetWidth+pad*2, h=g.offsetHeight+pad*2;
+    // 영역 밖으로 나가는 연결선 라벨도 보이게 그룹 주변 라벨 포함
+    sizeVp(); var vw=vp.clientWidth-16, vh=vp.clientHeight-8;
+    if(!keep) animT();
+    view.s=clampS(Math.min(vw/w,vh/h,2.2)); view.tx=(vp.clientWidth-w*view.s)/2-x*view.s; view.ty=(vh-h*view.s)/2-y*view.s; applyT();
+    state.zoomG=k; st.classList.add('gzoom'); st.querySelectorAll('.axa-grp,.axa-grp-t').forEach(function(el){ el.classList.toggle('gsel',el.dataset.g===k); });
+  }
+  function unzoom(){ var st=document.getElementById('axaStage'); state.zoomG=null; if(st){ st.classList.remove('gzoom'); st.querySelectorAll('.gsel').forEach(function(el){ el.classList.remove('gsel'); }); } animT(); fit(); }
   function selectMonth(m){ state.loop=null; state.month=(state.month===m)?null:m; applyFilter(); if(state.month===null) closeDrawer(); else openMonthDrawer(m); refit(); }
   function selectLoop(k){ state.month=null; state.loop=(state.loop===k)?null:k; applyFilter(); if(!state.loop) closeDrawer(); else openLoopDrawer(k); refit(); }
   function refit(){ fitVisible(); setTimeout(fitVisible,300); }
@@ -444,12 +457,12 @@
     var tg=e.target; if(tg&&(/^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName)||tg.isContentEditable)) return;
     var ov=document.getElementById('overlay'); if(ov&&ov.classList.contains('open')) return;
     if((e.key==='f'||e.key==='F')&&!e.metaKey&&!e.ctrlKey&&!e.altKey){ e.preventDefault(); setFs(!isFs()); }
-    else if(e.key==='Escape'){ var d=document.getElementById('axaDrawer'); if(d&&d.classList.contains('open')) clearAll(); else if(isFs()) setFs(false); }
+    else if(e.key==='Escape'){ var d=document.getElementById('axaDrawer'); if(d&&d.classList.contains('open')) clearAll(); else if(state.zoomG) unzoom(); else if(isFs()) setFs(false); }
   });
   window.addEventListener('resize',function(){ var v=document.getElementById('v-arch'); if(v&&v.classList.contains('active')) fitVisible(); });
   // 왼쪽 사이드바 접기·펼치기처럼 창 크기는 그대로인데 영역 폭만 바뀌는 경우에도 다시 맞춘다
   var roRaf=0, lastW=0;
-  function watchVp(vp){ if(!window.ResizeObserver||vp.__ro) return; vp.__ro=new ResizeObserver(function(){ var w=vp.clientWidth; if(Math.abs(w-lastW)<2) return; lastW=w; cancelAnimationFrame(roRaf); roRaf=requestAnimationFrame(function(){ fit(); }); }); vp.__ro.observe(vp); }
+  function watchVp(vp){ if(!window.ResizeObserver||vp.__ro) return; vp.__ro=new ResizeObserver(function(){ var w=vp.clientWidth; if(Math.abs(w-lastW)<2) return; lastW=w; cancelAnimationFrame(roRaf); roRaf=requestAnimationFrame(function(){ fitVisible(); }); }); vp.__ro.observe(vp); }
 
   function setDark(on){ state.dark=on; try{ localStorage.setItem('ax_arch_dark',on?'1':'0'); }catch(e){}
     var r=document.getElementById('axaRoot'); if(r){ r.classList.toggle('dark',on); var b=r.querySelector('.axa-dark-btn'); if(b) b.textContent=on?'☀ 밝게':'☾ 어둡게'; }
@@ -468,6 +481,7 @@
       root.querySelectorAll('.axa-loop').forEach(function(b){ b.onclick=function(){ selectLoop(b.dataset.loop); }; });
       root.querySelector('.axa-fs-btn').onclick=function(){ setFs(!isFs()); };
       root.querySelector('.axa-dark-btn').onclick=function(){ setDark(!state.dark); };
+      root.querySelector('.axa-info-btn').onclick=function(){ var on=root.classList.toggle('show-info'); this.setAttribute('aria-expanded',on?'true':'false'); setTimeout(fit,30); };
       st.addEventListener('click',function(e){
         var chip=e.target.closest('.axa-chip'); if(chip){ e.stopPropagation(); openTaskSafe(chip.dataset.code); return; }
         var n=e.target.closest('.axa-n.click:not(.hide)'); if(n){ openTaskSafe(n.dataset.code); return; }
@@ -475,6 +489,9 @@
       // 바탕(빈 캔버스)을 누르면 사이드 패널을 닫고 전체 도식으로 돌아간다
       vp.addEventListener('click',function(e){
         if(e.target.closest('.axa-n:not(.hide),.axa-zoom')) return;
+        var gt=e.target.closest('.axa-grp,.axa-grp-t');
+        if(gt){ if(state.zoomG===gt.dataset.g) unzoom(); else zoomGroup(gt.dataset.g); return; }
+        if(state.zoomG){ unzoom(); return; }
         if(state.month!==null||state.loop){ clearAll(); return; }
         var d=document.getElementById('axaDrawer'); if(d&&d.classList.contains('open')) clearAll();
       });
@@ -510,8 +527,8 @@
       '.axa-root.dark,[data-theme="dark"] .axa-root{--ink:#eef3f8;--ink2:#c9d4df;--ink3:#a3b1bf;--line:#3b4858;--line2:#2c3744;--card:#1b2330;--canvas:#0d131b;--panel:#141b25;--grp:rgba(255,255,255,.03);--grpb:#2e3a49;',
         '--w-solid:#c9d4df;--w-feed:#8a99a9;--w-fb:#a68fff;--w-gate:#8aa7e6;--lb-bg:#1b2330;--lb-tx:#e3eaf2;--lb-bd:#3b4858;--bd:#5d7086}',
       /* 머리·도구줄 */
-      '.axa-head{display:flex;align-items:flex-end;flex-direction:column;align-items:stretch;gap:16px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line2);border-bottom:0;border-radius:14px 14px 0 0;padding:12px 16px}',
-      '.axa-tt{flex:0 0 auto}',
+      '.axa-head{display:flex;flex-direction:row;align-items:center;gap:12px 16px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line2);border-bottom:0;border-radius:14px 14px 0 0;padding:8px 14px}',
+      '.axa-tt{flex:0 0 auto}','.axa-ttl{display:flex;align-items:center;gap:8px}','.axa-root h2{font-size:18px!important}','.axa-info{display:none;flex-basis:100%}','.axa-root.show-info .axa-tt{flex-basis:100%}','.axa-root.show-info .axa-info{display:block}','.axa-info-btn{border:1px solid var(--line2);background:var(--card);color:var(--ink3);border-radius:8px;padding:3px 8px;font:600 12px var(--font,"Noto Sans KR");cursor:pointer}','.axa-info-btn:hover{color:#3d5a98;border-color:#3d5a98}','#v-arch.view{padding-top:10px;padding-bottom:10px}',
       '.axa-eyebrow{font-size:11px;font-weight:800;letter-spacing:.08em;color:#0e8c86;text-transform:uppercase}',
       '.axa-root h2{margin:0;font-size:21px;font-weight:800;letter-spacing:-.015em;color:var(--ink)}',
       '.axa-lede{margin:4px 0 0;font-size:13px;line-height:1.6;color:var(--ink2);overflow-wrap:normal}','.axa-lede .ln{display:inline-block}','.axa-lede b{white-space:nowrap}',
@@ -552,8 +569,8 @@
       '.axa-lb text{fill:var(--lb-tx);font:600 15px var(--font,"Noto Sans KR",sans-serif)}',
       '.axa-bd{position:absolute;border:2px dashed var(--bd);border-radius:22px;z-index:1}',
       '.axa-bd-lb{position:absolute;font:800 15px var(--font,"Noto Sans KR");letter-spacing:.12em;color:var(--bd);z-index:1}',
-      '.axa-grp{position:absolute;border:1px solid var(--grpb);border-radius:14px;background:var(--grp);z-index:2}',
-      '.axa-grp-t{position:absolute;font:800 18px var(--font,"Noto Sans KR");color:var(--ink2);z-index:2;white-space:nowrap}',
+      '.axa-grp{position:absolute;border:1px solid var(--grpb);border-radius:14px;background:var(--grp);z-index:2;cursor:zoom-in}','.axa-grp:hover{border-color:#3d5a98}','.axa-grp.gsel{cursor:zoom-out;border-color:#3d5a98;border-width:2px}','.axa-stage.anim{transition:transform .38s ease}',
+      '.axa-grp-t{position:absolute;font:800 18px var(--font,"Noto Sans KR");color:var(--ink2);z-index:5;white-space:nowrap;cursor:zoom-in;padding:1px 6px;margin-left:-6px;border-radius:6px}','.axa-grp-t:hover{background:rgba(61,90,152,.12);color:#3d5a98}','.axa-grp-t:after{content:" ⤢";font-size:.8em;opacity:.55}','.axa-grp-t.gsel{color:#3d5a98;cursor:zoom-out}','.axa-grp-t.gsel:after{content:" ✕"}',
       /* 노드 */
       '.axa-n{position:absolute;box-sizing:border-box;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:7px 10px;box-shadow:0 2px 8px rgba(15,33,51,.10);display:flex;flex-direction:column;justify-content:center;gap:3px;z-index:4;transition:opacity .2s,box-shadow .15s,border-color .15s,filter .2s}',
       '.axa-n.click{cursor:pointer}.axa-n.click:hover,.axa-n.click:focus-visible{border-color:#3d5a98;box-shadow:0 0 0 2px rgba(61,90,152,.35),0 6px 18px rgba(15,33,51,.18);outline:none}',
