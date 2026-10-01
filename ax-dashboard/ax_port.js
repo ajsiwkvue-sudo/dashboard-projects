@@ -29,7 +29,7 @@ const taskTitle = (id) => { const r=SCHED().find(s=>s.id===id); return r? (r.tit
 /* ================================================== */
 
 const $  = (s,r)=> (r||document).querySelector(s);
-const esc = s => (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const esc = s => (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 const toast = (window.toast || function(m){console.log('[toast]',m);});
 let _consoleRender = null;   // 드로어 열려있을 때 실시간 재렌더 훅
 

@@ -11,7 +11,7 @@
   function TASKS_(){ try{ if(typeof TASKS!=='undefined') return TASKS; }catch(e){} return []; }
   function OWNERS_(){ try{ if(typeof OWNERS!=='undefined') return OWNERS; }catch(e){} return {}; }
   function esc(s){ try{ if(typeof escH==='function') return escH(s); }catch(e){}
-    return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+    return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   function task(code){ return TASKS_().filter(function(t){return t.id===code;})[0]||null; }
 
   /* ── 목표색 (번들이 render/chip 에 사용) ── */

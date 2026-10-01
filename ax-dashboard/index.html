@@ -1232,7 +1232,7 @@ function switchTab(name,el){
 }
 
 /* ---------- 개요 ---------- */
-function overallProgress(){const ps=TASKS.map(t=>taskProgress(t));const pct=Math.round(ps.reduce((a,b)=>a+b,0)/(ps.length||1));const wbsCount=TASKS.filter(taskHasWbs).length;return {pct,tot:TASKS.length,done:TASKS.filter(t=>taskProgress(t)>=100).length,wbsCount};}
+function overallProgress(){const wt=TASKS.filter(taskHasWbs);const ps=wt.map(t=>taskProgress(t));const pct=ps.length?Math.round(ps.reduce((a,b)=>a+b,0)/ps.length):0;return {pct,tot:TASKS.length,done:wt.filter(t=>taskProgress(t)>=100).length,wbsCount:wt.length};}
 function ddayText(){const end=new Date(2026,11,31);const diff=Math.ceil((end-TODAY)/(1000*3600*24));return diff>0?`D-${diff} · 사업종료 2026.12`:`사업기간 종료`;}
 function renderOverview(){
   const op=overallProgress();
@@ -1987,7 +1987,15 @@ async function _applyWbsImport(){
   try{
     const btn=document.querySelector('.wbsimp-ok');if(btn){btn.disabled=true;btn.textContent='입력 중…';}
     const {error:delErr}=await supa.from('ax_schedules').delete().eq('task_id',tid);if(delErr)throw delErr;
-    const {error:insErr}=await supa.from('ax_schedules').insert(ins);if(insErr)throw insErr;
+    const {error:insErr}=await supa.from('ax_schedules').insert(ins);
+    // 삭제는 이미 커밋됐다 → 입력이 실패하면 기존 행을 되돌려 놓아야 데이터가 사라지지 않는다
+    if(insErr){
+      if(oldRows.length){
+        const {error:rbErr}=await supa.from('ax_schedules').insert(oldRows);
+        if(rbErr){window.__wbsRescue={task_id:tid,rows:oldRows};throw new Error(insErr.message+'\n\n※ 기존 세부계획 복구까지 실패했습니다. 이 탭을 닫지 마시고 관리자에게 알려주세요. (복구용 데이터는 window.__wbsRescue 에 남아 있습니다)');}
+      }
+      throw new Error(insErr.message+'\n\n기존 세부계획은 그대로 복구했습니다.');
+    }
     pushUndo({label:'WBS 가져오기',run:async()=>{await supa.from('ax_schedules').delete().eq('task_id',tid);if(oldRows.length)await supa.from('ax_schedules').insert(oldRows);await reloadSched(tid);await loadAllSchedules();}});
     _closeWbsImport();_wbsImportRows=null;
     await reloadSched(tid);await loadAllSchedules();
@@ -2007,11 +2015,11 @@ async function loadCfg(tid){if(!supa){schedCfg={cols:[],aligns:{},hidden:[],widt
 async function saveCfg(){if(!supa)return;try{const {error}=await supa.from('ax_sched_cfg').upsert({task_id:currentSchedTask,cols:schedCfg.cols,aligns:schedCfg.aligns,hidden:schedCfg.hidden||[],widths:schedCfg.widths||{},merges:schedCfg.merges||[],col_order:schedCfg.order||[],updated_by:whoAmI(),updated_at:new Date().toISOString()},{onConflict:'task_id'});if(error)throw error;}catch(e){alert('열 설정 저장 실패: '+e.message);}}
 function weekCol(ds){if(!ds)return null;const d=new Date(ds);const m=d.getMonth()+1;if(m<7)return 0;if(m>12)return 29;return (m-7)*5+(Math.min(5,Math.ceil(d.getDate()/7))-1);}
 function fmtD(ds){if(!ds)return '';const d=new Date(ds);return `${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;}
-function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function rowStyle(r){let s='';if(r.fill_color)s+=`background:${r.fill_color};`;if(r.text_color)s+=`color:${r.text_color};`;if(r.bold)s+='font-weight:800;';return s?`style="${s}"`:'';}
 async function reloadSched(tid){if(!supa||!tid)return;try{const {data,error}=await supa.from('ax_schedules').select('*').eq('task_id',tid).order('sort_order');if(error)throw error;schedCache[tid]=data||[];}catch(e){schedCache[tid]=schedCache[tid]||[];}await loadCfg(tid);if(currentSchedTask===tid&&!editingCell)renderSchedule(tid);}
 // 모든 전략과제의 WBS 세부계획을 한 번에 로드 → 개요/카드/분석 진척율 계산에 사용
-async function loadAllSchedules(){if(!supa)return;try{const {data,error}=await supa.from('ax_schedules').select('*').order('sort_order');if(error)throw error;const g={};(data||[]).forEach(r=>{(g[r.task_id]=g[r.task_id]||[]).push(r);});const seen={};(data||[]).forEach(r=>{seen[r.task_id]=1;});Object.keys(g).forEach(tid=>{if(tid===currentSchedTask&&editingCell)return;schedCache[tid]=g[tid];});try{renderOverview();}catch(_){}try{renderTasks();}catch(_){}rerenderActive();}catch(e){}}
+async function loadAllSchedules(){if(!supa)return;try{const {data,error}=await supa.from('ax_schedules').select('*').order('sort_order');if(error)throw error;const g={};(data||[]).forEach(r=>{(g[r.task_id]=g[r.task_id]||[]).push(r);});const seen={};(data||[]).forEach(r=>{seen[r.task_id]=1;});Object.keys(g).forEach(tid=>{if(tid===currentSchedTask&&editingCell)return;schedCache[tid]=g[tid];});Object.keys(schedCache).forEach(tid=>{if(g[tid])return;if(tid===currentSchedTask&&editingCell)return;schedCache[tid]=[];});try{renderOverview();}catch(_){}try{renderTasks();}catch(_){}rerenderActive();}catch(e){}}
 let _schedBumpT=null;function _bumpAllSched(){clearTimeout(_schedBumpT);_schedBumpT=setTimeout(loadAllSchedules,400);}
 function subscribeSchedules(){if(!supa)return;supa.channel('ax_sch_ch').on('postgres_changes',{event:'*',schema:'public',table:'ax_schedules'},payload=>{const r=(payload.new&&payload.new.task_id)?payload.new:payload.old;if(r&&r.task_id===currentSchedTask)reloadSched(r.task_id);_bumpAllSched();}).on('postgres_changes',{event:'*',schema:'public',table:'ax_sched_cfg'},payload=>{const r=(payload.new&&payload.new.task_id)?payload.new:payload.old;if(r&&r.task_id===currentSchedTask&&!editingCell)reloadSched(r.task_id);}).subscribe();}
 function openSchedule(tid){currentSchedTask=tid;selectedSchedId=null;selectedCol=null;setSelCells([]);myCell=null;schedInitScroll=true;schedView={sort:null,dir:'asc',filters:{}};document.getElementById('swOverlay').classList.add('open');refreshBodyLock();renderSchedule(tid);reloadSched(tid);updatePresence();try{localStorage.setItem('ax_opensched',tid);}catch(_){}}
@@ -2619,8 +2627,10 @@ async function pasteCells(){if(!authUser){alert('구글 로그인 후 이용하�
   if(!grid||!grid.length)return;
   const targets=[];for(let i=0;i<grid.length;i++)for(let j=0;j<grid[i].length;j++){const rr=rows[r1+i],f=cols[c1+j];if(rr&&f)targets.push({rowId:rr.id,field:f,value:grid[i][j]});}
   await applyCellValues(targets,'붙여넣기');toast('붙여넣기 완료');}
-async function cutCells(){const R=selRect();if(!R)return;await copyCells();const {r1,r2,c1,c2,rows,cols}=R;const targets=[];for(let i=r1;i<=r2;i++)for(let j=c1;j<=c2;j++){const rr=rows[i],f=cols[j];if(rr&&f&&f!=='name')targets.push({rowId:rr.id,field:f,value:''});}await applyCellValues(targets,'잘라내기');}
+async function cutCells(){const R=selRect();if(!R)return;await copyCells();const {r1,r2,c1,c2,rows,cols}=R;const prot={seq:1,name:1};const targets=[];for(let i=r1;i<=r2;i++)for(let j=c1;j<=c2;j++){const rr=rows[i],f=cols[j];if(rr&&f&&f.indexOf('calc_')!==0&&!prot[f])targets.push({rowId:rr.id,field:f,value:''});}await applyCellValues(targets,'잘라내기');}
 async function applyCellValues(targets,label){
+  // calc_* 는 wbsCalc 로 계산해 보여주는 값이라 ax_schedules 에 없는 열이다. 여기서 걸러야 잘라내기·붙여넣기가 DB로 내보내지 않는다.
+  targets=(targets||[]).filter(t=>t.field&&t.field.indexOf('calc_')!==0);
   if(!targets.length)return;const rows=schedCache[currentSchedTask]||[];const byRow={};targets.forEach(t=>{(byRow[t.rowId]=byRow[t.rowId]||[]).push(t);});const snaps=[];
   try{for(const id of Object.keys(byRow)){const row=rows.find(r=>r.id===id);if(!row)continue;const patch={};let extra=Object.assign({},row.extra||{}),extraChg=false;const snap={id,extraOld:JSON.parse(JSON.stringify(row.extra||{})),fields:{}};
       byRow[id].forEach(t=>{const f=t.field;let v=(t.value==null?'':String(t.value)).trim();
@@ -2733,13 +2743,16 @@ async function hideColumn(field){if(!authUser){alert('구글 로그인 후 이�
 async function unhideAllCols(){if(!authUser)return;const old=(schedCfg.hidden||[]).slice();if(!old.length)return;schedCfg.hidden=[];pushUndo({label:'열 보이기',run:async()=>{schedCfg.hidden=old;await saveCfg();await reloadSched(currentSchedTask);}});await saveCfg();renderSchedule(currentSchedTask);}
 /* ---- 셀 병합 ---- */
 function mergeGroups(){const defs=colDefsAll();return {L:defs.left.filter(c=>!colHidden(c.f)),R:defs.right.filter(c=>!colHidden(c.f))};}
-function computeMergeMaps(rows){const covered=new Set(),span={};const gr=mergeGroups();const rowIndex={};rows.forEach((r,i)=>rowIndex[r.id]=i);const groupOf=f=>{let gi=gr.L.findIndex(c=>c.f===f);if(gi>=0)return{g:'L',gi};gi=gr.R.findIndex(c=>c.f===f);if(gi>=0)return{g:'R',gi};return null;};
-  (schedCfg.merges||[]).forEach(cells=>{if(!Array.isArray(cells)||cells.length<2)return;const pts=[];let grp=null,ok=true;for(const c of cells){const ri=rowIndex[c.r];const go=groupOf(c.f);if(ri==null||!go){ok=false;break;}if(grp==null)grp=go.g;else if(grp!==go.g){ok=false;break;}pts.push({ri,gi:go.gi});}if(!ok||!pts.length)return;const minR=Math.min(...pts.map(p=>p.ri)),maxR=Math.max(...pts.map(p=>p.ri)),minG=Math.min(...pts.map(p=>p.gi)),maxG=Math.max(...pts.map(p=>p.gi)),rs=maxR-minR+1,cs=maxG-minG+1;if(rs*cs!==pts.length)return;const arr=grp==='L'?gr.L:gr.R;span[rows[minR].id+'|'+arr[minG].f]={rs,cs};pts.forEach(p=>{if(p.ri===minR&&p.gi===minG)return;covered.add(rows[p.ri].id+'|'+arr[p.gi].f);});});
+// 대과제(phase)는 블록 첫 행에만 있으므로 원본 순서대로 아래로 채워 행별 대과제를 구한다(renderSchedule 그룹핑과 같은 규칙)
+function phaseMapOf(tid){const m={};let lp='';(schedCache[tid]||[]).forEach(r=>{const p=(r.phase||'').trim();if(p)lp=p;m[r.id]=lp||'(대과제 미지정)';});return m;}
+function computeMergeMaps(rows){const covered=new Set(),span={};const gr=mergeGroups();const rowIndex={};rows.forEach((r,i)=>rowIndex[r.id]=i);const _pm=phaseMapOf(currentSchedTask);const groupOf=f=>{let gi=gr.L.findIndex(c=>c.f===f);if(gi>=0)return{g:'L',gi};gi=gr.R.findIndex(c=>c.f===f);if(gi>=0)return{g:'R',gi};return null;};
+  (schedCfg.merges||[]).forEach(cells=>{if(!Array.isArray(cells)||cells.length<2)return;const pts=[];let grp=null,ok=true;let ph=null;for(const c of cells){const ri=rowIndex[c.r];const go=groupOf(c.f);if(ri==null||!go){ok=false;break;}if(grp==null)grp=go.g;else if(grp!==go.g){ok=false;break;}const cp=_pm[c.r];if(ph==null)ph=cp;else if(ph!==cp){ok=false;break;}pts.push({ri,gi:go.gi});}if(!ok||!pts.length)return;const minR=Math.min(...pts.map(p=>p.ri)),maxR=Math.max(...pts.map(p=>p.ri)),minG=Math.min(...pts.map(p=>p.gi)),maxG=Math.max(...pts.map(p=>p.gi)),rs=maxR-minR+1,cs=maxG-minG+1;if(rs*cs!==pts.length)return;const arr=grp==='L'?gr.L:gr.R;span[rows[minR].id+'|'+arr[minG].f]={rs,cs};pts.forEach(p=>{if(p.ri===minR&&p.gi===minG)return;covered.add(rows[p.ri].id+'|'+arr[p.gi].f);});});
   return {covered,span};}
 function selectionHasMerge(){const keys=new Set(selectedCells.map(c=>c.rowId+'|'+c.field));return (schedCfg.merges||[]).some(m=>m.some(c=>keys.has(c.r+'|'+c.f)));}
 async function mergeCells(){if(!authUser){alert('구글 로그인 후 이용하세요.');return;}if(selectedCells.length<2){toast('병합하려면 2개 이상 셀을 선택하세요.');return;}
   const rows=schedCache[currentSchedTask]||[];const gr=mergeGroups();const rowIndex={};rows.forEach((r,i)=>rowIndex[r.id]=i);const groupOf=f=>{let gi=gr.L.findIndex(c=>c.f===f);if(gi>=0)return{g:'L',gi};gi=gr.R.findIndex(c=>c.f===f);if(gi>=0)return{g:'R',gi};return null;};
-  const pts=[];let grp=null;for(const c of selectedCells){const ri=rowIndex[c.rowId];const go=groupOf(c.field);if(ri==null||!go){toast('주간(간트) 칸·숨긴 열은 병합 불가. 텍스트 열끼리 선택하세요.');return;}if(grp==null)grp=go.g;else if(grp!==go.g){toast('시작/완료 쪽 열과 산출물/비고 쪽 열은 함께 병합할 수 없어요.');return;}pts.push({ri,gi:go.gi});}
+  const _pm=phaseMapOf(currentSchedTask);
+  const pts=[];let grp=null,ph=null;for(const c of selectedCells){const ri=rowIndex[c.rowId];const go=groupOf(c.field);if(ri==null||!go){toast('주간(간트) 칸·숨긴 열은 병합 불가. 텍스트 열끼리 선택하세요.');return;}if(grp==null)grp=go.g;else if(grp!==go.g){toast('시작/완료 쪽 열과 산출물/비고 쪽 열은 함께 병합할 수 없어요.');return;}const cp=_pm[c.rowId];if(ph==null)ph=cp;else if(ph!==cp){toast('서로 다른 대과제에 걸친 셀은 병합할 수 없어요. 같은 대과제 안에서 선택하세요.');return;}pts.push({ri,gi:go.gi});}
   const minR=Math.min(...pts.map(p=>p.ri)),maxR=Math.max(...pts.map(p=>p.ri)),minG=Math.min(...pts.map(p=>p.gi)),maxG=Math.max(...pts.map(p=>p.gi));
   if((maxR-minR+1)*(maxG-minG+1)!==pts.length){toast('직사각형 범위만 병합할 수 있어요.');return;}
   const arr=grp==='L'?gr.L:gr.R;const cells=[];for(let ri=minR;ri<=maxR;ri++)for(let gi=minG;gi<=maxG;gi++)cells.push({r:rows[ri].id,f:arr[gi].f});
@@ -2748,7 +2761,7 @@ async function mergeCells(){if(!authUser){alert('구글 로그인 후 이용하�
   pushUndo({label:'셀 병합',run:async()=>{schedCfg.merges=old;await saveCfg();await reloadSched(currentSchedTask);}});await saveCfg();renderSchedule(currentSchedTask);toast('셀을 병합했습니다.');}
 async function unmergeCells(){if(!authUser)return;const keys=new Set(selectedCells.map(c=>c.rowId+'|'+c.field));const old=JSON.parse(JSON.stringify(schedCfg.merges||[]));const before=(schedCfg.merges||[]).length;schedCfg.merges=(schedCfg.merges||[]).filter(m=>!m.some(c=>keys.has(c.r+'|'+c.f)));if(schedCfg.merges.length===before){toast('선택 영역에 병합된 셀이 없어요.');return;}pushUndo({label:'병합 해제',run:async()=>{schedCfg.merges=old;await saveCfg();await reloadSched(currentSchedTask);}});await saveCfg();renderSchedule(currentSchedTask);toast('병합을 해제했습니다.');}
 /* ---- 필터·정렬 드롭다운(개인 뷰) ---- */
-function escA(s){return escH(s).replace(/"/g,'&quot;');}
+function escA(s){return escH(s);}
 function openFilter(e,field){closeMenu();closePalette();closeFilter();
   const rows=schedCache[currentSchedTask]||[];const vals=[...new Set(rows.map(r=>cellVal(r,field)))].sort((a,b)=>a<b?-1:a>b?1:0);
   const cur=schedView.filters[field];

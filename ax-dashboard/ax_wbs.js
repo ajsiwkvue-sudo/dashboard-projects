@@ -242,7 +242,7 @@
   var S_ARR='color:var(--border); margin:0 5px; font-size:.7rem;';
   var S_LEAF='font-weight:800;';
   function _esc(s){ try{ if(typeof escH==='function')return escH(s); }catch(e){}
-    return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+    return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   function _leaves(rows){ try{ if(typeof _wbsLeaves==='function')return _wbsLeaves(rows||[]); }catch(e){} return []; }
   function _cacheOf(id){ try{ if(typeof schedCache!=='undefined')return schedCache[id]||[]; }catch(e){} return []; }
   function _tasks(){ try{ if(typeof TASKS!=='undefined')return TASKS; }catch(e){} return []; }
