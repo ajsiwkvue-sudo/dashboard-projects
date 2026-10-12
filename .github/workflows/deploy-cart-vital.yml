@@ -6,7 +6,6 @@ on:
     paths:
       - 'cart-vital-dashboard/**'
       - 'med-xai-dashboard/**'
-      - 'ax-dashboard/**'
   workflow_dispatch:
 
 permissions:
@@ -55,8 +54,6 @@ jobs:
           cp -r cart-vital-dashboard/dist/* combined/
           mkdir -p combined/med-xai
           cp -r med-xai-dashboard/dist/* combined/med-xai/
-          mkdir -p combined/ax-dashboard
-          cp -r ax-dashboard/* combined/ax-dashboard/
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
